@@ -73,7 +73,4 @@ func Init() {
 	if err := viper.Unmarshal(Config); err != nil {
 		panic(err)
 	}
-	if mysqlPassword := os.Getenv("MYSQL_PASSWORD"); mysqlPassword != "" {
-		Config.MySQLConfig.Password = mysqlPassword
-	}
 }
