@@ -20,7 +20,7 @@ type Conf struct {
 }
 
 type SystemConfig struct {
-	Host string `mapstructure:"host"`
+	AllowedOrigins []string `mapstructure:"allowed_origins"`
 }
 
 type HttpConfig struct {

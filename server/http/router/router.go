@@ -56,10 +56,7 @@ func NewRouter() *gin.Engine {
 
 func corsMiddleware() gin.HandlerFunc {
 	return cors.New(cors.Config{
-		AllowOrigins: []string{
-			"http://localhost:8080",
-			config.Config.SystemConfig.Host,
-		},
+		AllowOrigins: config.Config.SystemConfig.AllowedOrigins,
 		AllowMethods: []string{
 			"GET", "POST", "PUT", "DELETE", "OPTIONS",
 		},
