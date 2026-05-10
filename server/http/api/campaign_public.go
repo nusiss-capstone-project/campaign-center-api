@@ -37,7 +37,14 @@ func UserGetCampaignLanding(c *gin.Context) {
 		data.JSON(c, http.StatusBadRequest, -1, "invalid campaignId", nil)
 		return
 	}
-	userID, _ := strconv.ParseInt(c.Query("userId"), 10, 64)
+	var userID int64
+	if userIDParam, ok := c.GetQuery("userId"); ok {
+		userID, err = strconv.ParseInt(userIDParam, 10, 64)
+		if err != nil {
+			data.JSON(c, http.StatusBadRequest, -1, "invalid userId", nil)
+			return
+		}
+	}
 	language := c.Query("language")
 
 	reply, err := service.GetUserCampaignService().GetLandingPageUI(campaignID, userID, language)
