@@ -25,12 +25,11 @@ type LandingPageBody struct {
 // @Tags admin-landing-page
 // @Accept json
 // @Produce json
-// @Param client path string true "Client type" Enums(merchant, customer)
 // @Param body body LandingPageBody true "Landing page content"
 // @Success 200 {object} data.StandardResponse "success"
 // @Failure 400 {object} data.StandardResponse "validation error"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
-// @Router /{client}/admin/landing-pages [post]
+// @Router /admin/landing-pages [post]
 func AdminCreateLandingPage(c *gin.Context) {
 	var req LandingPageBody
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -57,14 +56,13 @@ func AdminCreateLandingPage(c *gin.Context) {
 // @Tags admin-landing-page
 // @Accept json
 // @Produce json
-// @Param client path string true "Client type" Enums(merchant, customer)
 // @Param landingPageId path int true "Landing page ID"
 // @Param body body LandingPageBody true "Landing page content"
 // @Success 200 {object} data.StandardResponse "success"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Failure 409 {object} data.StandardResponse "not draft"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
-// @Router /{client}/admin/landing-pages/{landingPageId} [put]
+// @Router /admin/landing-pages/{landingPageId} [put]
 func AdminUpdateLandingPage(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("landingPageId"), 10, 64)
 	if err != nil {
@@ -103,14 +101,13 @@ func AdminUpdateLandingPage(c *gin.Context) {
 // @Summary List landing pages (admin)
 // @Tags admin-landing-page
 // @Produce json
-// @Param client path string true "Client type" Enums(merchant, customer)
 // @Param page query int false "Page"
 // @Param pageSize query int false "Page size"
 // @Param status query int false "Status filter"
 // @Param language query string false "Language filter e.g. en-US"
 // @Success 200 {object} data.StandardResponse "success"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
-// @Router /{client}/admin/landing-pages [get]
+// @Router /admin/landing-pages [get]
 func AdminListLandingPages(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
@@ -149,12 +146,11 @@ func AdminListLandingPages(c *gin.Context) {
 // @Summary Get landing page (admin)
 // @Tags admin-landing-page
 // @Produce json
-// @Param client path string true "Client type" Enums(merchant, customer)
 // @Param landingPageId path int true "Landing page ID"
 // @Success 200 {object} data.StandardResponse "success"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
-// @Router /{client}/admin/landing-pages/{landingPageId} [get]
+// @Router /admin/landing-pages/{landingPageId} [get]
 func AdminGetLandingPage(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("landingPageId"), 10, 64)
 	if err != nil {
@@ -187,13 +183,12 @@ func AdminGetLandingPage(c *gin.Context) {
 // @Tags admin-landing-page
 // @Accept json
 // @Produce json
-// @Param client path string true "Client type" Enums(merchant, customer)
 // @Param landingPageId path int true "Landing page ID"
 // @Param body body PublishOperatorReq true "Operator"
 // @Success 200 {object} data.StandardResponse "success"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
-// @Router /{client}/admin/landing-pages/{landingPageId}/publish [post]
+// @Router /admin/landing-pages/{landingPageId}/publish [post]
 func AdminPublishLandingPage(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("landingPageId"), 10, 64)
 	if err != nil {

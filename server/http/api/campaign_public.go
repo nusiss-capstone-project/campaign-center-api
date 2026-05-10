@@ -24,14 +24,13 @@ type SimulateTopUpReq struct {
 // @Summary Get campaign landing page (user)
 // @Tags user-campaign
 // @Produce json
-// @Param client path string true "Client type" Enums(merchant, customer)
 // @Param campaignId path int true "Campaign ID"
 // @Param userId query int false "User ID for participation status"
 // @Param language query string false "Must match landing page language when set"
 // @Success 200 {object} data.StandardResponse "success"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
-// @Router /{client}/campaigns/{campaignId}/landing-page [get]
+// @Router /web/campaigns/{campaignId}/landing-page [get]
 func UserGetCampaignLanding(c *gin.Context) {
 	campaignID, err := strconv.ParseInt(c.Param("campaignId"), 10, 64)
 	if err != nil {
@@ -54,13 +53,12 @@ func UserGetCampaignLanding(c *gin.Context) {
 // @Tags user-campaign
 // @Accept json
 // @Produce json
-// @Param client path string true "Client type" Enums(merchant, customer)
 // @Param campaignId path int true "Campaign ID"
 // @Param body body JoinCampaignReq true "User id"
 // @Success 200 {object} data.StandardResponse "success or business error code in body"
 // @Failure 400 {object} data.StandardResponse "bad request"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
-// @Router /{client}/campaigns/{campaignId}/join [post]
+// @Router /web/campaigns/{campaignId}/join [post]
 func UserJoinCampaign(c *gin.Context) {
 	campaignID, err := strconv.ParseInt(c.Param("campaignId"), 10, 64)
 	if err != nil {
@@ -86,13 +84,12 @@ func UserJoinCampaign(c *gin.Context) {
 // @Tags user-campaign
 // @Accept json
 // @Produce json
-// @Param client path string true "Client type" Enums(merchant, customer)
 // @Param campaignId path int true "Campaign ID"
 // @Param body body SimulateTopUpReq true "User and amount"
 // @Success 200 {object} data.StandardResponse "success, manual review, or business error code"
 // @Failure 400 {object} data.StandardResponse "bad request"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
-// @Router /{client}/campaigns/{campaignId}/top-up [post]
+// @Router /web/campaigns/{campaignId}/top-up [post]
 func UserSimulateTopUp(c *gin.Context) {
 	campaignID, err := strconv.ParseInt(c.Param("campaignId"), 10, 64)
 	if err != nil {

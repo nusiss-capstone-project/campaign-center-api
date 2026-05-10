@@ -35,8 +35,8 @@ func main() {
 	log.InitLogger()
 	log.Logger.Info("Logger initialized.")
 	if _, err := mysql.Init(); err != nil {
-		log.Logger.Warnw("MySQL initialization failed", "error", err)
-		panic(err)
+		log.Logger.Fatal("MySQL initialization failed", "error", err)
+		panic("MySQL initialization failed")
 	}
 	shutdownTrace := telemetry.InitTracer()
 	defer shutdownTrace()

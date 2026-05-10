@@ -17,14 +17,14 @@ WORKDIR /app
 COPY go.mod go.sum ./
 
 # Download the dependencies
-RUN go mod tidy
+RUN go mod download
 
 # Copy the rest of the application code
 COPY . .
 
 # Build the Go application
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -a -ldflags="-w -s" -o main main.go && \
+    go build -mod=readonly -a -ldflags="-w -s" -o main main.go && \
     go clean -cache -modcache
 
 # Create a non-root user and set permissions

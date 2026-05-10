@@ -58,16 +58,14 @@ func parseRFC3339(s string) (time.Time, error) {
 
 // AdminCreateCampaign creates a draft campaign.
 // @Summary Create campaign (admin)
-// @Description Creates a campaign in draft status. Requires client `merchant` or `customer` in the path.
 // @Tags admin-campaign
 // @Accept json
 // @Produce json
-// @Param client path string true "Client type" Enums(merchant, customer)
 // @Param body body CreateCampaignReq true "Campaign payload"
 // @Success 200 {object} data.StandardResponse "success"
 // @Failure 400 {object} data.StandardResponse "validation error"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
-// @Router /{client}/admin/campaigns [post]
+// @Router /admin/campaigns [post]
 func AdminCreateCampaign(c *gin.Context) {
 	var req CreateCampaignReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -128,7 +126,6 @@ func AdminCreateCampaign(c *gin.Context) {
 // @Tags admin-campaign
 // @Accept json
 // @Produce json
-// @Param client path string true "Client type" Enums(merchant, customer)
 // @Param campaignId path int true "Campaign ID"
 // @Param body body UpdateCampaignReq true "Campaign payload"
 // @Success 200 {object} data.StandardResponse "success"
@@ -136,7 +133,7 @@ func AdminCreateCampaign(c *gin.Context) {
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Failure 409 {object} data.StandardResponse "not draft"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
-// @Router /{client}/admin/campaigns/{campaignId} [put]
+// @Router /admin/campaigns/{campaignId} [put]
 func AdminUpdateCampaign(c *gin.Context) {
 	idStr := c.Param("campaignId")
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -205,14 +202,13 @@ func AdminUpdateCampaign(c *gin.Context) {
 // @Summary List campaigns (admin)
 // @Tags admin-campaign
 // @Produce json
-// @Param client path string true "Client type" Enums(merchant, customer)
 // @Param page query int false "Page (default 1)"
 // @Param pageSize query int false "Page size (default 10)"
 // @Param status query int false "Campaign status filter"
 // @Param type query string false "Campaign type e.g. TOPUP_REWARD"
 // @Success 200 {object} data.StandardResponse "success"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
-// @Router /{client}/admin/campaigns [get]
+// @Router /admin/campaigns [get]
 func AdminListCampaigns(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
@@ -254,12 +250,11 @@ func AdminListCampaigns(c *gin.Context) {
 // @Summary Get campaign detail (admin)
 // @Tags admin-campaign
 // @Produce json
-// @Param client path string true "Client type" Enums(merchant, customer)
 // @Param campaignId path int true "Campaign ID"
 // @Success 200 {object} data.StandardResponse "success"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
-// @Router /{client}/admin/campaigns/{campaignId} [get]
+// @Router /admin/campaigns/{campaignId} [get]
 func AdminGetCampaign(c *gin.Context) {
 	idStr := c.Param("campaignId")
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -308,13 +303,12 @@ func AdminGetCampaign(c *gin.Context) {
 // @Tags admin-campaign
 // @Accept json
 // @Produce json
-// @Param client path string true "Client type" Enums(merchant, customer)
 // @Param campaignId path int true "Campaign ID"
 // @Param body body PublishOperatorReq true "Operator"
 // @Success 200 {object} data.StandardResponse "success"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
-// @Router /{client}/admin/campaigns/{campaignId}/publish [post]
+// @Router /admin/campaigns/{campaignId}/publish [post]
 func AdminPublishCampaign(c *gin.Context) {
 	idStr := c.Param("campaignId")
 	id, err := strconv.ParseInt(idStr, 10, 64)

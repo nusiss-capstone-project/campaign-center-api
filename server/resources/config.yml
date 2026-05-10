@@ -8,13 +8,6 @@ grpc:
   port: 5000
   connect_timeout: 5
   max_pool_size: 100
-mysql:
-  enabled: true
-  host: 10.249.36.74
-  port: "3306"
-  userName: campaign_dev
-  password: "YV8d3vz68wPw1eYF"
-  dbName: campaign_center
 redis:
   enabled: false
   host: 127.0.0.1

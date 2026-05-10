@@ -12,6 +12,24 @@ type MockRewardTransactionRepository struct {
 	mock.Mock
 }
 
+// CommitGrantWithParticipant provides a mock function with given fields: participant, reward
+func (_m *MockRewardTransactionRepository) CommitGrantWithParticipant(participant *model.CampaignParticipant, reward *model.RewardTransaction) error {
+	ret := _m.Called(participant, reward)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CommitGrantWithParticipant")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*model.CampaignParticipant, *model.RewardTransaction) error); ok {
+		r0 = rf(participant, reward)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Create provides a mock function with given fields: t
 func (_m *MockRewardTransactionRepository) Create(t *model.RewardTransaction) error {
 	ret := _m.Called(t)

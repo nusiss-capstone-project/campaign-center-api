@@ -240,50 +240,12 @@ func (s *userCampaignService) JoinCampaign(campaignID, userID int64) (*HTTPReply
 }
 
 func (s *userCampaignService) SimulateTopUp(campaignID, userID int64, amount float64) (*HTTPReply, error) {
-	campaign, err := s.campaigns.GetByID(campaignID)
+	rules, participant, early, err := s.simulateTopUpPrecheck(campaignID, userID, amount)
 	if err != nil {
-		if mysql.IsNotFound(err) {
-			return &HTTPReply{HTTPStatus: http.StatusNotFound, Code: -1, Message: "campaign not found"}, nil
-		}
 		return nil, err
 	}
-	rules, err := model.ParseRewardRulesJSON(campaign.RewardRules)
-	if err != nil {
-		return &HTTPReply{HTTPStatus: http.StatusInternalServerError, Code: -1, Message: err.Error()}, nil
-	}
-
-	participant, err := s.participants.GetByCampaignAndUser(campaignID, userID)
-	if err != nil {
-		if mysql.IsNotFound(err) {
-			return &HTTPReply{HTTPStatus: http.StatusBadRequest, Code: -1, Message: "user has not joined this campaign"}, nil
-		}
-		return nil, err
-	}
-	if participant.RewardStatus == model.RewardStatusGranted {
-		return &HTTPReply{
-			HTTPStatus: http.StatusOK,
-			Code:       data.CodeDuplicateReward,
-			Message:    "Reward already granted",
-			Data: map[string]any{
-				"campaignId":   campaignID,
-				"userId":       userID,
-				"rewardStatus": model.RewardStatusGranted,
-			},
-		}, nil
-	}
-
-	if amount < rules.TopupThreshold {
-		return &HTTPReply{
-			HTTPStatus: http.StatusOK,
-			Code:       data.CodeTopupNotQualified,
-			Message:    "Top-up amount does not meet campaign requirement",
-			Data: map[string]any{
-				"requiredAmount": rules.TopupThreshold,
-				"actualAmount":   amount,
-				"taskStatus":     model.TaskStatusNotQualified,
-				"rewardStatus":   model.RewardStatusNotGranted,
-			},
-		}, nil
+	if early != nil {
+		return early, nil
 	}
 
 	user, err := s.users.GetByID(userID)
@@ -295,42 +257,123 @@ func (s *userCampaignService) SimulateTopUp(campaignID, userID int64, amount flo
 	}
 
 	now := time.Now()
+	applyTopUpProgressToParticipant(participant, amount, now)
+
+	if user.RiskLevel == model.RiskLevelHigh {
+		return s.simulateTopUpManualReview(participant, campaignID, userID, amount)
+	}
+	return s.simulateTopUpGrantApproved(participant, rules, campaignID, userID, amount, now)
+}
+
+// simulateTopUpPrecheck loads campaign and participant and returns an HTTPReply for early business exits.
+func (s *userCampaignService) simulateTopUpPrecheck(campaignID, userID int64, amount float64) (
+	rules model.RewardRulesPayload,
+	participant *model.CampaignParticipant,
+	early *HTTPReply,
+	err error,
+) {
+	campaign, err := s.campaigns.GetByID(campaignID)
+	if err != nil {
+		if mysql.IsNotFound(err) {
+			return model.RewardRulesPayload{}, nil, &HTTPReply{
+				HTTPStatus: http.StatusNotFound, Code: -1, Message: "campaign not found",
+			}, nil
+		}
+		return model.RewardRulesPayload{}, nil, nil, err
+	}
+	rules, err = model.ParseRewardRulesJSON(campaign.RewardRules)
+	if err != nil {
+		return model.RewardRulesPayload{}, nil, &HTTPReply{
+			HTTPStatus: http.StatusInternalServerError, Code: -1, Message: err.Error(),
+		}, nil
+	}
+
+	participant, err = s.participants.GetByCampaignAndUser(campaignID, userID)
+	if err != nil {
+		if mysql.IsNotFound(err) {
+			return model.RewardRulesPayload{}, nil, &HTTPReply{
+				HTTPStatus: http.StatusBadRequest, Code: -1, Message: "user has not joined this campaign",
+			}, nil
+		}
+		return model.RewardRulesPayload{}, nil, nil, err
+	}
+	if participant.RewardStatus == model.RewardStatusGranted {
+		return model.RewardRulesPayload{}, nil, &HTTPReply{
+			HTTPStatus: http.StatusOK,
+			Code:       data.CodeDuplicateReward,
+			Message:    "Reward already granted",
+			Data: map[string]any{
+				"campaignId":   campaignID,
+				"userId":       userID,
+				"rewardStatus": model.RewardStatusGranted,
+			},
+		}, nil
+	}
+	if amount < rules.TopupThreshold {
+		return model.RewardRulesPayload{}, nil, &HTTPReply{
+			HTTPStatus: http.StatusOK,
+			Code:       data.CodeTopupNotQualified,
+			Message:    "Top-up amount does not meet campaign requirement",
+			Data: map[string]any{
+				"requiredAmount": rules.TopupThreshold,
+				"actualAmount":   amount,
+				"taskStatus":     model.TaskStatusNotQualified,
+				"rewardStatus":   model.RewardStatusNotGranted,
+			},
+		}, nil
+	}
+	return rules, participant, nil, nil
+}
+
+func applyTopUpProgressToParticipant(participant *model.CampaignParticipant, amount float64, now time.Time) {
 	completedAt := now
 	participant.TopupAmount = amount
 	participant.TaskStatus = model.TaskStatusCompleted
 	participant.CompletedAt = &completedAt
 	participant.UpdatedAt = now
+}
 
-	if user.RiskLevel == model.RiskLevelHigh {
-		participant.RiskStatus = model.RiskStatusManualReview
-		participant.RewardStatus = model.RewardStatusPendingReview
-		participant.RewardAmount = 0
-		if err := s.participants.Save(participant); err != nil {
-			return nil, err
-		}
-		return &HTTPReply{
-			HTTPStatus: http.StatusOK,
-			Code:       data.CodeSuccess,
-			Message:    "manual review required",
-			Data: map[string]any{
-				"campaignId":   campaignID,
-				"userId":       userID,
-				"topupAmount":  amount,
-				"taskStatus":   model.TaskStatusCompleted,
-				"riskStatus":   model.RiskStatusManualReview,
-				"rewardStatus": model.RewardStatusPendingReview,
-				"rewardAmount": 0,
-			},
-		}, nil
+func (s *userCampaignService) simulateTopUpManualReview(
+	participant *model.CampaignParticipant,
+	campaignID, userID int64,
+	amount float64,
+) (*HTTPReply, error) {
+	participant.RiskStatus = model.RiskStatusManualReview
+	participant.RewardStatus = model.RewardStatusPendingReview
+	participant.RewardAmount = 0
+	if err := s.participants.Save(participant); err != nil {
+		return nil, err
 	}
+	return &HTTPReply{
+		HTTPStatus: http.StatusOK,
+		Code:       data.CodeSuccess,
+		Message:    "manual review required",
+		Data: map[string]any{
+			"campaignId":   campaignID,
+			"userId":       userID,
+			"topupAmount":  amount,
+			"taskStatus":   model.TaskStatusCompleted,
+			"riskStatus":   model.RiskStatusManualReview,
+			"rewardStatus": model.RewardStatusPendingReview,
+			"rewardAmount": 0,
+		},
+	}, nil
+}
 
+func (s *userCampaignService) simulateTopUpGrantApproved(
+	participant *model.CampaignParticipant,
+	rules model.RewardRulesPayload,
+	campaignID, userID int64,
+	amount float64,
+	now time.Time,
+) (*HTTPReply, error) {
 	participant.RiskStatus = model.RiskStatusApproved
 	participant.RewardStatus = model.RewardStatusGranted
 	participant.RewardAmount = rules.RewardAmount
 	rewardedAt := now
 	participant.RewardedAt = &rewardedAt
 
-	tx := model.RewardTransaction{
+	rewardRow := model.RewardTransaction{
 		CampaignID:    campaignID,
 		UserID:        userID,
 		ParticipantID: participant.ID,
@@ -339,10 +382,7 @@ func (s *userCampaignService) SimulateTopUp(campaignID, userID int64, amount flo
 		Status:        model.RewardTxnStatusCompleted,
 		CreatedAt:     now,
 	}
-	if err := s.rewardTx.Create(&tx); err != nil {
-		return nil, err
-	}
-	if err := s.participants.Save(participant); err != nil {
+	if err := s.rewardTx.CommitGrantWithParticipant(participant, &rewardRow); err != nil {
 		return nil, err
 	}
 
@@ -358,7 +398,7 @@ func (s *userCampaignService) SimulateTopUp(campaignID, userID int64, amount flo
 			"riskStatus":          model.RiskStatusApproved,
 			"rewardStatus":        model.RewardStatusGranted,
 			"rewardAmount":        rules.RewardAmount,
-			"rewardTransactionId": tx.ID,
+			"rewardTransactionId": rewardRow.ID,
 		},
 	}, nil
 }

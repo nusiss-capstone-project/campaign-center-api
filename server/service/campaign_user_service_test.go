@@ -221,13 +221,12 @@ func TestUserCampaignService_SimulateTopUp_granted(t *testing.T) {
 	um := servicemock.NewMockUserRepository(t)
 	um.On("GetByID", int64(100)).Return(&model.User{RiskLevel: "LOW"}, nil)
 	rm := servicemock.NewMockRewardTransactionRepository(t)
-	rm.On("Create", mock.MatchedBy(func(tx *model.RewardTransaction) bool {
+	rm.On("CommitGrantWithParticipant", mock.Anything, mock.MatchedBy(func(tx *model.RewardTransaction) bool {
 		return tx.ParticipantID == 55
 	})).Run(func(args mock.Arguments) {
-		tx := args.Get(0).(*model.RewardTransaction)
+		tx := args.Get(1).(*model.RewardTransaction)
 		tx.ID = 999
 	}).Return(nil)
-	pm.On("Save", mock.Anything).Return(nil)
 
 	svc := service.NewUserCampaignService(cm,
 		servicemock.NewMockLandingPageRepository(t), pm, um, rm,
