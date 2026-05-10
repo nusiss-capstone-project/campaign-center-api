@@ -22,29 +22,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/ping": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "health"
-                ],
-                "summary": "Ping",
-                "responses": {
-                    "200": {
-                        "description": "example: {\\\"message\\\":\\\"pong\\\"}",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/{client}/admin/campaigns": {
+        "/admin/campaigns": {
             "get": {
                 "produces": [
                     "application/json"
@@ -54,17 +32,6 @@ const docTemplate = `{
                 ],
                 "summary": "List campaigns (admin)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Page (default 1)",
@@ -106,7 +73,6 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Creates a campaign in draft status. Requires client ` + "`" + `merchant` + "`" + ` or ` + "`" + `customer` + "`" + ` in the path.",
                 "consumes": [
                     "application/json"
                 ],
@@ -118,17 +84,6 @@ const docTemplate = `{
                 ],
                 "summary": "Create campaign (admin)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "description": "Campaign payload",
                         "name": "body",
@@ -161,7 +116,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/{client}/admin/campaigns/{campaignId}": {
+        "/admin/campaigns/{campaignId}": {
             "get": {
                 "produces": [
                     "application/json"
@@ -171,17 +126,6 @@ const docTemplate = `{
                 ],
                 "summary": "Get campaign detail (admin)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Campaign ID",
@@ -223,17 +167,6 @@ const docTemplate = `{
                 ],
                 "summary": "Update campaign (admin)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Campaign ID",
@@ -285,7 +218,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/{client}/admin/campaigns/{campaignId}/publish": {
+        "/admin/campaigns/{campaignId}/publish": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -298,17 +231,6 @@ const docTemplate = `{
                 ],
                 "summary": "Publish campaign (admin)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Campaign ID",
@@ -348,7 +270,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/{client}/admin/landing-pages": {
+        "/admin/landing-pages": {
             "get": {
                 "produces": [
                     "application/json"
@@ -358,17 +280,6 @@ const docTemplate = `{
                 ],
                 "summary": "List landing pages (admin)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Page",
@@ -422,17 +333,6 @@ const docTemplate = `{
                 "summary": "Create landing page (admin)",
                 "parameters": [
                     {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
                         "description": "Landing page content",
                         "name": "body",
                         "in": "body",
@@ -464,7 +364,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/{client}/admin/landing-pages/{landingPageId}": {
+        "/admin/landing-pages/{landingPageId}": {
             "get": {
                 "produces": [
                     "application/json"
@@ -474,17 +374,6 @@ const docTemplate = `{
                 ],
                 "summary": "Get landing page (admin)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Landing page ID",
@@ -526,17 +415,6 @@ const docTemplate = `{
                 ],
                 "summary": "Update landing page (admin)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Landing page ID",
@@ -582,7 +460,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/{client}/admin/landing-pages/{landingPageId}/publish": {
+        "/admin/landing-pages/{landingPageId}/publish": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -595,17 +473,6 @@ const docTemplate = `{
                 ],
                 "summary": "Publish landing page (admin)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Landing page ID",
@@ -645,7 +512,29 @@ const docTemplate = `{
                 }
             }
         },
-        "/{client}/campaigns/{campaignId}/join": {
+        "/ping": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Ping",
+                "responses": {
+                    "200": {
+                        "description": "example: {\\\"message\\\":\\\"pong\\\"}",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/web/campaigns/{campaignId}/join": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -658,17 +547,6 @@ const docTemplate = `{
                 ],
                 "summary": "Join campaign (user)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Campaign ID",
@@ -708,7 +586,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/{client}/campaigns/{campaignId}/landing-page": {
+        "/web/campaigns/{campaignId}/landing-page": {
             "get": {
                 "produces": [
                     "application/json"
@@ -718,17 +596,6 @@ const docTemplate = `{
                 ],
                 "summary": "Get campaign landing page (user)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Campaign ID",
@@ -771,7 +638,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/{client}/campaigns/{campaignId}/top-up": {
+        "/web/campaigns/{campaignId}/top-up": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -784,17 +651,6 @@ const docTemplate = `{
                 ],
                 "summary": "Simulate top-up (user)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Campaign ID",
@@ -829,56 +685,6 @@ const docTemplate = `{
                         "description": "database unavailable",
                         "schema": {
                             "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/{client}/hello": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "health"
-                ],
-                "summary": "Hello (demo)",
-                "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Name to greet",
-                        "name": "name",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "JSON fields: client, message, service",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
                         }
                     }
                 }
@@ -1085,7 +891,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/campaign-center-api/v1",
 	Schemes:          []string{"http", "https"},
 	Title:            "Campaign Center API",
-	Description:      "HTTP API for Phase 1 user top-up campaigns (admin + user-facing). Operates under `/campaign-center-api/v1`; path segment `{client}` must be `merchant` or `customer`.",
+	Description:      "HTTP API for Phase 1 user top-up campaigns (admin + user-facing). Operates under `/campaign-center-api/v1`;",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

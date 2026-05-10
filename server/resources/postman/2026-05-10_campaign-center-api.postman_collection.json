@@ -54,8 +54,8 @@
               "raw": "{\n  \"name\": \"New User Top-up Reward Campaign\",\n  \"type\": \"TOPUP_REWARD\",\n  \"targetMarket\": \"US\",\n  \"registrationStartTime\": \"2026-05-15T00:00:00+08:00\",\n  \"registrationEndTime\": \"2026-05-20T23:59:59+08:00\",\n  \"campaignStartTime\": \"2026-05-15T00:00:00+08:00\",\n  \"campaignEndTime\": \"2026-05-31T23:59:59+08:00\",\n  \"targetUserSegment\": \"NEW_USER\",\n  \"rewardRules\": {\n    \"topupThreshold\": 100,\n    \"rewardAmount\": 10,\n    \"rewardType\": \"BONUS_CREDIT\",\n    \"maxClaimPerUser\": 1\n  },\n  \"landingPageId\": 0\n}\n",
               "options": { "raw": { "language": "json" } }
             },
-            "url": "{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/campaigns",
-            "description": "```bash\ncurl -sS -X POST '{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/campaigns' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"name\":\"New User Top-up Reward Campaign\",\"type\":\"TOPUP_REWARD\",\"targetMarket\":\"US\",\"registrationStartTime\":\"2026-05-15T00:00:00+08:00\",\"registrationEndTime\":\"2026-05-20T23:59:59+08:00\",\"campaignStartTime\":\"2026-05-15T00:00:00+08:00\",\"campaignEndTime\":\"2026-05-31T23:59:59+08:00\",\"targetUserSegment\":\"NEW_USER\",\"rewardRules\":{\"topupThreshold\":100,\"rewardAmount\":10,\"rewardType\":\"BONUS_CREDIT\",\"maxClaimPerUser\":1},\"landingPageId\":0}'\n```"
+            "url": "{{baseUrl}}/campaign-center-api/v1/{{client}}/campaigns",
+            "description": "```bash\ncurl -sS -X POST '{{baseUrl}}/campaign-center-api/v1/{{client}}/campaigns' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"name\":\"New User Top-up Reward Campaign\",\"type\":\"TOPUP_REWARD\",\"targetMarket\":\"US\",\"registrationStartTime\":\"2026-05-15T00:00:00+08:00\",\"registrationEndTime\":\"2026-05-20T23:59:59+08:00\",\"campaignStartTime\":\"2026-05-15T00:00:00+08:00\",\"campaignEndTime\":\"2026-05-31T23:59:59+08:00\",\"targetUserSegment\":\"NEW_USER\",\"rewardRules\":{\"topupThreshold\":100,\"rewardAmount\":10,\"rewardType\":\"BONUS_CREDIT\",\"maxClaimPerUser\":1},\"landingPageId\":0}'\n```"
           }
         },
         {
@@ -64,7 +64,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/campaigns?page=1&pageSize=10&status=2&type=TOPUP_REWARD",
+              "raw": "{{baseUrl}}/campaign-center-api/v1/{{client}}/campaigns?page=1&pageSize=10&status=2&type=TOPUP_REWARD",
               "host": ["{{baseUrl}}"],
               "path": ["campaign-center-api", "v1", "{{client}}", "admin", "campaigns"],
               "query": [
@@ -74,7 +74,7 @@
                 { "key": "type", "value": "TOPUP_REWARD" }
               ]
             },
-            "description": "```bash\ncurl -sS '{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/campaigns?page=1&pageSize=10&status=2&type=TOPUP_REWARD'\n```"
+            "description": "```bash\ncurl -sS '{{baseUrl}}/campaign-center-api/v1/{{client}}/campaigns?page=1&pageSize=10&status=2&type=TOPUP_REWARD'\n```"
           }
         },
         {
@@ -82,8 +82,8 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/campaigns/{{campaignId}}",
-            "description": "```bash\ncurl -sS '{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/campaigns/{{campaignId}}'\n```"
+            "url": "{{baseUrl}}/campaign-center-api/v1/{{client}}/campaigns/{{campaignId}}",
+            "description": "```bash\ncurl -sS '{{baseUrl}}/campaign-center-api/v1/{{client}}/campaigns/{{campaignId}}'\n```"
           }
         },
         {
@@ -96,8 +96,8 @@
               "raw": "{\n  \"name\": \"New User Top-up Reward Campaign\",\n  \"targetMarket\": \"US\",\n  \"registrationStartTime\": \"2026-05-15T00:00:00+08:00\",\n  \"registrationEndTime\": \"2026-05-20T23:59:59+08:00\",\n  \"campaignStartTime\": \"2026-05-15T00:00:00+08:00\",\n  \"campaignEndTime\": \"2026-05-31T23:59:59+08:00\",\n  \"targetUserSegment\": \"NEW_USER\",\n  \"rewardRules\": {\n    \"topupThreshold\": 100,\n    \"rewardAmount\": 10,\n    \"rewardType\": \"BONUS_CREDIT\",\n    \"maxClaimPerUser\": 1\n  },\n  \"landingPageId\": 2001\n}\n",
               "options": { "raw": { "language": "json" } }
             },
-            "url": "{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/campaigns/{{campaignId}}",
-            "description": "```bash\ncurl -sS -X PUT '{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/campaigns/{{campaignId}}' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"name\":\"New User Top-up Reward Campaign\",\"targetMarket\":\"US\",\"registrationStartTime\":\"2026-05-15T00:00:00+08:00\",\"registrationEndTime\":\"2026-05-20T23:59:59+08:00\",\"campaignStartTime\":\"2026-05-15T00:00:00+08:00\",\"campaignEndTime\":\"2026-05-31T23:59:59+08:00\",\"targetUserSegment\":\"NEW_USER\",\"rewardRules\":{\"topupThreshold\":100,\"rewardAmount\":10,\"rewardType\":\"BONUS_CREDIT\",\"maxClaimPerUser\":1},\"landingPageId\":2001}'\n```"
+            "url": "{{baseUrl}}/campaign-center-api/v1/{{client}}/campaigns/{{campaignId}}",
+            "description": "```bash\ncurl -sS -X PUT '{{baseUrl}}/campaign-center-api/v1/{{client}}/campaigns/{{campaignId}}' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"name\":\"New User Top-up Reward Campaign\",\"targetMarket\":\"US\",\"registrationStartTime\":\"2026-05-15T00:00:00+08:00\",\"registrationEndTime\":\"2026-05-20T23:59:59+08:00\",\"campaignStartTime\":\"2026-05-15T00:00:00+08:00\",\"campaignEndTime\":\"2026-05-31T23:59:59+08:00\",\"targetUserSegment\":\"NEW_USER\",\"rewardRules\":{\"topupThreshold\":100,\"rewardAmount\":10,\"rewardType\":\"BONUS_CREDIT\",\"maxClaimPerUser\":1},\"landingPageId\":2001}'\n```"
           }
         },
         {
@@ -110,8 +110,8 @@
               "raw": "{\n  \"operator\": \"admin\"\n}\n",
               "options": { "raw": { "language": "json" } }
             },
-            "url": "{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/campaigns/{{campaignId}}/publish",
-            "description": "```bash\ncurl -sS -X POST '{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/campaigns/{{campaignId}}/publish' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"operator\":\"admin\"}'\n```"
+            "url": "{{baseUrl}}/campaign-center-api/v1/{{client}}/campaigns/{{campaignId}}/publish",
+            "description": "```bash\ncurl -sS -X POST '{{baseUrl}}/campaign-center-api/v1/{{client}}/campaigns/{{campaignId}}/publish' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"operator\":\"admin\"}'\n```"
           }
         }
       ]
@@ -129,8 +129,8 @@
               "raw": "{\n  \"language\": \"en-US\",\n  \"bannerImageUrl\": \"https://example.com/banner.png\",\n  \"title\": \"Top up {{threshold}} and get {{reward}} bonus\",\n  \"description\": \"Join the campaign and complete your first top-up to receive the reward.\",\n  \"terms\": \"Each user can claim the reward once.\"\n}\n",
               "options": { "raw": { "language": "json" } }
             },
-            "url": "{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/landing-pages",
-            "description": "```bash\ncurl -sS -X POST '{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/landing-pages' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"language\":\"en-US\",\"bannerImageUrl\":\"https://example.com/banner.png\",\"title\":\"Top up {{threshold}} and get {{reward}} bonus\",\"description\":\"Join the campaign and complete your first top-up to receive the reward.\",\"terms\":\"Each user can claim the reward once.\"}'\n```"
+            "url": "{{baseUrl}}/campaign-center-api/v1/{{client}}/landing-pages",
+            "description": "```bash\ncurl -sS -X POST '{{baseUrl}}/campaign-center-api/v1/{{client}}/landing-pages' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"language\":\"en-US\",\"bannerImageUrl\":\"https://example.com/banner.png\",\"title\":\"Top up {{threshold}} and get {{reward}} bonus\",\"description\":\"Join the campaign and complete your first top-up to receive the reward.\",\"terms\":\"Each user can claim the reward once.\"}'\n```"
           }
         },
         {
@@ -139,7 +139,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/landing-pages?page=1&pageSize=10&status=1&language=en-US",
+              "raw": "{{baseUrl}}/campaign-center-api/v1/{{client}}/landing-pages?page=1&pageSize=10&status=1&language=en-US",
               "host": ["{{baseUrl}}"],
               "path": ["campaign-center-api", "v1", "{{client}}", "admin", "landing-pages"],
               "query": [
@@ -149,7 +149,7 @@
                 { "key": "language", "value": "en-US" }
               ]
             },
-            "description": "```bash\ncurl -sS '{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/landing-pages?page=1&pageSize=10&status=1&language=en-US'\n```"
+            "description": "```bash\ncurl -sS '{{baseUrl}}/campaign-center-api/v1/{{client}}/landing-pages?page=1&pageSize=10&status=1&language=en-US'\n```"
           }
         },
         {
@@ -157,8 +157,8 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/landing-pages/{{landingPageId}}",
-            "description": "```bash\ncurl -sS '{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/landing-pages/{{landingPageId}}'\n```"
+            "url": "{{baseUrl}}/campaign-center-api/v1/{{client}}/landing-pages/{{landingPageId}}",
+            "description": "```bash\ncurl -sS '{{baseUrl}}/campaign-center-api/v1/{{client}}/landing-pages/{{landingPageId}}'\n```"
           }
         },
         {
@@ -171,8 +171,8 @@
               "raw": "{\n  \"language\": \"en-US\",\n  \"bannerImageUrl\": \"https://example.com/banner.png\",\n  \"title\": \"Top up {{threshold}} and get {{reward}} bonus\",\n  \"description\": \"Join the campaign and complete your first top-up to receive the reward.\",\n  \"terms\": \"Each user can claim the reward once.\"\n}\n",
               "options": { "raw": { "language": "json" } }
             },
-            "url": "{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/landing-pages/{{landingPageId}}",
-            "description": "```bash\ncurl -sS -X PUT '{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/landing-pages/{{landingPageId}}' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"language\":\"en-US\",\"bannerImageUrl\":\"https://example.com/banner.png\",\"title\":\"Top up {{threshold}} and get {{reward}} bonus\",\"description\":\"Join the campaign and complete your first top-up to receive the reward.\",\"terms\":\"Each user can claim the reward once.\"}'\n```"
+            "url": "{{baseUrl}}/campaign-center-api/v1/{{client}}/landing-pages/{{landingPageId}}",
+            "description": "```bash\ncurl -sS -X PUT '{{baseUrl}}/campaign-center-api/v1/{{client}}/landing-pages/{{landingPageId}}' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"language\":\"en-US\",\"bannerImageUrl\":\"https://example.com/banner.png\",\"title\":\"Top up {{threshold}} and get {{reward}} bonus\",\"description\":\"Join the campaign and complete your first top-up to receive the reward.\",\"terms\":\"Each user can claim the reward once.\"}'\n```"
           }
         },
         {
@@ -185,8 +185,8 @@
               "raw": "{\n  \"operator\": \"admin\"\n}\n",
               "options": { "raw": { "language": "json" } }
             },
-            "url": "{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/landing-pages/{{landingPageId}}/publish",
-            "description": "```bash\ncurl -sS -X POST '{{baseUrl}}/campaign-center-api/v1/{{client}}/admin/landing-pages/{{landingPageId}}/publish' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"operator\":\"admin\"}'\n```"
+            "url": "{{baseUrl}}/campaign-center-api/v1/{{client}}/landing-pages/{{landingPageId}}/publish",
+            "description": "```bash\ncurl -sS -X POST '{{baseUrl}}/campaign-center-api/v1/{{client}}/landing-pages/{{landingPageId}}/publish' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"operator\":\"admin\"}'\n```"
           }
         }
       ]

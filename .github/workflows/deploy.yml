@@ -1,28 +1,40 @@
 name: Deploy to Railway
+
 on:
-  push:
-    branches: [main, develop] # 分支关联环境
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Deployment target (Railway environment)
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - production
+
+env:
+  RAILWAY_SERVICE: campaign-center-api
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Railway CLI
         run: npm install -g @railway/cli
 
       - name: Deploy to Dev
-        if: github.ref == 'refs/heads/develop'
+        if: github.event.inputs.environment == 'dev'
         working-directory: server
-        run: railway up --detach -e dev
+        run: railway up --detach -e dev --service "${{ env.RAILWAY_SERVICE }}"
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_DEV }}
 
       - name: Deploy to Production
-        if: github.ref == 'refs/heads/main'
+        if: github.event.inputs.environment == 'production'
         working-directory: server
-        run: railway up --detach -e production
+        run: railway up --detach -e production --service "${{ env.RAILWAY_SERVICE }}"
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PROD }}
