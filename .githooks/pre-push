@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Compile before push; no binaries written (-o /dev/null for main, ./... for libraries).
+# Enable once: git config core.hooksPath .githooks
+set -euo pipefail
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+
+echo "pre-push: go build (server, client, common)..."
+( cd "$root/server" && go build -o /dev/null . )
+( cd "$root/client" && go build ./... )
+( cd "$root/common" && go build ./... )
+echo "pre-push: OK"
