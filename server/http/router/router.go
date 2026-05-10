@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/lianjin/campaign-center-api/common/middleware"
 	"github.com/lianjin/campaign-center-api/server/http/api"
 	"github.com/lianjin/campaign-center-api/server/http/data"
 	"github.com/lianjin/campaign-center-api/server/log"
@@ -18,7 +19,7 @@ func NewRouter() *gin.Engine {
 	basicGroup.GET("/ping", otelgin.Middleware(data.ServiceName), log.TraceLoggerMiddleware(), api.Ping)
 
 	clientGroup := basicGroup.Group("/:client")
-	clientGroup.Use(otelgin.Middleware(data.ServiceName), log.TraceLoggerMiddleware())
+	clientGroup.Use(middleware.ValidateClient(), otelgin.Middleware(data.ServiceName), log.TraceLoggerMiddleware())
 	clientGroup.GET("/hello", api.SayHello)
 
 	return r
