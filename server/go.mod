@@ -5,7 +5,7 @@ go 1.25.9
 require (
 	github.com/gin-gonic/gin v1.11.0
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/lianjin/campaign-center-api/common v0.0.0
+	github.com/lianjin/campaign-center-api/common v0.0.1
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/files v1.0.1
@@ -99,5 +99,3 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/lianjin/campaign-center-api/common => ../common
