@@ -5,7 +5,7 @@
     ],
     "swagger": "2.0",
     "info": {
-        "description": "HTTP API for Phase 1 user top-up campaigns (admin + user-facing). Operates under `/campaign-center-api/v1`; path segment `{client}` must be `merchant` or `customer`.",
+        "description": "HTTP API for Phase 1 user top-up campaigns (admin + user-facing). Operates under `/campaign-center-api/v1`;",
         "title": "Campaign Center API",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {

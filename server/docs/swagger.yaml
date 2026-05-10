@@ -137,8 +137,7 @@ info:
   contact:
     name: API Support
   description: HTTP API for Phase 1 user top-up campaigns (admin + user-facing). Operates
-    under `/campaign-center-api/v1`; path segment `{client}` must be `merchant` or
-    `customer`.
+    under `/campaign-center-api/v1`;
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html

@@ -18,7 +18,7 @@ var sigCh = make(chan os.Signal, 1)
 
 // @title Campaign Center API
 // @version 1.0
-// @description HTTP API for Phase 1 user top-up campaigns (admin + user-facing). Operates under `/campaign-center-api/v1`; path segment `{client}` must be `merchant` or `customer`.
+// @description HTTP API for Phase 1 user top-up campaigns (admin + user-facing). Operates under `/campaign-center-api/v1`;
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name API Support
