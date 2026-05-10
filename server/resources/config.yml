@@ -12,3 +12,6 @@ redis:
   enabled: false
   host: 127.0.0.1
   port: "6379"
+
+system:
+  host: https://campaign-center-api-dev.up.railway.app

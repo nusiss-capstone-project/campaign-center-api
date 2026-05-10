@@ -1,7 +1,11 @@
 package router
 
 import (
+	"time"
+
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/lianjin/campaign-center-api/server/config"
 	_ "github.com/lianjin/campaign-center-api/server/docs"
 	"github.com/lianjin/campaign-center-api/server/http/api"
 	"github.com/lianjin/campaign-center-api/server/http/data"
@@ -16,6 +20,7 @@ const serviceURIPrefix = "/campaign-center-api/v1"
 func NewRouter() *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
+	r.Use(corsMiddleware())
 
 	basicGroup := r.Group(serviceURIPrefix)
 	basicGroup.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -47,4 +52,24 @@ func NewRouter() *gin.Engine {
 	}
 
 	return r
+}
+
+func corsMiddleware() gin.HandlerFunc {
+	return cors.New(cors.Config{
+		AllowOrigins: []string{
+			"http://localhost:8080",
+			config.Config.SystemConfig.Host,
+		},
+		AllowMethods: []string{
+			"GET", "POST", "PUT", "DELETE", "OPTIONS",
+		},
+		AllowHeaders: []string{
+			"Origin", "Content-Type", "Accept", "Authorization",
+		},
+		ExposeHeaders: []string{
+			"Content-Length",
+		},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	})
 }
