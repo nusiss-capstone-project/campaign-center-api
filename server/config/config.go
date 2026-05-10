@@ -12,10 +12,15 @@ var (
 )
 
 type Conf struct {
-	GrpcConfig  *GrpcConfig  `mapstructure:"grpc"`
-	LogConfig   *LogConfig   `mapstructure:"log"`
-	HttpConfig  *HttpConfig  `mapstructure:"http"`
-	RedisConfig *RedisConfig `mapstructure:"redis"`
+	GrpcConfig   *GrpcConfig   `mapstructure:"grpc"`
+	LogConfig    *LogConfig    `mapstructure:"log"`
+	HttpConfig   *HttpConfig   `mapstructure:"http"`
+	RedisConfig  *RedisConfig  `mapstructure:"redis"`
+	SystemConfig *SystemConfig `mapstructure:"system"`
+}
+
+type SystemConfig struct {
+	AllowedOrigins []string `mapstructure:"allowed_origins"`
 }
 
 type HttpConfig struct {

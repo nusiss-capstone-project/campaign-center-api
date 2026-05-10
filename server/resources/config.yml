@@ -12,3 +12,8 @@ redis:
   enabled: false
   host: 127.0.0.1
   port: "6379"
+
+system:
+  allowed_origins: 
+  - https://campaign-center-admin-web.vercel.app
+  - http://localhost:3000
