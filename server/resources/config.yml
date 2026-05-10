@@ -5,14 +5,14 @@ log:
   level: info
 grpc:
   host: 0.0.0.0
-  port: 9090
+  port: 5000
   connect_timeout: 5
   max_pool_size: 100
 mysql:
-  enabled: false
-  host: 127.0.0.1
+  enabled: true
+  host: 10.249.36.74
   port: "3306"
-  userName: root
+  userName: campaign_dev
   password: ""
   dbName: campaign_center
 redis:

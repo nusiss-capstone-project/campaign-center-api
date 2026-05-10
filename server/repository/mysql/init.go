@@ -1,10 +1,11 @@
-package repository
+package mysql
 
 import (
 	"fmt"
 
 	"github.com/lianjin/campaign-center-api/server/config"
-	"gorm.io/driver/mysql"
+	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
+	gormmysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
@@ -22,10 +23,20 @@ func Init() (*gorm.DB, error) {
 		config.Config.MySQLConfig.Port,
 		config.Config.MySQLConfig.DBName,
 	)
-	database, err := gorm.Open(mysql.Open(dsn), &gorm.Config{PrepareStmt: true, SkipDefaultTransaction: true})
+	database, err := gorm.Open(gormmysql.Open(dsn), &gorm.Config{PrepareStmt: true, SkipDefaultTransaction: true})
 	if err != nil {
 		return nil, err
 	}
 	DB = database
+	if err := DB.AutoMigrate(
+		&model.Campaign{},
+		&model.CampaignLandingPage{},
+		&model.User{},
+		&model.CampaignParticipant{},
+		&model.RewardTransaction{},
+		&model.AuditLog{},
+	); err != nil {
+		return DB, err
+	}
 	return DB, nil
 }

@@ -21,7 +21,7 @@ func TestNewRouter(t *testing.T) {
 	}
 
 	helloRecorder := httptest.NewRecorder()
-	helloRequest := httptest.NewRequest(http.MethodGet, "/campaign-center-api/v1/customer/hello?name=Copilot", nil)
+	helloRequest := httptest.NewRequest(http.MethodGet, "/campaign-center-api/v1/web/hello?name=Copilot", nil)
 	r.ServeHTTP(helloRecorder, helloRequest)
 	if helloRecorder.Code != http.StatusOK {
 		t.Fatalf("expected hello status 200, got %d", helloRecorder.Code)
@@ -30,7 +30,7 @@ func TestNewRouter(t *testing.T) {
 	if err := json.Unmarshal(helloRecorder.Body.Bytes(), &body); err != nil {
 		t.Fatalf("expected valid JSON response: %v", err)
 	}
-	if body["client"] != "customer" {
+	if body["client"] != "web" {
 		t.Fatalf("expected client in response, got %q", body["client"])
 	}
 
