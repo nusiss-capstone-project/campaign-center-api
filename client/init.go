@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/lianjin/campaign-center-api/common/userpb"
+	"github.com/lianjin/campaign-center-api/common/campaignpb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 var (
 	conn           *grpc.ClientConn
-	client         userpb.CampaignCenterServiceClient
+	client         campaignpb.CampaignCenterServiceClient
 	clientErr      error
 	clientSyncOnce sync.Once
 )
 
-func GetCampaignCenterServiceClient(config *GRPCClientConfig) (userpb.CampaignCenterServiceClient, error) {
+func GetCampaignCenterServiceClient(config *GRPCClientConfig) (campaignpb.CampaignCenterServiceClient, error) {
 	clientSyncOnce.Do(func() {
 		opts := []grpc.DialOption{
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -27,7 +27,7 @@ func GetCampaignCenterServiceClient(config *GRPCClientConfig) (userpb.CampaignCe
 		if clientErr != nil {
 			return
 		}
-		client = userpb.NewCampaignCenterServiceClient(conn)
+		client = campaignpb.NewCampaignCenterServiceClient(conn)
 	})
 	return client, clientErr
 }

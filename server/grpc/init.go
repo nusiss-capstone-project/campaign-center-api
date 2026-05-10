@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/lianjin/campaign-center-api/common/userpb"
+	"github.com/lianjin/campaign-center-api/common/campaignpb"
 	"github.com/lianjin/campaign-center-api/server/config"
 	"github.com/lianjin/campaign-center-api/server/log"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -31,7 +31,7 @@ func Init(exitSig chan os.Signal) {
 		grpcpkg.StatsHandler(otelgrpc.NewServerHandler()),
 	}
 	grpcServer := grpcpkg.NewServer(opts...)
-	userpb.RegisterCampaignCenterServiceServer(grpcServer, &CampaignCenterService{})
+	campaignpb.RegisterCampaignCenterServiceServer(grpcServer, &CampaignCenterService{})
 
 	log.Logger.Infof("gRPC server is running on %s", ipPort)
 	if err := grpcServer.Serve(listener); err != nil {

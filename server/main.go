@@ -23,8 +23,6 @@ func main() {
 	log.Logger.Info("Logger initialized.")
 	if _, err := repository.Init(); err != nil {
 		log.Logger.Warnw("MySQL initialization failed", "error", err)
-	} else if config.Config.MySQLConfig != nil && config.Config.MySQLConfig.Enabled {
-		log.Logger.Info("MySQL initialized.")
 	} else {
 		log.Logger.Info("MySQL initialization skipped.")
 	}

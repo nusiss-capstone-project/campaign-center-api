@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lianjin/campaign-center-api/common/userpb"
+	"github.com/lianjin/campaign-center-api/common/campaignpb"
 )
 
 type CampaignCenterService struct {
-	userpb.UnimplementedCampaignCenterServiceServer
+	campaignpb.UnimplementedCampaignCenterServiceServer
 }
 
-func (s *CampaignCenterService) SayHello(_ context.Context, req *userpb.HelloRequest) (*userpb.HelloResponse, error) {
+func (s *CampaignCenterService) SayHello(_ context.Context, req *campaignpb.HelloRequest) (*campaignpb.HelloResponse, error) {
 	name := strings.TrimSpace(req.GetName())
 	if name == "" {
 		name = "world"
 	}
-	return &userpb.HelloResponse{Message: fmt.Sprintf("Hello %s", name)}, nil
+	return &campaignpb.HelloResponse{Message: fmt.Sprintf("Hello %s", name)}, nil
 }

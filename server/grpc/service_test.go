@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/lianjin/campaign-center-api/common/userpb"
+	"github.com/lianjin/campaign-center-api/common/campaignpb"
 )
 
 func TestCampaignCenterServiceSayHello(t *testing.T) {
 	svc := &CampaignCenterService{}
-	response, err := svc.SayHello(context.Background(), &userpb.HelloRequest{})
+	response, err := svc.SayHello(context.Background(), &campaignpb.HelloRequest{})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

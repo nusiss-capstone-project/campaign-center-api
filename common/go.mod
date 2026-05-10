@@ -1,6 +1,6 @@
 module github.com/lianjin/campaign-center-api/common
 
-go 1.25.0
+go 1.25.9
 
 require (
 	github.com/gin-gonic/gin v1.11.0

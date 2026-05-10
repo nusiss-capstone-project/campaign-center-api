@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package userpb;
+package campaignpb;
 
-option go_package = "/userpb;userpb";
+option go_package = "/campaignpb;campaignpb";
 
 service CampaignCenterService {
   rpc SayHello (HelloRequest) returns (HelloResponse);

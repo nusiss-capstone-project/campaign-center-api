@@ -1,6 +1,6 @@
 module github.com/lianjin/campaign-center-api/client
 
-go 1.25.0
+go 1.25.9
 
 require (
 	github.com/lianjin/campaign-center-api/common v0.0.0
