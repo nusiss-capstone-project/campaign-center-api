@@ -1,0 +1,21 @@
+http:
+  host: 0.0.0.0
+  port: 8080
+log:
+  level: info
+grpc:
+  host: 0.0.0.0
+  port: 9090
+  connect_timeout: 5
+  max_pool_size: 100
+mysql:
+  enabled: false
+  host: 127.0.0.1
+  port: "3306"
+  userName: root
+  password: ""
+  dbName: campaign_center
+redis:
+  enabled: false
+  host: 127.0.0.1
+  port: "6379"

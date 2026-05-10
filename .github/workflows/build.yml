@@ -1,0 +1,48 @@
+name: build and test
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.10'
+          cache: true
+
+      - name: Build and test modules
+        run: |
+          for module in common client server; do
+            echo "Building and testing module: $module"
+            cd "$module"
+            go build ./...
+            go test ./...
+            cd ..
+          done
+
+  lint:
+    name: Lint (multi-module)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module: [common, client, server]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.10'
+          cache: true
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9
+        with:
+          working-directory: ${{ matrix.module }}
+          args: --timeout=5m

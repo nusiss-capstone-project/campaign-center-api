@@ -1,2 +1,9 @@
 # campaign-center-api
-backend api for campaign-center
+
+Backend API for campaign-center.
+
+## Modules
+
+- `common`: shared protobuf and middleware helpers
+- `client`: gRPC client bootstrap
+- `server`: gin/http, MySQL, Redis, gRPC, and OpenTelemetry bootstrap
