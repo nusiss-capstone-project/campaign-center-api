@@ -1,0 +1,727 @@
+basePath: /campaign-center-api/v1
+definitions:
+  api.CreateCampaignReq:
+    properties:
+      campaignEndTime:
+        type: string
+      campaignStartTime:
+        type: string
+      landingPageId:
+        type: integer
+      name:
+        type: string
+      registrationEndTime:
+        type: string
+      registrationStartTime:
+        type: string
+      rewardRules:
+        $ref: '#/definitions/api.RewardRulesReq'
+      targetMarket:
+        type: string
+      targetUserSegment:
+        type: string
+      type:
+        type: string
+    required:
+    - campaignEndTime
+    - campaignStartTime
+    - name
+    - registrationEndTime
+    - registrationStartTime
+    - rewardRules
+    - targetMarket
+    - targetUserSegment
+    - type
+    type: object
+  api.JoinCampaignReq:
+    properties:
+      userId:
+        type: integer
+    required:
+    - userId
+    type: object
+  api.LandingPageBody:
+    properties:
+      bannerImageUrl:
+        type: string
+      description:
+        type: string
+      language:
+        type: string
+      terms:
+        type: string
+      title:
+        type: string
+    required:
+    - bannerImageUrl
+    - description
+    - language
+    - terms
+    - title
+    type: object
+  api.PublishOperatorReq:
+    properties:
+      operator:
+        type: string
+    required:
+    - operator
+    type: object
+  api.RewardRulesReq:
+    properties:
+      maxClaimPerUser:
+        type: integer
+      rewardAmount:
+        type: number
+      rewardType:
+        type: string
+      topupThreshold:
+        type: number
+    required:
+    - maxClaimPerUser
+    - rewardAmount
+    - rewardType
+    - topupThreshold
+    type: object
+  api.SimulateTopUpReq:
+    properties:
+      amount:
+        type: number
+      userId:
+        type: integer
+    required:
+    - amount
+    - userId
+    type: object
+  api.UpdateCampaignReq:
+    properties:
+      campaignEndTime:
+        type: string
+      campaignStartTime:
+        type: string
+      landingPageId:
+        type: integer
+      name:
+        type: string
+      registrationEndTime:
+        type: string
+      registrationStartTime:
+        type: string
+      rewardRules:
+        $ref: '#/definitions/api.RewardRulesReq'
+      targetMarket:
+        type: string
+      targetUserSegment:
+        type: string
+    required:
+    - campaignEndTime
+    - campaignStartTime
+    - name
+    - registrationEndTime
+    - registrationStartTime
+    - rewardRules
+    - targetMarket
+    - targetUserSegment
+    type: object
+  data.StandardResponse:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data: {}
+      message:
+        example: success
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: API Support
+  description: HTTP API for Phase 1 user top-up campaigns (admin + user-facing). Operates
+    under `/campaign-center-api/v1`; path segment `{client}` must be `merchant` or
+    `customer`.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Campaign Center API
+  version: "1.0"
+paths:
+  /{client}/admin/campaigns:
+    get:
+      parameters:
+      - description: Client type
+        enum:
+        - merchant
+        - customer
+        in: path
+        name: client
+        required: true
+        type: string
+      - description: Page (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 10)
+        in: query
+        name: pageSize
+        type: integer
+      - description: Campaign status filter
+        in: query
+        name: status
+        type: integer
+      - description: Campaign type e.g. TOPUP_REWARD
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: List campaigns (admin)
+      tags:
+      - admin-campaign
+    post:
+      consumes:
+      - application/json
+      description: Creates a campaign in draft status. Requires client `merchant`
+        or `customer` in the path.
+      parameters:
+      - description: Client type
+        enum:
+        - merchant
+        - customer
+        in: path
+        name: client
+        required: true
+        type: string
+      - description: Campaign payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.CreateCampaignReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "400":
+          description: validation error
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Create campaign (admin)
+      tags:
+      - admin-campaign
+  /{client}/admin/campaigns/{campaignId}:
+    get:
+      parameters:
+      - description: Client type
+        enum:
+        - merchant
+        - customer
+        in: path
+        name: client
+        required: true
+        type: string
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Get campaign detail (admin)
+      tags:
+      - admin-campaign
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Client type
+        enum:
+        - merchant
+        - customer
+        in: path
+        name: client
+        required: true
+        type: string
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      - description: Campaign payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.UpdateCampaignReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "409":
+          description: not draft
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Update campaign (admin)
+      tags:
+      - admin-campaign
+  /{client}/admin/campaigns/{campaignId}/publish:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Client type
+        enum:
+        - merchant
+        - customer
+        in: path
+        name: client
+        required: true
+        type: string
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      - description: Operator
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.PublishOperatorReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Publish campaign (admin)
+      tags:
+      - admin-campaign
+  /{client}/admin/landing-pages:
+    get:
+      parameters:
+      - description: Client type
+        enum:
+        - merchant
+        - customer
+        in: path
+        name: client
+        required: true
+        type: string
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: pageSize
+        type: integer
+      - description: Status filter
+        in: query
+        name: status
+        type: integer
+      - description: Language filter e.g. en-US
+        in: query
+        name: language
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: List landing pages (admin)
+      tags:
+      - admin-landing-page
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Client type
+        enum:
+        - merchant
+        - customer
+        in: path
+        name: client
+        required: true
+        type: string
+      - description: Landing page content
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.LandingPageBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "400":
+          description: validation error
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Create landing page (admin)
+      tags:
+      - admin-landing-page
+  /{client}/admin/landing-pages/{landingPageId}:
+    get:
+      parameters:
+      - description: Client type
+        enum:
+        - merchant
+        - customer
+        in: path
+        name: client
+        required: true
+        type: string
+      - description: Landing page ID
+        in: path
+        name: landingPageId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Get landing page (admin)
+      tags:
+      - admin-landing-page
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Client type
+        enum:
+        - merchant
+        - customer
+        in: path
+        name: client
+        required: true
+        type: string
+      - description: Landing page ID
+        in: path
+        name: landingPageId
+        required: true
+        type: integer
+      - description: Landing page content
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.LandingPageBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "409":
+          description: not draft
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Update landing page (admin)
+      tags:
+      - admin-landing-page
+  /{client}/admin/landing-pages/{landingPageId}/publish:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Client type
+        enum:
+        - merchant
+        - customer
+        in: path
+        name: client
+        required: true
+        type: string
+      - description: Landing page ID
+        in: path
+        name: landingPageId
+        required: true
+        type: integer
+      - description: Operator
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.PublishOperatorReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Publish landing page (admin)
+      tags:
+      - admin-landing-page
+  /{client}/campaigns/{campaignId}/join:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Client type
+        enum:
+        - merchant
+        - customer
+        in: path
+        name: client
+        required: true
+        type: string
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      - description: User id
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.JoinCampaignReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success or business error code in body
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Join campaign (user)
+      tags:
+      - user-campaign
+  /{client}/campaigns/{campaignId}/landing-page:
+    get:
+      parameters:
+      - description: Client type
+        enum:
+        - merchant
+        - customer
+        in: path
+        name: client
+        required: true
+        type: string
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      - description: User ID for participation status
+        in: query
+        name: userId
+        type: integer
+      - description: Must match landing page language when set
+        in: query
+        name: language
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Get campaign landing page (user)
+      tags:
+      - user-campaign
+  /{client}/campaigns/{campaignId}/top-up:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Client type
+        enum:
+        - merchant
+        - customer
+        in: path
+        name: client
+        required: true
+        type: string
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      - description: User and amount
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.SimulateTopUpReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success, manual review, or business error code
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Simulate top-up (user)
+      tags:
+      - user-campaign
+  /{client}/hello:
+    get:
+      parameters:
+      - description: Client type
+        enum:
+        - merchant
+        - customer
+        in: path
+        name: client
+        required: true
+        type: string
+      - description: Name to greet
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'JSON fields: client, message, service'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Hello (demo)
+      tags:
+      - health
+  /ping:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'example: {\"message\":\"pong\"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Ping
+      tags:
+      - health
+schemes:
+- http
+- https
+swagger: "2.0"
