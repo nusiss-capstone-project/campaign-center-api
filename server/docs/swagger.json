@@ -20,29 +20,7 @@
     "host": "localhost:8080",
     "basePath": "/campaign-center-api/v1",
     "paths": {
-        "/ping": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "health"
-                ],
-                "summary": "Ping",
-                "responses": {
-                    "200": {
-                        "description": "example: {\\\"message\\\":\\\"pong\\\"}",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/{client}/admin/campaigns": {
+        "/admin/campaigns": {
             "get": {
                 "produces": [
                     "application/json"
@@ -52,17 +30,6 @@
                 ],
                 "summary": "List campaigns (admin)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Page (default 1)",
@@ -104,7 +71,6 @@
                 }
             },
             "post": {
-                "description": "Creates a campaign in draft status. Requires client `merchant` or `customer` in the path.",
                 "consumes": [
                     "application/json"
                 ],
@@ -116,17 +82,6 @@
                 ],
                 "summary": "Create campaign (admin)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "description": "Campaign payload",
                         "name": "body",
@@ -159,7 +114,7 @@
                 }
             }
         },
-        "/{client}/admin/campaigns/{campaignId}": {
+        "/admin/campaigns/{campaignId}": {
             "get": {
                 "produces": [
                     "application/json"
@@ -169,17 +124,6 @@
                 ],
                 "summary": "Get campaign detail (admin)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Campaign ID",
@@ -221,17 +165,6 @@
                 ],
                 "summary": "Update campaign (admin)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Campaign ID",
@@ -283,7 +216,7 @@
                 }
             }
         },
-        "/{client}/admin/campaigns/{campaignId}/publish": {
+        "/admin/campaigns/{campaignId}/publish": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -296,17 +229,6 @@
                 ],
                 "summary": "Publish campaign (admin)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Campaign ID",
@@ -346,7 +268,7 @@
                 }
             }
         },
-        "/{client}/admin/landing-pages": {
+        "/admin/landing-pages": {
             "get": {
                 "produces": [
                     "application/json"
@@ -356,17 +278,6 @@
                 ],
                 "summary": "List landing pages (admin)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Page",
@@ -420,17 +331,6 @@
                 "summary": "Create landing page (admin)",
                 "parameters": [
                     {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
                         "description": "Landing page content",
                         "name": "body",
                         "in": "body",
@@ -462,7 +362,7 @@
                 }
             }
         },
-        "/{client}/admin/landing-pages/{landingPageId}": {
+        "/admin/landing-pages/{landingPageId}": {
             "get": {
                 "produces": [
                     "application/json"
@@ -472,17 +372,6 @@
                 ],
                 "summary": "Get landing page (admin)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Landing page ID",
@@ -524,17 +413,6 @@
                 ],
                 "summary": "Update landing page (admin)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Landing page ID",
@@ -580,7 +458,7 @@
                 }
             }
         },
-        "/{client}/admin/landing-pages/{landingPageId}/publish": {
+        "/admin/landing-pages/{landingPageId}/publish": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -593,17 +471,6 @@
                 ],
                 "summary": "Publish landing page (admin)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Landing page ID",
@@ -643,7 +510,29 @@
                 }
             }
         },
-        "/{client}/campaigns/{campaignId}/join": {
+        "/ping": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Ping",
+                "responses": {
+                    "200": {
+                        "description": "example: {\\\"message\\\":\\\"pong\\\"}",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/web/campaigns/{campaignId}/join": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -656,17 +545,6 @@
                 ],
                 "summary": "Join campaign (user)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Campaign ID",
@@ -706,7 +584,7 @@
                 }
             }
         },
-        "/{client}/campaigns/{campaignId}/landing-page": {
+        "/web/campaigns/{campaignId}/landing-page": {
             "get": {
                 "produces": [
                     "application/json"
@@ -716,17 +594,6 @@
                 ],
                 "summary": "Get campaign landing page (user)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Campaign ID",
@@ -769,7 +636,7 @@
                 }
             }
         },
-        "/{client}/campaigns/{campaignId}/top-up": {
+        "/web/campaigns/{campaignId}/top-up": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -782,17 +649,6 @@
                 ],
                 "summary": "Simulate top-up (user)",
                 "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "integer",
                         "description": "Campaign ID",
@@ -827,56 +683,6 @@
                         "description": "database unavailable",
                         "schema": {
                             "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/{client}/hello": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "health"
-                ],
-                "summary": "Hello (demo)",
-                "parameters": [
-                    {
-                        "enum": [
-                            "merchant",
-                            "customer"
-                        ],
-                        "type": "string",
-                        "description": "Client type",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Name to greet",
-                        "name": "name",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "JSON fields: client, message, service",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
                         }
                     }
                 }

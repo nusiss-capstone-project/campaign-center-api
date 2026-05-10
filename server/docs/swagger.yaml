@@ -146,17 +146,9 @@ info:
   title: Campaign Center API
   version: "1.0"
 paths:
-  /{client}/admin/campaigns:
+  /admin/campaigns:
     get:
       parameters:
-      - description: Client type
-        enum:
-        - merchant
-        - customer
-        in: path
-        name: client
-        required: true
-        type: string
       - description: Page (default 1)
         in: query
         name: page
@@ -190,17 +182,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates a campaign in draft status. Requires client `merchant`
-        or `customer` in the path.
       parameters:
-      - description: Client type
-        enum:
-        - merchant
-        - customer
-        in: path
-        name: client
-        required: true
-        type: string
       - description: Campaign payload
         in: body
         name: body
@@ -225,17 +207,9 @@ paths:
       summary: Create campaign (admin)
       tags:
       - admin-campaign
-  /{client}/admin/campaigns/{campaignId}:
+  /admin/campaigns/{campaignId}:
     get:
       parameters:
-      - description: Client type
-        enum:
-        - merchant
-        - customer
-        in: path
-        name: client
-        required: true
-        type: string
       - description: Campaign ID
         in: path
         name: campaignId
@@ -263,14 +237,6 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Client type
-        enum:
-        - merchant
-        - customer
-        in: path
-        name: client
-        required: true
-        type: string
       - description: Campaign ID
         in: path
         name: campaignId
@@ -308,19 +274,11 @@ paths:
       summary: Update campaign (admin)
       tags:
       - admin-campaign
-  /{client}/admin/campaigns/{campaignId}/publish:
+  /admin/campaigns/{campaignId}/publish:
     post:
       consumes:
       - application/json
       parameters:
-      - description: Client type
-        enum:
-        - merchant
-        - customer
-        in: path
-        name: client
-        required: true
-        type: string
       - description: Campaign ID
         in: path
         name: campaignId
@@ -350,17 +308,9 @@ paths:
       summary: Publish campaign (admin)
       tags:
       - admin-campaign
-  /{client}/admin/landing-pages:
+  /admin/landing-pages:
     get:
       parameters:
-      - description: Client type
-        enum:
-        - merchant
-        - customer
-        in: path
-        name: client
-        required: true
-        type: string
       - description: Page
         in: query
         name: page
@@ -395,14 +345,6 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Client type
-        enum:
-        - merchant
-        - customer
-        in: path
-        name: client
-        required: true
-        type: string
       - description: Landing page content
         in: body
         name: body
@@ -427,17 +369,9 @@ paths:
       summary: Create landing page (admin)
       tags:
       - admin-landing-page
-  /{client}/admin/landing-pages/{landingPageId}:
+  /admin/landing-pages/{landingPageId}:
     get:
       parameters:
-      - description: Client type
-        enum:
-        - merchant
-        - customer
-        in: path
-        name: client
-        required: true
-        type: string
       - description: Landing page ID
         in: path
         name: landingPageId
@@ -465,14 +399,6 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Client type
-        enum:
-        - merchant
-        - customer
-        in: path
-        name: client
-        required: true
-        type: string
       - description: Landing page ID
         in: path
         name: landingPageId
@@ -506,19 +432,11 @@ paths:
       summary: Update landing page (admin)
       tags:
       - admin-landing-page
-  /{client}/admin/landing-pages/{landingPageId}/publish:
+  /admin/landing-pages/{landingPageId}/publish:
     post:
       consumes:
       - application/json
       parameters:
-      - description: Client type
-        enum:
-        - merchant
-        - customer
-        in: path
-        name: client
-        required: true
-        type: string
       - description: Landing page ID
         in: path
         name: landingPageId
@@ -548,19 +466,25 @@ paths:
       summary: Publish landing page (admin)
       tags:
       - admin-landing-page
-  /{client}/campaigns/{campaignId}/join:
+  /ping:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'example: {\"message\":\"pong\"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Ping
+      tags:
+      - health
+  /web/campaigns/{campaignId}/join:
     post:
       consumes:
       - application/json
       parameters:
-      - description: Client type
-        enum:
-        - merchant
-        - customer
-        in: path
-        name: client
-        required: true
-        type: string
       - description: Campaign ID
         in: path
         name: campaignId
@@ -590,17 +514,9 @@ paths:
       summary: Join campaign (user)
       tags:
       - user-campaign
-  /{client}/campaigns/{campaignId}/landing-page:
+  /web/campaigns/{campaignId}/landing-page:
     get:
       parameters:
-      - description: Client type
-        enum:
-        - merchant
-        - customer
-        in: path
-        name: client
-        required: true
-        type: string
       - description: Campaign ID
         in: path
         name: campaignId
@@ -632,19 +548,11 @@ paths:
       summary: Get campaign landing page (user)
       tags:
       - user-campaign
-  /{client}/campaigns/{campaignId}/top-up:
+  /web/campaigns/{campaignId}/top-up:
     post:
       consumes:
       - application/json
       parameters:
-      - description: Client type
-        enum:
-        - merchant
-        - customer
-        in: path
-        name: client
-        required: true
-        type: string
       - description: Campaign ID
         in: path
         name: campaignId
@@ -674,53 +582,6 @@ paths:
       summary: Simulate top-up (user)
       tags:
       - user-campaign
-  /{client}/hello:
-    get:
-      parameters:
-      - description: Client type
-        enum:
-        - merchant
-        - customer
-        in: path
-        name: client
-        required: true
-        type: string
-      - description: Name to greet
-        in: query
-        name: name
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 'JSON fields: client, message, service'
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Hello (demo)
-      tags:
-      - health
-  /ping:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 'example: {\"message\":\"pong\"}'
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Ping
-      tags:
-      - health
 schemes:
 - http
 - https

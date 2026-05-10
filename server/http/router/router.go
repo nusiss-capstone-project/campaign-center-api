@@ -37,8 +37,7 @@ func NewRouter() *gin.Engine {
 		admin.POST("/landing-pages/:landingPageId/publish", api.AdminPublishLandingPage)
 	}
 
-	// User-facing campaign APIs (same :client as middleware; no extra path segment).
-	// Correct URL: /campaign-center-api/v1/web/campaigns/:id/landing-page
+	// User-facing campaign APIs
 	web := basicGroup.Group("/web")
 	web.Use(otelgin.Middleware(data.ServiceName), log.TraceLoggerMiddleware())
 	{
