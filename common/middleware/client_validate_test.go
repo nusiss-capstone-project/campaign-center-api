@@ -16,7 +16,7 @@ func TestValidateClient(t *testing.T) {
 	})
 
 	validRecorder := httptest.NewRecorder()
-	validRequest := httptest.NewRequest(http.MethodGet, "/customer", nil)
+	validRequest := httptest.NewRequest(http.MethodGet, "/web", nil)
 	router.ServeHTTP(validRecorder, validRequest)
 	if validRecorder.Code != http.StatusOK {
 		t.Fatalf("expected valid client to pass, got status %d", validRecorder.Code)
