@@ -6,10 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type helloURI struct {
-	Client string `uri:"client" binding:"required"`
-}
-
 // Ping liveness probe.
 // @Summary Ping
 // @Tags health
