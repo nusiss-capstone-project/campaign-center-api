@@ -15,7 +15,6 @@ type Conf struct {
 	GrpcConfig  *GrpcConfig  `mapstructure:"grpc"`
 	LogConfig   *LogConfig   `mapstructure:"log"`
 	HttpConfig  *HttpConfig  `mapstructure:"http"`
-	MySQLConfig *MySQL       `mapstructure:"mysql"`
 	RedisConfig *RedisConfig `mapstructure:"redis"`
 }
 
@@ -34,15 +33,6 @@ type GrpcConfig struct {
 	Port           int    `mapstructure:"port"`
 	ConnectTimeout int    `mapstructure:"connect_timeout"`
 	MaxPoolSize    int    `mapstructure:"max_pool_size"`
-}
-
-type MySQL struct {
-	Enabled  bool   `mapstructure:"enabled"`
-	Host     string `mapstructure:"host"`
-	Port     string `mapstructure:"port"`
-	UserName string `mapstructure:"userName"`
-	Password string `mapstructure:"password"`
-	DBName   string `mapstructure:"dbName"`
 }
 
 type RedisConfig struct {
@@ -71,11 +61,6 @@ func Init() {
 	viper.SetDefault("grpc.port", 9090)
 	viper.SetDefault("grpc.connect_timeout", 5)
 	viper.SetDefault("grpc.max_pool_size", 100)
-	viper.SetDefault("mysql.enabled", false)
-	viper.SetDefault("mysql.host", "127.0.0.1")
-	viper.SetDefault("mysql.port", "3306")
-	viper.SetDefault("mysql.userName", "root")
-	viper.SetDefault("mysql.dbName", "campaign_center")
 	viper.SetDefault("redis.enabled", false)
 	viper.SetDefault("redis.host", "127.0.0.1")
 	viper.SetDefault("redis.port", "6379")
@@ -87,8 +72,5 @@ func Init() {
 	}
 	if err := viper.Unmarshal(Config); err != nil {
 		panic(err)
-	}
-	if mysqlPassword := os.Getenv("MYSQL_PASSWORD"); mysqlPassword != "" {
-		Config.MySQLConfig.Password = mysqlPassword
 	}
 }
