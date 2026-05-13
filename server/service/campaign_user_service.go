@@ -119,11 +119,7 @@ func (s *userCampaignService) GetLandingPageUI(campaignID, userID int64, languag
 			"description":    lp.Description,
 			"terms":          lp.Terms,
 		},
-		"rewardRule": map[string]any{
-			"topupThreshold": rules.TopupThreshold,
-			"rewardAmount":   rules.RewardAmount,
-			"rewardType":     rules.RewardType,
-		},
+		"rewardRule": rules,
 		"userStatus": map[string]any{
 			"joined":       joined,
 			"taskStatus":   taskStatus,

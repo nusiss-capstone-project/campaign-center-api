@@ -113,6 +113,74 @@ func TestCampaignAdminService_PublishCampaign(t *testing.T) {
 	require.Equal(t, model.CampaignStatusPublished, c.Status)
 }
 
+func TestCampaignAdminService_ArchiveCampaign_draft(t *testing.T) {
+	m := servicemock.NewMockCampaignRepository(t)
+	m.On("GetByID", int64(1)).Return(&model.Campaign{ID: 1, Status: model.CampaignStatusDraft}, nil)
+	m.On("Archive", int64(1), "op").Return(&model.Campaign{ID: 1, Status: model.CampaignStatusArchive}, nil)
+
+	svc := service.NewCampaignAdminService(m)
+	c, err := svc.ArchiveCampaign(1, "op")
+	require.NoError(t, err)
+	require.Equal(t, model.CampaignStatusArchive, c.Status)
+}
+
+func TestCampaignAdminService_ArchiveCampaign_publishedAfterEnd(t *testing.T) {
+	m := servicemock.NewMockCampaignRepository(t)
+	pastStart := time.Now().Add(-48 * time.Hour)
+	pastEnd := time.Now().Add(-time.Hour)
+	m.On("GetByID", int64(2)).Return(&model.Campaign{
+		ID: 2, Status: model.CampaignStatusPublished,
+		CampaignStartTime: pastStart, CampaignEndTime: pastEnd,
+	}, nil)
+	m.On("Archive", int64(2), "op").Return(&model.Campaign{ID: 2, Status: model.CampaignStatusArchive}, nil)
+
+	svc := service.NewCampaignAdminService(m)
+	c, err := svc.ArchiveCampaign(2, "op")
+	require.NoError(t, err)
+	require.Equal(t, model.CampaignStatusArchive, c.Status)
+}
+
+func TestCampaignAdminService_ArchiveCampaign_publishedNotYetStarted(t *testing.T) {
+	m := servicemock.NewMockCampaignRepository(t)
+	futureStart := time.Now().Add(time.Hour)
+	futureEnd := time.Now().Add(24 * time.Hour)
+	m.On("GetByID", int64(5)).Return(&model.Campaign{
+		ID: 5, Status: model.CampaignStatusPublished,
+		CampaignStartTime: futureStart, CampaignEndTime: futureEnd,
+	}, nil)
+	m.On("Archive", int64(5), "op").Return(&model.Campaign{ID: 5, Status: model.CampaignStatusArchive}, nil)
+
+	svc := service.NewCampaignAdminService(m)
+	c, err := svc.ArchiveCampaign(5, "op")
+	require.NoError(t, err)
+	require.Equal(t, model.CampaignStatusArchive, c.Status)
+}
+
+func TestCampaignAdminService_ArchiveCampaign_publishedDuringActivity(t *testing.T) {
+	m := servicemock.NewMockCampaignRepository(t)
+	past := time.Now().Add(-time.Hour)
+	future := time.Now().Add(time.Hour)
+	m.On("GetByID", int64(3)).Return(&model.Campaign{
+		ID: 3, Status: model.CampaignStatusPublished,
+		CampaignStartTime: past, CampaignEndTime: future,
+	}, nil)
+
+	svc := service.NewCampaignAdminService(m)
+	_, err := svc.ArchiveCampaign(3, "op")
+	require.Error(t, err)
+	require.True(t, service.IsCampaignNotArchivable(err))
+}
+
+func TestCampaignAdminService_ArchiveCampaign_alreadyArchived(t *testing.T) {
+	m := servicemock.NewMockCampaignRepository(t)
+	m.On("GetByID", int64(4)).Return(&model.Campaign{ID: 4, Status: model.CampaignStatusArchive}, nil)
+
+	svc := service.NewCampaignAdminService(m)
+	_, err := svc.ArchiveCampaign(4, "op")
+	require.Error(t, err)
+	require.True(t, service.IsCampaignAlreadyArchived(err))
+}
+
 func TestCampaignAdminService_GetByID_notFound(t *testing.T) {
 	m := servicemock.NewMockCampaignRepository(t)
 	m.On("GetByID", int64(404)).Return(nil, gorm.ErrRecordNotFound)
