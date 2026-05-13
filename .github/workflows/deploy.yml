@@ -27,8 +27,7 @@ jobs:
 
       - name: Deploy to Dev
         if: github.event.inputs.environment == 'dev'
-        working-directory: server
-        run: railway up --detach -e dev --service "${{ env.RAILWAY_SERVICE }}"
+        run: railway up --detach --force -e dev --service "${{ env.RAILWAY_SERVICE }}" --path ./server
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_DEV }}
 

@@ -273,6 +273,48 @@ paths:
       summary: Update campaign (admin)
       tags:
       - admin-campaign
+  /admin/campaigns/{campaignId}/archive:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      - description: Operator
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.PublishOperatorReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "409":
+          description: not eligible or already archived
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Archive campaign (admin)
+      tags:
+      - admin-campaign
   /admin/campaigns/{campaignId}/publish:
     post:
       consumes:

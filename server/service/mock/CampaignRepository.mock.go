@@ -13,6 +13,36 @@ type MockCampaignRepository struct {
 	mock.Mock
 }
 
+// Archive provides a mock function with given fields: id, operator
+func (_m *MockCampaignRepository) Archive(id int64, operator string) (*model.Campaign, error) {
+	ret := _m.Called(id, operator)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Archive")
+	}
+
+	var r0 *model.Campaign
+	var r1 error
+	if rf, ok := ret.Get(0).(func(int64, string) (*model.Campaign, error)); ok {
+		return rf(id, operator)
+	}
+	if rf, ok := ret.Get(0).(func(int64, string) *model.Campaign); ok {
+		r0 = rf(id, operator)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.Campaign)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(int64, string) error); ok {
+		r1 = rf(id, operator)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Create provides a mock function with given fields: c
 func (_m *MockCampaignRepository) Create(c *model.Campaign) error {
 	ret := _m.Called(c)

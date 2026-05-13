@@ -34,6 +34,7 @@ func NewRouter() *gin.Engine {
 		admin.GET("/campaigns", api.AdminListCampaigns)
 		admin.GET("/campaigns/:campaignId", api.AdminGetCampaign)
 		admin.POST("/campaigns/:campaignId/publish", api.AdminPublishCampaign)
+		admin.POST("/campaigns/:campaignId/archive", api.AdminArchiveCampaign)
 
 		admin.POST("/landing-pages", api.AdminCreateLandingPage)
 		admin.PUT("/landing-pages/:landingPageId", api.AdminUpdateLandingPage)

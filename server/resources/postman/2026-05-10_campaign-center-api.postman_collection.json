@@ -113,6 +113,20 @@
             "url": "{{baseUrl}}/campaign-center-api/v1/{{client}}/campaigns/{{campaignId}}/publish",
             "description": "```bash\ncurl -sS -X POST '{{baseUrl}}/campaign-center-api/v1/{{client}}/campaigns/{{campaignId}}/publish' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"operator\":\"admin\"}'\n```"
           }
+        },
+        {
+          "name": "Archive campaign",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operator\": \"admin\"\n}\n",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/campaign-center-api/v1/admin/campaigns/{{campaignId}}/archive",
+            "description": "Draft always. Published only when not in [campaignStartTime, campaignEndTime] (e.g. not started yet or already ended).\n```bash\ncurl -sS -X POST '{{baseUrl}}/campaign-center-api/v1/{{client}}/campaigns/{{campaignId}}/archive' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"operator\":\"admin\"}'\n```"
+          }
         }
       ]
     },
