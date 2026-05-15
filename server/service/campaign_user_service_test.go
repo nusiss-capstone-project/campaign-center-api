@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/lianjin/campaign-center-api/server/http/data"
+	"github.com/lianjin/campaign-center-api/server/repository/mysql"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
 	"github.com/lianjin/campaign-center-api/server/service"
 	servicemock "github.com/lianjin/campaign-center-api/server/service/mock"
@@ -46,6 +47,7 @@ func TestUserCampaignService_GetLandingPageUI_campaignNotFound(t *testing.T) {
 	cm.On("GetByID", int64(1)).Return(nil, gorm.ErrRecordNotFound)
 	svc := service.NewUserCampaignService(cm,
 		servicemock.NewMockLandingPageRepository(t),
+		mysql.NewNoopLandingPageTranslationRepository(),
 		servicemock.NewMockParticipantRepository(t),
 		servicemock.NewMockUserRepository(t),
 		servicemock.NewMockRewardTransactionRepository(t),
@@ -61,6 +63,7 @@ func TestUserCampaignService_GetLandingPageUI_landingNotConfigured(t *testing.T)
 	cm.On("GetByID", int64(1)).Return(&model.Campaign{ID: 1, LandingPageID: 0}, nil)
 	svc := service.NewUserCampaignService(cm,
 		servicemock.NewMockLandingPageRepository(t),
+		mysql.NewNoopLandingPageTranslationRepository(),
 		servicemock.NewMockParticipantRepository(t),
 		servicemock.NewMockUserRepository(t),
 		servicemock.NewMockRewardTransactionRepository(t),
@@ -71,19 +74,26 @@ func TestUserCampaignService_GetLandingPageUI_landingNotConfigured(t *testing.T)
 	require.Contains(t, reply.Message, "not configured")
 }
 
-func TestUserCampaignService_GetLandingPageUI_languageMismatch(t *testing.T) {
+func TestUserCampaignService_GetLandingPageUI_fallbackWhenMissingTranslation(t *testing.T) {
 	cm := servicemock.NewMockCampaignRepository(t)
 	cm.On("GetByID", int64(1)).Return(&model.Campaign{ID: 1, LandingPageID: 10, RewardRules: rewardRulesJSON(t)}, nil)
 	lm := servicemock.NewMockLandingPageRepository(t)
-	lm.On("GetByID", int64(10)).Return(&model.CampaignLandingPage{ID: 10, Language: "zh-CN"}, nil)
+	lm.On("GetByID", int64(10)).Return(&model.CampaignLandingPage{
+		ID: 10, DefaultLang: "zh-CN", Title: "ZH", Description: "d", Terms: "t",
+	}, nil)
 	svc := service.NewUserCampaignService(cm, lm,
+		mysql.NewNoopLandingPageTranslationRepository(),
 		servicemock.NewMockParticipantRepository(t),
 		servicemock.NewMockUserRepository(t),
 		servicemock.NewMockRewardTransactionRepository(t),
 	)
 	reply, err := svc.GetLandingPageUI(1, 0, "en-US")
 	require.NoError(t, err)
-	require.Equal(t, http.StatusNotFound, reply.HTTPStatus)
+	require.Equal(t, http.StatusOK, reply.HTTPStatus)
+	dataMap := reply.Data.(map[string]any)
+	lp := dataMap["landingPage"].(map[string]any)
+	require.Equal(t, "zh-CN", lp["lang"])
+	require.Equal(t, "ZH", lp["title"])
 }
 
 func TestUserCampaignService_GetLandingPageUI_success(t *testing.T) {
@@ -93,12 +103,12 @@ func TestUserCampaignService_GetLandingPageUI_success(t *testing.T) {
 	cm.On("GetByID", int64(1)).Return(camp, nil)
 	lm := servicemock.NewMockLandingPageRepository(t)
 	lm.On("GetByID", int64(10)).Return(&model.CampaignLandingPage{
-		ID: 10, Language: "en-US", Title: "Hi {{threshold}} {{reward}}", BannerImageURL: "x",
+		ID: 10, DefaultLang: "en-US", Title: "Hi {{threshold}} {{reward}}", BannerImageURL: "x",
 	}, nil)
 	pm := servicemock.NewMockParticipantRepository(t)
 	pm.On("GetByCampaignAndUser", int64(1), int64(5)).Return(nil, gorm.ErrRecordNotFound)
 
-	svc := service.NewUserCampaignService(cm, lm, pm,
+	svc := service.NewUserCampaignService(cm, lm, mysql.NewNoopLandingPageTranslationRepository(), pm,
 		servicemock.NewMockUserRepository(t),
 		servicemock.NewMockRewardTransactionRepository(t),
 	)
@@ -116,6 +126,7 @@ func TestUserCampaignService_JoinCampaign_notPublished(t *testing.T) {
 	cm.On("GetByID", int64(1)).Return(&model.Campaign{ID: 1, Status: model.CampaignStatusDraft}, nil)
 	svc := service.NewUserCampaignService(cm,
 		servicemock.NewMockLandingPageRepository(t),
+		mysql.NewNoopLandingPageTranslationRepository(),
 		servicemock.NewMockParticipantRepository(t),
 		servicemock.NewMockUserRepository(t),
 		servicemock.NewMockRewardTransactionRepository(t),
@@ -141,7 +152,7 @@ func TestUserCampaignService_JoinCampaign_success(t *testing.T) {
 	})).Return(nil)
 
 	svc := service.NewUserCampaignService(cm,
-		servicemock.NewMockLandingPageRepository(t), pm, um,
+		servicemock.NewMockLandingPageRepository(t), mysql.NewNoopLandingPageTranslationRepository(), pm, um,
 		servicemock.NewMockRewardTransactionRepository(t),
 	)
 	reply, err := svc.JoinCampaign(1, 100)
@@ -158,7 +169,7 @@ func TestUserCampaignService_SimulateTopUp_notJoined(t *testing.T) {
 	pm.On("GetByCampaignAndUser", int64(1), int64(100)).Return(nil, gorm.ErrRecordNotFound)
 
 	svc := service.NewUserCampaignService(cm,
-		servicemock.NewMockLandingPageRepository(t), pm,
+		servicemock.NewMockLandingPageRepository(t), mysql.NewNoopLandingPageTranslationRepository(), pm,
 		servicemock.NewMockUserRepository(t),
 		servicemock.NewMockRewardTransactionRepository(t),
 	)
@@ -178,7 +189,7 @@ func TestUserCampaignService_SimulateTopUp_belowThreshold(t *testing.T) {
 	}, nil)
 
 	svc := service.NewUserCampaignService(cm,
-		servicemock.NewMockLandingPageRepository(t), pm,
+		servicemock.NewMockLandingPageRepository(t), mysql.NewNoopLandingPageTranslationRepository(), pm,
 		servicemock.NewMockUserRepository(t),
 		servicemock.NewMockRewardTransactionRepository(t),
 	)
@@ -201,7 +212,7 @@ func TestUserCampaignService_SimulateTopUp_manualReview(t *testing.T) {
 	pm.On("Save", mock.Anything).Return(nil)
 
 	svc := service.NewUserCampaignService(cm,
-		servicemock.NewMockLandingPageRepository(t), pm, um,
+		servicemock.NewMockLandingPageRepository(t), mysql.NewNoopLandingPageTranslationRepository(), pm, um,
 		servicemock.NewMockRewardTransactionRepository(t),
 	)
 	reply, err := svc.SimulateTopUp(1, 100, 120)
@@ -229,7 +240,7 @@ func TestUserCampaignService_SimulateTopUp_granted(t *testing.T) {
 	}).Return(nil)
 
 	svc := service.NewUserCampaignService(cm,
-		servicemock.NewMockLandingPageRepository(t), pm, um, rm,
+		servicemock.NewMockLandingPageRepository(t), mysql.NewNoopLandingPageTranslationRepository(), pm, um, rm,
 	)
 	reply, err := svc.SimulateTopUp(1, 100, 120)
 	require.NoError(t, err)

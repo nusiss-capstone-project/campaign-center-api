@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lianjin/campaign-center-api/server/log"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
 )
@@ -13,13 +14,13 @@ type LandingPageAdminService interface {
 	CreateLandingPage(p CreateLandingPageParams) (id int64, status int16, err error)
 	UpdateDraftLandingPage(id int64, p CreateLandingPageParams) error
 	ListLandingPages(filter mysql.LandingPageListFilter) ([]model.CampaignLandingPage, int64, error)
-	GetLandingPage(id int64) (*model.CampaignLandingPage, error)
+	GetLandingPage(id int64, lang string) (*LandingPageDetailView, error)
 	PublishLandingPage(id int64, operator string) (*model.CampaignLandingPage, error)
 }
 
 // CreateLandingPageParams body fields for create/update landing page.
 type CreateLandingPageParams struct {
-	Language       string
+	DefaultLang    string
 	BannerImageURL string
 	Title          string
 	Description    string
@@ -27,7 +28,8 @@ type CreateLandingPageParams struct {
 }
 
 type landingPageAdminService struct {
-	pages mysql.LandingPageRepository
+	pages         mysql.LandingPageRepository
+	translations  mysql.LandingPageTranslationRepository
 }
 
 var (
@@ -35,15 +37,21 @@ var (
 	landingPageAdminServiceInst LandingPageAdminService
 )
 
-// NewLandingPageAdminService builds a landing page admin service with explicit repositories (for tests).
-func NewLandingPageAdminService(pages mysql.LandingPageRepository) LandingPageAdminService {
-	return &landingPageAdminService{pages: pages}
+// NewLandingPageAdminService builds admin service with repositories (for tests).
+func NewLandingPageAdminService(
+	pages mysql.LandingPageRepository,
+	translations mysql.LandingPageTranslationRepository,
+) LandingPageAdminService {
+	return &landingPageAdminService{pages: pages, translations: translations}
 }
 
 // GetLandingPageAdminService returns the singleton landing page admin service.
 func GetLandingPageAdminService() LandingPageAdminService {
 	landingPageAdminServiceOnce.Do(func() {
-		landingPageAdminServiceInst = NewLandingPageAdminService(mysql.GetLandingPageRepository())
+		landingPageAdminServiceInst = NewLandingPageAdminService(
+			mysql.GetLandingPageRepository(),
+			mysql.GetLandingPageTranslationRepository(),
+		)
 	})
 	return landingPageAdminServiceInst
 }
@@ -51,7 +59,7 @@ func GetLandingPageAdminService() LandingPageAdminService {
 func (s *landingPageAdminService) CreateLandingPage(p CreateLandingPageParams) (int64, int16, error) {
 	now := time.Now()
 	row := model.CampaignLandingPage{
-		Language:       p.Language,
+		DefaultLang:    p.DefaultLang,
 		BannerImageURL: p.BannerImageURL,
 		Title:          p.Title,
 		Description:    p.Description,
@@ -63,6 +71,7 @@ func (s *landingPageAdminService) CreateLandingPage(p CreateLandingPageParams) (
 	if err := s.pages.Create(&row); err != nil {
 		return 0, 0, err
 	}
+	log.Logger.Infow("landing_page_created", "id", row.ID)
 	return row.ID, row.Status, nil
 }
 
@@ -75,12 +84,13 @@ func (s *landingPageAdminService) UpdateDraftLandingPage(id int64, p CreateLandi
 		return errLandingPageNotDraft
 	}
 	now := time.Now()
-	existing.Language = p.Language
+	existing.DefaultLang = p.DefaultLang
 	existing.BannerImageURL = p.BannerImageURL
 	existing.Title = p.Title
 	existing.Description = p.Description
 	existing.Terms = p.Terms
 	existing.UpdatedAt = now
+	log.Logger.Infow("landing_page_draft_updated", "id", id)
 	return s.pages.Update(existing)
 }
 
@@ -88,10 +98,7 @@ func (s *landingPageAdminService) ListLandingPages(filter mysql.LandingPageListF
 	return s.pages.List(filter)
 }
 
-func (s *landingPageAdminService) GetLandingPage(id int64) (*model.CampaignLandingPage, error) {
-	return s.pages.GetByID(id)
-}
-
 func (s *landingPageAdminService) PublishLandingPage(id int64, operator string) (*model.CampaignLandingPage, error) {
+	log.Logger.Infow("landing_page_publish", "id", id, "operator", operator)
 	return s.pages.Publish(id, operator)
 }

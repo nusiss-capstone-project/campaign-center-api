@@ -14,7 +14,7 @@ import (
 
 // UserCampaignService user-facing campaign flows.
 type UserCampaignService interface {
-	GetLandingPageUI(campaignID, userID int64, language string) (*HTTPReply, error)
+	GetLandingPageUI(campaignID, userID int64, lang string) (*HTTPReply, error)
 	JoinCampaign(campaignID, userID int64) (*HTTPReply, error)
 	SimulateTopUp(campaignID, userID int64, amount float64) (*HTTPReply, error)
 }
@@ -22,6 +22,7 @@ type UserCampaignService interface {
 type userCampaignService struct {
 	campaigns    mysql.CampaignRepository
 	landingPages mysql.LandingPageRepository
+	translations mysql.LandingPageTranslationRepository
 	participants mysql.ParticipantRepository
 	users        mysql.UserRepository
 	rewardTx     mysql.RewardTransactionRepository
@@ -36,6 +37,7 @@ var (
 func NewUserCampaignService(
 	campaigns mysql.CampaignRepository,
 	landingPages mysql.LandingPageRepository,
+	translations mysql.LandingPageTranslationRepository,
 	participants mysql.ParticipantRepository,
 	users mysql.UserRepository,
 	rewardTx mysql.RewardTransactionRepository,
@@ -43,6 +45,7 @@ func NewUserCampaignService(
 	return &userCampaignService{
 		campaigns:    campaigns,
 		landingPages: landingPages,
+		translations: translations,
 		participants: participants,
 		users:        users,
 		rewardTx:     rewardTx,
@@ -55,6 +58,7 @@ func GetUserCampaignService() UserCampaignService {
 		userCampaignServiceInst = NewUserCampaignService(
 			mysql.GetCampaignRepository(),
 			mysql.GetLandingPageRepository(),
+			mysql.GetLandingPageTranslationRepository(),
 			mysql.GetParticipantRepository(),
 			mysql.GetUserRepository(),
 			mysql.GetRewardTransactionRepository(),
@@ -63,7 +67,7 @@ func GetUserCampaignService() UserCampaignService {
 	return userCampaignServiceInst
 }
 
-func (s *userCampaignService) GetLandingPageUI(campaignID, userID int64, language string) (*HTTPReply, error) {
+func (s *userCampaignService) GetLandingPageUI(campaignID, userID int64, lang string) (*HTTPReply, error) {
 	campaign, err := s.campaigns.GetByID(campaignID)
 	if err != nil {
 		if mysql.IsNotFound(err) {
@@ -81,52 +85,22 @@ func (s *userCampaignService) GetLandingPageUI(campaignID, userID int64, languag
 		}
 		return nil, err
 	}
-	if language != "" && lp.Language != language {
-		return &HTTPReply{HTTPStatus: http.StatusNotFound, Code: -1, Message: "landing page language mismatch"}, nil
-	}
 	rules, err := model.ParseRewardRulesJSON(campaign.RewardRules)
 	if err != nil {
 		return &HTTPReply{HTTPStatus: http.StatusInternalServerError, Code: -1, Message: err.Error()}, nil
 	}
-	title := replaceLandingTemplates(lp.Title, rules.TopupThreshold, rules.RewardAmount)
-
-	var joined bool
-	taskStatus := model.TaskStatusNotStarted
-	rewardStatus := model.RewardStatusNotGranted
-	if userID > 0 {
-		if p, err := s.participants.GetByCampaignAndUser(campaignID, userID); err == nil {
-			joined = true
-			taskStatus = p.TaskStatus
-			rewardStatus = p.RewardStatus
-		} else if !mysql.IsNotFound(err) {
-			return nil, err
-		}
+	titleBase, descBase, termsBase, resolvedLang, err := s.resolveLandingPageTexts(lp, lang)
+	if err != nil {
+		return nil, err
 	}
-
-	payload := map[string]any{
-		"campaignId":            campaignID,
-		"campaignName":          campaign.Name,
-		"campaignType":          campaign.Type,
-		"status":                campaign.Status,
-		"registrationStartTime": campaign.RegistrationStartTime.Format(time.RFC3339),
-		"registrationEndTime":   campaign.RegistrationEndTime.Format(time.RFC3339),
-		"campaignStartTime":     campaign.CampaignStartTime.Format(time.RFC3339),
-		"campaignEndTime":       campaign.CampaignEndTime.Format(time.RFC3339),
-		"landingPage": map[string]any{
-			"language":       lp.Language,
-			"bannerImageUrl": lp.BannerImageURL,
-			"title":          title,
-			"description":    lp.Description,
-			"terms":          lp.Terms,
-		},
-		"rewardRule": rules,
-		"userStatus": map[string]any{
-			"joined":       joined,
-			"taskStatus":   taskStatus,
-			"rewardStatus": rewardStatus,
-		},
+	title := replaceLandingTemplates(titleBase, rules.TopupThreshold, rules.RewardAmount)
+	payload, err := s.buildLandingPageUIPayload(
+		campaign, campaignID, userID, lp, resolvedLang, title, descBase, termsBase, rules,
+	)
+	if err != nil {
+		return nil, err
 	}
-	return &HTTPReply{HTTPStatus: http.StatusOK, Code: data.CodeSuccess, Message: "success", Data: payload}, nil
+	return landingPageUIReply(payload), nil
 }
 
 func (s *userCampaignService) JoinCampaign(campaignID, userID int64) (*HTTPReply, error) {

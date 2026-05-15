@@ -10,10 +10,10 @@ import (
 
 // LandingPageListFilter filters admin landing page list.
 type LandingPageListFilter struct {
-	Page     int
-	PageSize int
-	Status   *int16
-	Language string
+	Page        int
+	PageSize    int
+	Status      *int16
+	DefaultLang string
 }
 
 // LandingPageRepository persists campaign landing pages.
@@ -61,7 +61,7 @@ func (r *landingPageRepository) Update(p *model.CampaignLandingPage) error {
 		return err
 	}
 	return db.Model(&model.CampaignLandingPage{}).Where("id = ?", p.ID).Updates(map[string]interface{}{
-		"language":         p.Language,
+		"default_lang":     p.DefaultLang,
 		"banner_image_url": p.BannerImageURL,
 		"title":            p.Title,
 		"description":      p.Description,
@@ -92,8 +92,8 @@ func (r *landingPageRepository) List(f LandingPageListFilter) ([]model.CampaignL
 	if f.Status != nil {
 		q = q.Where("status = ?", *f.Status)
 	}
-	if f.Language != "" {
-		q = q.Where("language = ?", f.Language)
+	if f.DefaultLang != "" {
+		q = q.Where("default_lang = ?", f.DefaultLang)
 	}
 	var total int64
 	if err := q.Count(&total).Error; err != nil {

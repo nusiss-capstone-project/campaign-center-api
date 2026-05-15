@@ -26,7 +26,7 @@ type SimulateTopUpReq struct {
 // @Produce json
 // @Param campaignId path int true "Campaign ID"
 // @Param userId query int false "User ID for participation status"
-// @Param language query string false "Must match landing page language when set"
+// @Param lang query string false "Preferred language; falls back to default"
 // @Success 200 {object} data.StandardResponse "success"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
@@ -45,9 +45,12 @@ func UserGetCampaignLanding(c *gin.Context) {
 			return
 		}
 	}
-	language := c.Query("language")
+	lang := c.Query("lang")
+	if lang == "" {
+		lang = c.Query("language")
+	}
 
-	reply, err := service.GetUserCampaignService().GetLandingPageUI(campaignID, userID, language)
+	reply, err := service.GetUserCampaignService().GetLandingPageUI(campaignID, userID, lang)
 	if err != nil {
 		handleRepoErr(c, err)
 		return
