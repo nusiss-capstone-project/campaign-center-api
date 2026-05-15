@@ -16,6 +16,41 @@ import (
 	"gorm.io/gorm"
 )
 
+type noopRewardNotifier struct{}
+
+func (noopRewardNotifier) NotifyTopUpReward(service.TopUpRewardEvent) {}
+
+func newTestUserCampaignService(
+	t *testing.T,
+	cm *servicemock.MockCampaignRepository,
+	lm *servicemock.MockLandingPageRepository,
+	trans mysql.LandingPageTranslationRepository,
+	pm *servicemock.MockParticipantRepository,
+	um *servicemock.MockUserRepository,
+	am service.AccountService,
+	rn service.CampaignRewardNotifier,
+) service.UserCampaignService {
+	t.Helper()
+	if trans == nil {
+		trans = mysql.NewNoopLandingPageTranslationRepository()
+	}
+	if am == nil {
+		am = &servicemock.MockAccountService{}
+	}
+	if rn == nil {
+		rn = noopRewardNotifier{}
+	}
+	return service.NewUserCampaignService(cm, lm, trans, pm, um, am, rn)
+}
+
+func defaultRechargeMock(t *testing.T) *servicemock.MockAccountService {
+	t.Helper()
+	am := &servicemock.MockAccountService{}
+	am.On("Recharge", mock.Anything, mock.Anything, mock.Anything).
+		Return(&service.RechargeResult{TransactionNo: "TXN_TEST", BalanceAfter: 220}, nil)
+	return am
+}
+
 func rewardRulesJSON(t *testing.T) string {
 	t.Helper()
 	b, err := json.Marshal(model.RewardRulesPayload{
@@ -45,12 +80,10 @@ func publishedCampaign(regStart, regEnd time.Time) *model.Campaign {
 func TestUserCampaignService_GetLandingPageUI_campaignNotFound(t *testing.T) {
 	cm := servicemock.NewMockCampaignRepository(t)
 	cm.On("GetByID", int64(1)).Return(nil, gorm.ErrRecordNotFound)
-	svc := service.NewUserCampaignService(cm,
-		servicemock.NewMockLandingPageRepository(t),
-		mysql.NewNoopLandingPageTranslationRepository(),
+	svc := newTestUserCampaignService(t, cm,
+		servicemock.NewMockLandingPageRepository(t), nil,
 		servicemock.NewMockParticipantRepository(t),
-		servicemock.NewMockUserRepository(t),
-		servicemock.NewMockRewardTransactionRepository(t),
+		servicemock.NewMockUserRepository(t), nil, nil,
 	)
 	reply, err := svc.GetLandingPageUI(1, 0, "")
 	require.NoError(t, err)
@@ -61,12 +94,10 @@ func TestUserCampaignService_GetLandingPageUI_campaignNotFound(t *testing.T) {
 func TestUserCampaignService_GetLandingPageUI_landingNotConfigured(t *testing.T) {
 	cm := servicemock.NewMockCampaignRepository(t)
 	cm.On("GetByID", int64(1)).Return(&model.Campaign{ID: 1, LandingPageID: 0}, nil)
-	svc := service.NewUserCampaignService(cm,
-		servicemock.NewMockLandingPageRepository(t),
-		mysql.NewNoopLandingPageTranslationRepository(),
+	svc := newTestUserCampaignService(t, cm,
+		servicemock.NewMockLandingPageRepository(t), nil,
 		servicemock.NewMockParticipantRepository(t),
-		servicemock.NewMockUserRepository(t),
-		servicemock.NewMockRewardTransactionRepository(t),
+		servicemock.NewMockUserRepository(t), nil, nil,
 	)
 	reply, err := svc.GetLandingPageUI(1, 0, "")
 	require.NoError(t, err)
@@ -81,11 +112,9 @@ func TestUserCampaignService_GetLandingPageUI_fallbackWhenMissingTranslation(t *
 	lm.On("GetByID", int64(10)).Return(&model.CampaignLandingPage{
 		ID: 10, DefaultLang: "zh-CN", Title: "ZH", Description: "d", Terms: "t",
 	}, nil)
-	svc := service.NewUserCampaignService(cm, lm,
-		mysql.NewNoopLandingPageTranslationRepository(),
+	svc := newTestUserCampaignService(t, cm, lm, nil,
 		servicemock.NewMockParticipantRepository(t),
-		servicemock.NewMockUserRepository(t),
-		servicemock.NewMockRewardTransactionRepository(t),
+		servicemock.NewMockUserRepository(t), nil, nil,
 	)
 	reply, err := svc.GetLandingPageUI(1, 0, "en-US")
 	require.NoError(t, err)
@@ -108,9 +137,8 @@ func TestUserCampaignService_GetLandingPageUI_success(t *testing.T) {
 	pm := servicemock.NewMockParticipantRepository(t)
 	pm.On("GetByCampaignAndUser", int64(1), int64(5)).Return(nil, gorm.ErrRecordNotFound)
 
-	svc := service.NewUserCampaignService(cm, lm, mysql.NewNoopLandingPageTranslationRepository(), pm,
-		servicemock.NewMockUserRepository(t),
-		servicemock.NewMockRewardTransactionRepository(t),
+	svc := newTestUserCampaignService(t, cm, lm, nil, pm,
+		servicemock.NewMockUserRepository(t), nil, nil,
 	)
 	reply, err := svc.GetLandingPageUI(1, 5, "en-US")
 	require.NoError(t, err)
@@ -124,12 +152,10 @@ func TestUserCampaignService_GetLandingPageUI_success(t *testing.T) {
 func TestUserCampaignService_JoinCampaign_notPublished(t *testing.T) {
 	cm := servicemock.NewMockCampaignRepository(t)
 	cm.On("GetByID", int64(1)).Return(&model.Campaign{ID: 1, Status: model.CampaignStatusDraft}, nil)
-	svc := service.NewUserCampaignService(cm,
-		servicemock.NewMockLandingPageRepository(t),
-		mysql.NewNoopLandingPageTranslationRepository(),
+	svc := newTestUserCampaignService(t, cm,
+		servicemock.NewMockLandingPageRepository(t), nil,
 		servicemock.NewMockParticipantRepository(t),
-		servicemock.NewMockUserRepository(t),
-		servicemock.NewMockRewardTransactionRepository(t),
+		servicemock.NewMockUserRepository(t), nil, nil,
 	)
 	reply, err := svc.JoinCampaign(1, 100)
 	require.NoError(t, err)
@@ -151,9 +177,8 @@ func TestUserCampaignService_JoinCampaign_success(t *testing.T) {
 		return p.UserID == 100 && p.JoinStatus == model.JoinStatusJoined
 	})).Return(nil)
 
-	svc := service.NewUserCampaignService(cm,
-		servicemock.NewMockLandingPageRepository(t), mysql.NewNoopLandingPageTranslationRepository(), pm, um,
-		servicemock.NewMockRewardTransactionRepository(t),
+	svc := newTestUserCampaignService(t, cm,
+		servicemock.NewMockLandingPageRepository(t), nil, pm, um, nil, nil,
 	)
 	reply, err := svc.JoinCampaign(1, 100)
 	require.NoError(t, err)
@@ -168,10 +193,9 @@ func TestUserCampaignService_SimulateTopUp_notJoined(t *testing.T) {
 	pm := servicemock.NewMockParticipantRepository(t)
 	pm.On("GetByCampaignAndUser", int64(1), int64(100)).Return(nil, gorm.ErrRecordNotFound)
 
-	svc := service.NewUserCampaignService(cm,
-		servicemock.NewMockLandingPageRepository(t), mysql.NewNoopLandingPageTranslationRepository(), pm,
-		servicemock.NewMockUserRepository(t),
-		servicemock.NewMockRewardTransactionRepository(t),
+	svc := newTestUserCampaignService(t, cm,
+		servicemock.NewMockLandingPageRepository(t), nil, pm,
+		servicemock.NewMockUserRepository(t), nil, nil,
 	)
 	reply, err := svc.SimulateTopUp(1, 100, 120)
 	require.NoError(t, err)
@@ -188,10 +212,9 @@ func TestUserCampaignService_SimulateTopUp_belowThreshold(t *testing.T) {
 		ID: 1, RewardStatus: model.RewardStatusNotGranted,
 	}, nil)
 
-	svc := service.NewUserCampaignService(cm,
-		servicemock.NewMockLandingPageRepository(t), mysql.NewNoopLandingPageTranslationRepository(), pm,
-		servicemock.NewMockUserRepository(t),
-		servicemock.NewMockRewardTransactionRepository(t),
+	svc := newTestUserCampaignService(t, cm,
+		servicemock.NewMockLandingPageRepository(t), nil, pm,
+		servicemock.NewMockUserRepository(t), nil, nil,
 	)
 	reply, err := svc.SimulateTopUp(1, 100, 50)
 	require.NoError(t, err)
@@ -210,10 +233,10 @@ func TestUserCampaignService_SimulateTopUp_manualReview(t *testing.T) {
 	um := servicemock.NewMockUserRepository(t)
 	um.On("GetByID", int64(100)).Return(&model.User{RiskLevel: model.RiskLevelHigh}, nil)
 	pm.On("Save", mock.Anything).Return(nil)
+	am := defaultRechargeMock(t)
 
-	svc := service.NewUserCampaignService(cm,
-		servicemock.NewMockLandingPageRepository(t), mysql.NewNoopLandingPageTranslationRepository(), pm, um,
-		servicemock.NewMockRewardTransactionRepository(t),
+	svc := newTestUserCampaignService(t, cm,
+		servicemock.NewMockLandingPageRepository(t), nil, pm, um, am, nil,
 	)
 	reply, err := svc.SimulateTopUp(1, 100, 120)
 	require.NoError(t, err)
@@ -231,20 +254,20 @@ func TestUserCampaignService_SimulateTopUp_granted(t *testing.T) {
 	}, nil)
 	um := servicemock.NewMockUserRepository(t)
 	um.On("GetByID", int64(100)).Return(&model.User{RiskLevel: "LOW"}, nil)
-	rm := servicemock.NewMockRewardTransactionRepository(t)
-	rm.On("CommitGrantWithParticipant", mock.Anything, mock.MatchedBy(func(tx *model.RewardTransaction) bool {
-		return tx.ParticipantID == 55
-	})).Run(func(args mock.Arguments) {
-		tx := args.Get(1).(*model.RewardTransaction)
-		tx.ID = 999
-	}).Return(nil)
+	pm.On("Save", mock.Anything).Return(nil)
+	am := defaultRechargeMock(t)
+	rn := &servicemock.MockCampaignRewardNotifier{}
+	rn.On("NotifyTopUpReward", mock.MatchedBy(func(e service.TopUpRewardEvent) bool {
+		return e.ParticipantID == 55 && e.RewardAmount == 10
+	}))
 
-	svc := service.NewUserCampaignService(cm,
-		servicemock.NewMockLandingPageRepository(t), mysql.NewNoopLandingPageTranslationRepository(), pm, um, rm,
+	svc := newTestUserCampaignService(t, cm,
+		servicemock.NewMockLandingPageRepository(t), nil, pm, um, am, rn,
 	)
 	reply, err := svc.SimulateTopUp(1, 100, 120)
 	require.NoError(t, err)
 	require.Equal(t, data.CodeSuccess, reply.Code)
 	d := reply.Data.(map[string]any)
-	require.EqualValues(t, 999, d["rewardTransactionId"])
+	require.Equal(t, "TXN_TEST", d["rechargeTransactionNo"])
+	rn.AssertExpectations(t)
 }

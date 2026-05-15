@@ -25,7 +25,8 @@ type userCampaignService struct {
 	translations mysql.LandingPageTranslationRepository
 	participants mysql.ParticipantRepository
 	users        mysql.UserRepository
-	rewardTx     mysql.RewardTransactionRepository
+	accounts     AccountService
+	rewards      CampaignRewardNotifier
 }
 
 var (
@@ -40,7 +41,8 @@ func NewUserCampaignService(
 	translations mysql.LandingPageTranslationRepository,
 	participants mysql.ParticipantRepository,
 	users mysql.UserRepository,
-	rewardTx mysql.RewardTransactionRepository,
+	accounts AccountService,
+	rewards CampaignRewardNotifier,
 ) UserCampaignService {
 	return &userCampaignService{
 		campaigns:    campaigns,
@@ -48,7 +50,8 @@ func NewUserCampaignService(
 		translations: translations,
 		participants: participants,
 		users:        users,
-		rewardTx:     rewardTx,
+		accounts:     accounts,
+		rewards:      rewards,
 	}
 }
 
@@ -61,7 +64,8 @@ func GetUserCampaignService() UserCampaignService {
 			mysql.GetLandingPageTranslationRepository(),
 			mysql.GetParticipantRepository(),
 			mysql.GetUserRepository(),
-			mysql.GetRewardTransactionRepository(),
+			GetAccountService(),
+			GetCampaignRewardNotifier(),
 		)
 	})
 	return userCampaignServiceInst
@@ -229,10 +233,14 @@ func (s *userCampaignService) SimulateTopUp(campaignID, userID int64, amount flo
 	now := time.Now()
 	applyTopUpProgressToParticipant(participant, amount, now)
 
-	if user.RiskLevel == model.RiskLevelHigh {
-		return s.simulateTopUpManualReview(participant, campaignID, userID, amount)
+	recharge, err := s.accounts.Recharge(userID, amount, model.DefaultCurrency)
+	if err != nil {
+		return nil, err
 	}
-	return s.simulateTopUpGrantApproved(participant, rules, campaignID, userID, amount, now)
+	return s.simulateTopUpAfterRecharge(
+		participant, rules, campaignID, userID, amount, user,
+		recharge.TransactionNo, recharge.BalanceAfter,
+	)
 }
 
 // simulateTopUpPrecheck loads campaign and participant and returns an HTTPReply for early business exits.
@@ -301,76 +309,6 @@ func applyTopUpProgressToParticipant(participant *model.CampaignParticipant, amo
 	participant.TaskStatus = model.TaskStatusCompleted
 	participant.CompletedAt = &completedAt
 	participant.UpdatedAt = now
-}
-
-func (s *userCampaignService) simulateTopUpManualReview(
-	participant *model.CampaignParticipant,
-	campaignID, userID int64,
-	amount float64,
-) (*HTTPReply, error) {
-	participant.RiskStatus = model.RiskStatusManualReview
-	participant.RewardStatus = model.RewardStatusPendingReview
-	participant.RewardAmount = 0
-	if err := s.participants.Save(participant); err != nil {
-		return nil, err
-	}
-	return &HTTPReply{
-		HTTPStatus: http.StatusOK,
-		Code:       data.CodeSuccess,
-		Message:    "manual review required",
-		Data: map[string]any{
-			"campaignId":   campaignID,
-			"userId":       userID,
-			"topupAmount":  amount,
-			"taskStatus":   model.TaskStatusCompleted,
-			"riskStatus":   model.RiskStatusManualReview,
-			"rewardStatus": model.RewardStatusPendingReview,
-			"rewardAmount": 0,
-		},
-	}, nil
-}
-
-func (s *userCampaignService) simulateTopUpGrantApproved(
-	participant *model.CampaignParticipant,
-	rules model.RewardRulesPayload,
-	campaignID, userID int64,
-	amount float64,
-	now time.Time,
-) (*HTTPReply, error) {
-	participant.RiskStatus = model.RiskStatusApproved
-	participant.RewardStatus = model.RewardStatusGranted
-	participant.RewardAmount = rules.RewardAmount
-	rewardedAt := now
-	participant.RewardedAt = &rewardedAt
-
-	rewardRow := model.RewardTransaction{
-		CampaignID:    campaignID,
-		UserID:        userID,
-		ParticipantID: participant.ID,
-		RewardType:    rules.RewardType,
-		RewardAmount:  rules.RewardAmount,
-		Status:        model.RewardTxnStatusCompleted,
-		CreatedAt:     now,
-	}
-	if err := s.rewardTx.CommitGrantWithParticipant(participant, &rewardRow); err != nil {
-		return nil, err
-	}
-
-	return &HTTPReply{
-		HTTPStatus: http.StatusOK,
-		Code:       data.CodeSuccess,
-		Message:    "success",
-		Data: map[string]any{
-			"campaignId":          campaignID,
-			"userId":              userID,
-			"topupAmount":         amount,
-			"taskStatus":          model.TaskStatusCompleted,
-			"riskStatus":          model.RiskStatusApproved,
-			"rewardStatus":        model.RewardStatusGranted,
-			"rewardAmount":        rules.RewardAmount,
-			"rewardTransactionId": rewardRow.ID,
-		},
-	}, nil
 }
 
 func replaceLandingTemplates(title string, threshold, reward float64) string {

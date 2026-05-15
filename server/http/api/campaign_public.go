@@ -89,8 +89,8 @@ func UserJoinCampaign(c *gin.Context) {
 	data.JSON(c, reply.HTTPStatus, reply.Code, reply.Message, reply.Data)
 }
 
-// UserSimulateTopUp simulates a top-up and may grant rewards or route to manual review.
-// @Summary Simulate top-up (user)
+// UserSimulateTopUp simulates a top-up: credits account (RECHARGE) then asynchronously processes campaign reward.
+// @Summary Simulate top-up with account recharge (user)
 // @Tags user-campaign
 // @Accept json
 // @Produce json

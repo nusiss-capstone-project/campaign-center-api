@@ -35,6 +35,9 @@ func NewRouter() *gin.Engine {
 		admin.GET("/campaigns/:campaignId", api.AdminGetCampaign)
 		admin.POST("/campaigns/:campaignId/publish", api.AdminPublishCampaign)
 		admin.POST("/campaigns/:campaignId/archive", api.AdminArchiveCampaign)
+		admin.GET("/campaigns/:campaignId/performance/summary", api.AdminGetCampaignPerformanceSummary)
+		admin.GET("/campaigns/:campaignId/performance/daily", api.AdminListCampaignDailyPerformance)
+		admin.GET("/campaigns/:campaignId/participations", api.AdminListCampaignParticipations)
 
 		admin.POST("/landing-pages/:landingPageId/translations/generate", api.AdminGenerateLandingTranslation)
 		admin.GET("/landing-pages/:landingPageId/translations", api.AdminListLandingPageTranslatedLangs)
@@ -51,6 +54,8 @@ func NewRouter() *gin.Engine {
 	web := basicGroup.Group("/web")
 	web.Use(otelgin.Middleware(data.ServiceName), log.TraceLoggerMiddleware())
 	{
+		web.GET("/account/summary", api.UserGetAccountSummary)
+		web.GET("/account/transactions", api.UserListAccountTransactions)
 		web.GET("/campaigns/:campaignId/landing-page", api.UserGetCampaignLanding)
 		web.POST("/campaigns/:campaignId/join", api.UserJoinCampaign)
 		web.POST("/campaigns/:campaignId/top-up", api.UserSimulateTopUp)

@@ -448,6 +448,114 @@ paths:
       summary: Archive campaign (admin)
       tags:
       - admin-campaign
+  /admin/campaigns/{campaignId}/participations:
+    get:
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      - description: Page (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20)
+        in: query
+        name: pageSize
+        type: integer
+      - description: Filter by user ID
+        in: query
+        name: userId
+        type: integer
+      - description: Filter by reward status e.g. GRANTED
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: campaign not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: List campaign participations (admin)
+      tags:
+      - admin-campaign-performance
+  /admin/campaigns/{campaignId}/performance/daily:
+    get:
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      - description: Start date YYYY-MM-DD
+        in: query
+        name: startDate
+        required: true
+        type: string
+      - description: End date YYYY-MM-DD
+        in: query
+        name: endDate
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: campaign not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: List campaign daily performance (admin)
+      tags:
+      - admin-campaign-performance
+  /admin/campaigns/{campaignId}/performance/summary:
+    get:
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: campaign not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Get campaign performance summary (admin)
+      tags:
+      - admin-campaign-performance
   /admin/campaigns/{campaignId}/publish:
     post:
       consumes:
@@ -822,6 +930,74 @@ paths:
       summary: Ping
       tags:
       - health
+  /web/account/summary:
+    get:
+      parameters:
+      - description: User ID
+        in: query
+        name: userId
+        required: true
+        type: integer
+      - description: Currency (default USDT)
+        in: query
+        name: currency
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Get account summary (user)
+      tags:
+      - user-account
+  /web/account/transactions:
+    get:
+      parameters:
+      - description: User ID
+        in: query
+        name: userId
+        required: true
+        type: integer
+      - description: Transaction type RECHARGE or CAMPAIGN_REWARD
+        in: query
+        name: type
+        type: string
+      - description: Pagination cursor (transaction id)
+        in: query
+        name: cursor
+        type: integer
+      - description: Page size (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: List account transactions (user)
+      tags:
+      - user-account
   /web/campaigns/{campaignId}/join:
     post:
       consumes:
@@ -921,7 +1097,7 @@ paths:
           description: database unavailable
           schema:
             $ref: '#/definitions/data.StandardResponse'
-      summary: Simulate top-up (user)
+      summary: Simulate top-up with account recharge (user)
       tags:
       - user-campaign
 schemes:

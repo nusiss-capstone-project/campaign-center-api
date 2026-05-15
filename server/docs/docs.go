@@ -282,6 +282,170 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/campaigns/{campaignId}/participations": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin-campaign-performance"
+                ],
+                "summary": "List campaign participations (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Campaign ID",
+                        "name": "campaignId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 20)",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by user ID",
+                        "name": "userId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by reward status e.g. GRANTED",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "campaign not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/campaigns/{campaignId}/performance/daily": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin-campaign-performance"
+                ],
+                "summary": "List campaign daily performance (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Campaign ID",
+                        "name": "campaignId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date YYYY-MM-DD",
+                        "name": "startDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date YYYY-MM-DD",
+                        "name": "endDate",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "campaign not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/campaigns/{campaignId}/performance/summary": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin-campaign-performance"
+                ],
+                "summary": "Get campaign performance summary (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Campaign ID",
+                        "name": "campaignId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "campaign not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/campaigns/{campaignId}/publish": {
             "post": {
                 "consumes": [
@@ -842,6 +1006,110 @@ const docTemplate = `{
                 }
             }
         },
+        "/web/account/summary": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-account"
+                ],
+                "summary": "Get account summary (user)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Currency (default USDT)",
+                        "name": "currency",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/web/account/transactions": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-account"
+                ],
+                "summary": "List account transactions (user)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Transaction type RECHARGE or CAMPAIGN_REWARD",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Pagination cursor (transaction id)",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/web/campaigns/{campaignId}/join": {
             "post": {
                 "consumes": [
@@ -957,7 +1225,7 @@ const docTemplate = `{
                 "tags": [
                     "user-campaign"
                 ],
-                "summary": "Simulate top-up (user)",
+                "summary": "Simulate top-up with account recharge (user)",
                 "parameters": [
                     {
                         "type": "integer",
