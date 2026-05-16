@@ -56,6 +56,8 @@ Notes:
 - Trace sampling is parent-based. `OTEL_TRACES_SAMPLER_ARG` controls sampling
   for new root traces (`1.0` = 100%, `0.1` = 10%) while respecting upstream
   sampled/unsampled `traceparent` decisions.
+- Go runtime metrics are collected every 15 seconds when metrics export is
+  enabled, using the same OTLP MeterProvider as HTTP metrics.
 - Do not configure a local OpenTelemetry Collector for Railway; the app exports
   directly to Grafana Cloud OTLP.
 
@@ -74,6 +76,23 @@ Metrics:
 2. Filter by `service.name="campaign-center-api"` or the configured
    `OTEL_SERVICE_NAME`.
 3. Confirm HTTP server metrics appear after traffic reaches the Railway service.
+
+For this deployment, Grafana Cloud Prometheus exposes the OTel Go runtime
+metrics with Prometheus-style names. Search these exact metric identifiers in
+Grafana Explore:
+
+- `go_goroutine_count`
+- `go_memory_used_bytes`
+- `go_memory_limit_bytes`
+- `go_memory_allocated_bytes_total`
+- `go_memory_allocations_total`
+- `go_memory_gc_goal_bytes`
+- `go_processor_limit`
+- `go_config_gogc_percent`
+
+If `OTEL_GO_X_DEPRECATED_RUNTIME_METRICS=true` is set, the runtime package also
+emits deprecated names such as `runtime_go_goroutines` and
+`runtime_go_mem_heap_alloc_bytes`.
 
 Logs:
 
