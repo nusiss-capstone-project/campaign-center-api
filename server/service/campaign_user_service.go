@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -292,6 +293,10 @@ func (s *userCampaignService) SimulateTopUp(campaignID, userID int64, amount flo
 		}
 		return nil, err
 	}
+	rewardAmount, err := calculateTopUpRewardAmount(amount, rules)
+	if err != nil {
+		return &HTTPReply{HTTPStatus: http.StatusBadRequest, Code: -1, Message: err.Error()}, nil
+	}
 
 	now := time.Now()
 	applyTopUpProgressToParticipant(participant, amount, now)
@@ -305,7 +310,7 @@ func (s *userCampaignService) SimulateTopUp(campaignID, userID int64, amount flo
 	}
 	return s.simulateTopUpAfterRecharge(
 		participant, rules, campaignID, userID, amount, user,
-		recharge.TransactionNo, recharge.BalanceAfter,
+		recharge.TransactionNo, recharge.BalanceAfter, rewardAmount,
 	)
 }
 
@@ -350,6 +355,19 @@ func (s *userCampaignService) simulateTopUpPrecheck(campaignID, userID int64, am
 				"campaignId":   campaignID,
 				"userId":       userID,
 				"rewardStatus": model.RewardStatusGranted,
+			},
+		}, nil
+	}
+	if participant.RewardStatus == model.RewardStatusPending ||
+		participant.RewardStatus == model.RewardStatusPendingReview {
+		return model.RewardRulesPayload{}, nil, &HTTPReply{
+			HTTPStatus: http.StatusOK,
+			Code:       data.CodeDuplicateReward,
+			Message:    "Reward already processing",
+			Data: map[string]any{
+				"campaignId":   campaignID,
+				"userId":       userID,
+				"rewardStatus": participant.RewardStatus,
 			},
 		}, nil
 	}
@@ -455,6 +473,7 @@ func (s *userCampaignService) simulateTopUpAfterRecharge(
 	user *model.User,
 	rechargeTxnNo string,
 	balanceAfter float64,
+	rewardAmount float64,
 ) (*HTTPReply, error) {
 	if user.RiskLevel == model.RiskLevelHigh {
 		return s.simulateTopUpManualReviewWithAccount(
@@ -462,7 +481,7 @@ func (s *userCampaignService) simulateTopUpAfterRecharge(
 		)
 	}
 	return s.simulateTopUpEnqueueReward(
-		participant, rules, campaignID, userID, amount, rechargeTxnNo, balanceAfter,
+		participant, rules, campaignID, userID, amount, rechargeTxnNo, balanceAfter, rewardAmount,
 	)
 }
 
@@ -492,22 +511,47 @@ func (s *userCampaignService) simulateTopUpEnqueueReward(
 	amount float64,
 	rechargeTxnNo string,
 	balanceAfter float64,
+	rewardAmount float64,
 ) (*HTTPReply, error) {
 	participant.RiskStatus = model.RiskStatusApproved
 	participant.RewardStatus = model.RewardStatusPending
-	participant.RewardAmount = rules.RewardAmount
+	participant.RewardAmount = rewardAmount
 	if err := s.participants.Save(participant); err != nil {
 		return nil, err
 	}
 	s.rewards.NotifyTopUpReward(TopUpRewardEvent{
 		CampaignID: campaignID, UserID: userID, TopupAmount: amount,
 		ParticipantID: participant.ID, ManualReview: false,
-		RewardAmount: rules.RewardAmount, RewardType: rules.RewardType,
+		RewardAmount: rewardAmount, RewardType: rules.RewardType,
 	})
 	return topUpReply(campaignID, userID, amount, rechargeTxnNo, balanceAfter, map[string]any{
 		"taskStatus": model.TaskStatusCompleted, "riskStatus": model.RiskStatusApproved,
-		"rewardStatus": model.RewardStatusPending, "rewardAmount": rules.RewardAmount,
+		"rewardStatus": model.RewardStatusPending, "rewardAmount": rewardAmount,
 	}, "reward processing")
+}
+
+func calculateTopUpRewardAmount(topupAmount float64, rules model.RewardRulesPayload) (float64, error) {
+	mode := strings.TrimSpace(rules.RewardMode)
+	if mode == "" {
+		mode = model.RewardModeFixedAmount
+	}
+
+	var rewardAmount float64
+	switch mode {
+	case model.RewardModeFixedAmount:
+		rewardAmount = rules.RewardAmount
+	case model.RewardModePercentage:
+		rewardAmount = topupAmount * rules.RewardPercentage / 100
+	default:
+		return 0, fmt.Errorf("invalid rewardMode: %s", rules.RewardMode)
+	}
+	if rules.MaxRewardAmount > 0 && rewardAmount > rules.MaxRewardAmount {
+		rewardAmount = rules.MaxRewardAmount
+	}
+	if rewardAmount < 0 {
+		return 0, fmt.Errorf("reward amount must be non-negative")
+	}
+	return rewardAmount, nil
 }
 
 func topUpReply(

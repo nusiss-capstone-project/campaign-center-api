@@ -76,6 +76,11 @@ const (
 )
 
 const (
+	RewardModeFixedAmount = "FIXED_AMOUNT"
+	RewardModePercentage  = "PERCENTAGE"
+)
+
+const (
 	RewardTxnStatusCompleted = "COMPLETED"
 	RewardTxnStatusPending   = "PENDING"
 )

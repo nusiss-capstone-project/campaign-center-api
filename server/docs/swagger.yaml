@@ -196,7 +196,17 @@ definitions:
     properties:
       maxClaimPerUser:
         type: integer
+      maxRewardAmount:
+        type: number
+      minObtainDays:
+        type: integer
       rewardAmount:
+        type: number
+      rewardCurrency:
+        type: string
+      rewardMode:
+        type: string
+      rewardPercentage:
         type: number
       rewardType:
         type: string
@@ -204,7 +214,6 @@ definitions:
         type: number
     required:
     - maxClaimPerUser
-    - rewardAmount
     - rewardType
     - topupThreshold
     type: object

@@ -368,6 +368,118 @@ func TestUserCampaignService_SimulateTopUp_granted(t *testing.T) {
 	rn.AssertExpectations(t)
 }
 
+func TestUserCampaignService_SimulateTopUp_percentageRewardCapped(t *testing.T) {
+	cm := servicemock.NewMockCampaignRepository(t)
+	cm.On("GetByID", int64(1)).Return(&model.Campaign{
+		ID: 1,
+		RewardRules: `{"topupThreshold":100,"rewardType":"TOKEN_BONUS",` +
+			`"rewardMode":"PERCENTAGE","rewardPercentage":10,"maxRewardAmount":15,"maxClaimPerUser":1}`,
+	}, nil)
+	pm := servicemock.NewMockParticipantRepository(t)
+	pm.On("GetByCampaignAndUser", int64(1), int64(100)).Return(&model.CampaignParticipant{
+		ID: 55, RewardStatus: model.RewardStatusNotGranted,
+	}, nil)
+	um := servicemock.NewMockUserRepository(t)
+	um.On("GetByID", int64(100)).Return(&model.User{RiskLevel: "LOW"}, nil)
+	pm.On("Save", mock.MatchedBy(func(p *model.CampaignParticipant) bool {
+		return p.RewardStatus == model.RewardStatusPending && p.RewardAmount == 15
+	})).Return(nil)
+	am := defaultRechargeMock(t)
+	rn := &servicemock.MockCampaignRewardNotifier{}
+	rn.On("NotifyTopUpReward", mock.MatchedBy(func(e service.TopUpRewardEvent) bool {
+		return e.ParticipantID == 55 && e.RewardAmount == 15
+	}))
+
+	svc := newTestUserCampaignService(t, cm,
+		servicemock.NewMockLandingPageRepository(t), nil, pm, um, am, rn,
+	)
+	reply, err := svc.SimulateTopUp(1, 100, 200)
+	require.NoError(t, err)
+
+	d := reply.Data.(map[string]any)
+	require.Equal(t, float64(15), d["rewardAmount"])
+	require.Equal(t, model.RewardStatusPending, d["rewardStatus"])
+	rn.AssertExpectations(t)
+}
+
+func TestUserCampaignService_SimulateTopUp_fixedRewardCapped(t *testing.T) {
+	cm := servicemock.NewMockCampaignRepository(t)
+	cm.On("GetByID", int64(1)).Return(&model.Campaign{
+		ID: 1,
+		RewardRules: `{"topupThreshold":100,"rewardType":"TOKEN_BONUS",` +
+			`"rewardMode":"FIXED_AMOUNT","rewardAmount":30,"maxRewardAmount":20,"maxClaimPerUser":1}`,
+	}, nil)
+	pm := servicemock.NewMockParticipantRepository(t)
+	pm.On("GetByCampaignAndUser", int64(1), int64(100)).Return(&model.CampaignParticipant{
+		ID: 55, RewardStatus: model.RewardStatusNotGranted,
+	}, nil)
+	um := servicemock.NewMockUserRepository(t)
+	um.On("GetByID", int64(100)).Return(&model.User{RiskLevel: "LOW"}, nil)
+	pm.On("Save", mock.MatchedBy(func(p *model.CampaignParticipant) bool {
+		return p.RewardStatus == model.RewardStatusPending && p.RewardAmount == 20
+	})).Return(nil)
+	am := defaultRechargeMock(t)
+	rn := &servicemock.MockCampaignRewardNotifier{}
+	rn.On("NotifyTopUpReward", mock.MatchedBy(func(e service.TopUpRewardEvent) bool {
+		return e.ParticipantID == 55 && e.RewardAmount == 20
+	}))
+
+	svc := newTestUserCampaignService(t, cm,
+		servicemock.NewMockLandingPageRepository(t), nil, pm, um, am, rn,
+	)
+	reply, err := svc.SimulateTopUp(1, 100, 200)
+	require.NoError(t, err)
+
+	d := reply.Data.(map[string]any)
+	require.Equal(t, float64(20), d["rewardAmount"])
+	require.Equal(t, model.RewardStatusPending, d["rewardStatus"])
+	rn.AssertExpectations(t)
+}
+
+func TestUserCampaignService_SimulateTopUp_pendingRewardNotReenqueued(t *testing.T) {
+	cm := servicemock.NewMockCampaignRepository(t)
+	cm.On("GetByID", int64(1)).Return(&model.Campaign{
+		ID: 1, RewardRules: `{"topupThreshold":100,"rewardAmount":10,"rewardType":"BONUS_CREDIT","maxClaimPerUser":1}`,
+	}, nil)
+	pm := servicemock.NewMockParticipantRepository(t)
+	pm.On("GetByCampaignAndUser", int64(1), int64(100)).Return(&model.CampaignParticipant{
+		ID: 55, RewardStatus: model.RewardStatusPending,
+	}, nil)
+
+	svc := newTestUserCampaignService(t, cm,
+		servicemock.NewMockLandingPageRepository(t), nil, pm,
+		servicemock.NewMockUserRepository(t), nil, nil,
+	)
+	reply, err := svc.SimulateTopUp(1, 100, 120)
+	require.NoError(t, err)
+	require.Equal(t, data.CodeDuplicateReward, reply.Code)
+	require.Equal(t, "Reward already processing", reply.Message)
+}
+
+func TestUserCampaignService_SimulateTopUp_invalidRewardModeBeforeRecharge(t *testing.T) {
+	cm := servicemock.NewMockCampaignRepository(t)
+	cm.On("GetByID", int64(1)).Return(&model.Campaign{
+		ID: 1,
+		RewardRules: `{"topupThreshold":100,"rewardType":"TOKEN_BONUS",` +
+			`"rewardMode":"UNKNOWN","rewardAmount":30,"maxClaimPerUser":1}`,
+	}, nil)
+	pm := servicemock.NewMockParticipantRepository(t)
+	pm.On("GetByCampaignAndUser", int64(1), int64(100)).Return(&model.CampaignParticipant{
+		ID: 55, RewardStatus: model.RewardStatusNotGranted,
+	}, nil)
+	um := servicemock.NewMockUserRepository(t)
+	um.On("GetByID", int64(100)).Return(&model.User{RiskLevel: "LOW"}, nil)
+	am := &servicemock.MockAccountService{}
+
+	svc := newTestUserCampaignService(t, cm,
+		servicemock.NewMockLandingPageRepository(t), nil, pm, um, am, nil,
+	)
+	reply, err := svc.SimulateTopUp(1, 100, 120)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, reply.HTTPStatus)
+	require.Equal(t, "invalid rewardMode: UNKNOWN", reply.Message)
+}
+
 func TestUserCampaignService_ListAvailableCampaigns_groupsOngoingAndUpcoming(t *testing.T) {
 	now := time.Now()
 	ongoing := model.Campaign{

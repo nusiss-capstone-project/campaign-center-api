@@ -1577,7 +1577,6 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "maxClaimPerUser",
-                "rewardAmount",
                 "rewardType",
                 "topupThreshold"
             ],
@@ -1585,7 +1584,22 @@ const docTemplate = `{
                 "maxClaimPerUser": {
                     "type": "integer"
                 },
+                "maxRewardAmount": {
+                    "type": "number"
+                },
+                "minObtainDays": {
+                    "type": "integer"
+                },
                 "rewardAmount": {
+                    "type": "number"
+                },
+                "rewardCurrency": {
+                    "type": "string"
+                },
+                "rewardMode": {
+                    "type": "string"
+                },
+                "rewardPercentage": {
                     "type": "number"
                 },
                 "rewardType": {
