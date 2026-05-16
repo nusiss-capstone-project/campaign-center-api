@@ -21,7 +21,10 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 )
 
-const disabledMessage = "OTLP endpoint not configured, telemetry export disabled"
+const (
+	disabledMessage         = "OTLP endpoint not configured, telemetry export disabled"
+	metricsCollectionPeriod = 15 * time.Second
+)
 
 type shutdownFunc func(context.Context) error
 
@@ -115,7 +118,7 @@ func initMetrics(ctx context.Context, res *resource.Resource) (*sdkmetric.MeterP
 		return nil, err
 	}
 	mp := sdkmetric.NewMeterProvider(
-		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(exp, sdkmetric.WithInterval(15*time.Second))),
+		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(exp, sdkmetric.WithInterval(metricsCollectionPeriod))),
 		sdkmetric.WithResource(res),
 	)
 	otel.SetMeterProvider(mp)
@@ -125,7 +128,7 @@ func initMetrics(ctx context.Context, res *resource.Resource) (*sdkmetric.MeterP
 func startRuntimeMetrics(mp *sdkmetric.MeterProvider) error {
 	return otelruntime.Start(
 		otelruntime.WithMeterProvider(mp),
-		otelruntime.WithMinimumReadMemStatsInterval(15*time.Second),
+		otelruntime.WithMinimumReadMemStatsInterval(metricsCollectionPeriod),
 	)
 }
 

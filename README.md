@@ -77,20 +77,22 @@ Metrics:
    `OTEL_SERVICE_NAME`.
 3. Confirm HTTP server metrics appear after traffic reaches the Railway service.
 
-Go runtime metrics to search in Grafana Explore:
+For this deployment, Grafana Cloud Prometheus exposes the OTel Go runtime
+metrics with Prometheus-style names. Search these exact metric identifiers in
+Grafana Explore:
 
-- `go.goroutine.count`
-- `go.memory.used`
-- `go.memory.limit`
-- `go.memory.allocated`
-- `go.memory.allocations`
-- `go.memory.gc.goal`
-- `go.processor.limit`
-- `go.config.gogc`
+- `go_goroutine_count`
+- `go_memory_used_bytes`
+- `go_memory_limit_bytes`
+- `go_memory_allocated_bytes_total`
+- `go_memory_allocations_total`
+- `go_memory_gc_goal_bytes`
+- `go_processor_limit`
+- `go_config_gogc_percent`
 
 If `OTEL_GO_X_DEPRECATED_RUNTIME_METRICS=true` is set, the runtime package also
-emits deprecated names such as `runtime.go.goroutines` and
-`runtime.go.mem.heap_alloc`.
+emits deprecated names such as `runtime_go_goroutines` and
+`runtime_go_mem_heap_alloc_bytes`.
 
 Logs:
 

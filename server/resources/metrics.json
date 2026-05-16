@@ -69,7 +69,7 @@
       },
       "id": 2,
       "options": {
-        "colorMode": "background",
+        "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "center",
         "orientation": "auto",
@@ -134,7 +134,7 @@
       },
       "id": 3,
       "options": {
-        "colorMode": "background",
+        "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "center",
         "orientation": "auto",
@@ -203,7 +203,7 @@
       },
       "id": 4,
       "options": {
-        "colorMode": "background",
+        "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "center",
         "orientation": "auto",
@@ -358,7 +358,7 @@
       },
       "id": 7,
       "options": {
-        "colorMode": "background",
+        "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "center",
         "orientation": "auto",
@@ -615,7 +615,7 @@
       },
       "id": 10,
       "options": {
-        "colorMode": "background",
+        "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "center",
         "orientation": "auto",
@@ -879,7 +879,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Current number of goroutines. If absent, ensure Go runtime metrics are enabled in the exporter.",
+      "description": "Current number of goroutines from go.opentelemetry.io/contrib/instrumentation/runtime.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -961,7 +961,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "go_goroutines",
+          "expr": "go_goroutine_count",
           "legendFormat": "Goroutines",
           "range": true,
           "refId": "A"
@@ -975,7 +975,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Current Go heap allocation. Adjust metric name if your exporter uses runtime_go_mem_* names.",
+      "description": "Current Go runtime memory usage from OTel runtime metrics. Summed across memory type labels.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1057,8 +1057,8 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "go_memstats_heap_alloc_bytes",
-          "legendFormat": "Heap Alloc",
+          "expr": "sum(go_memory_used_bytes)",
+          "legendFormat": "Memory Used",
           "range": true,
           "refId": "A"
         }
@@ -1071,7 +1071,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Process CPU usage over a 5 minute window. Depending on exporter, this may represent CPU cores rather than a 0-1 fraction.",
+      "description": "Rate of bytes allocated to the heap by the application over a 5 minute window.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1087,7 +1087,7 @@
               }
             ]
           },
-          "unit": "percentunit",
+          "unit": "Bps",
           "custom": {
             "axisBorderShow": false,
             "axisCenteredZero": false,
@@ -1153,13 +1153,13 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "rate(process_cpu_seconds_total[5m])",
-          "legendFormat": "CPU",
+          "expr": "sum(rate(go_memory_allocated_bytes_total[5m]))",
+          "legendFormat": "Allocated Bytes Rate",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Process CPU Usage",
+      "title": "Heap Allocation Rate",
       "type": "timeseries"
     },
     {
@@ -1167,7 +1167,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "P95 garbage collection pause duration. Adjust metric name if using OpenTelemetry runtime metric naming.",
+      "description": "Heap size target for the end of the GC cycle from OTel runtime metrics.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1183,7 +1183,7 @@
               }
             ]
           },
-          "unit": "s",
+          "unit": "bytes",
           "custom": {
             "axisBorderShow": false,
             "axisCenteredZero": false,
@@ -1249,13 +1249,13 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum(rate(go_gc_duration_seconds_bucket[5m])) by (le))",
-          "legendFormat": "P95 GC Pause",
+          "expr": "go_memory_gc_goal_bytes",
+          "legendFormat": "GC Goal",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "GC Pause P95",
+      "title": "GC Goal",
       "type": "timeseries"
     }
   ],
@@ -1304,8 +1304,8 @@
     ]
   },
   "timezone": "browser",
-  "title": "Shadow Project Backend Observability",
-  "uid": "shadow-project-backend-observability",
+  "title": "Campaign Center API Observability",
+  "uid": "campaign-center-api-observability",
   "version": 1,
   "weekStart": ""
 }
