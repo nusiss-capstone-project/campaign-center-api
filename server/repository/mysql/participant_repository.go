@@ -8,11 +8,22 @@ import (
 	"gorm.io/gorm"
 )
 
+// ParticipationListFilter filters admin participation list.
+type ParticipationListFilter struct {
+	CampaignID   int64
+	UserID       *int64
+	RewardStatus string
+	Page         int
+	PageSize     int
+}
+
 // ParticipantRepository persists campaign participants.
 type ParticipantRepository interface {
 	GetByCampaignAndUser(campaignID, userID int64) (*model.CampaignParticipant, error)
 	Create(p *model.CampaignParticipant) error
 	Save(p *model.CampaignParticipant) error
+	ListByCampaign(filter ParticipationListFilter) ([]model.CampaignParticipant, int64, error)
+	ListByUserAndCampaignIDs(userID int64, campaignIDs []int64) ([]model.CampaignParticipant, error)
 }
 
 type participantRepository struct{}
@@ -64,4 +75,52 @@ func (r *participantRepository) Save(p *model.CampaignParticipant) error {
 	}
 	p.UpdatedAt = time.Now()
 	return db.Save(p).Error
+}
+
+func (r *participantRepository) ListByCampaign(filter ParticipationListFilter) ([]model.CampaignParticipant, int64, error) {
+	db, err := r.db()
+	if err != nil {
+		return nil, 0, err
+	}
+	q := db.Model(&model.CampaignParticipant{}).Where("campaign_id = ?", filter.CampaignID)
+	if filter.UserID != nil {
+		q = q.Where("user_id = ?", *filter.UserID)
+	}
+	if filter.RewardStatus != "" {
+		q = q.Where("reward_status = ?", filter.RewardStatus)
+	}
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	page, pageSize := filter.Page, filter.PageSize
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+	offset := (page - 1) * pageSize
+	var rows []model.CampaignParticipant
+	if err := q.Order("id DESC").Offset(offset).Limit(pageSize).Find(&rows).Error; err != nil {
+		return nil, 0, err
+	}
+	return rows, total, nil
+}
+
+func (r *participantRepository) ListByUserAndCampaignIDs(
+	userID int64, campaignIDs []int64,
+) ([]model.CampaignParticipant, error) {
+	if len(campaignIDs) == 0 {
+		return []model.CampaignParticipant{}, nil
+	}
+	db, err := r.db()
+	if err != nil {
+		return nil, err
+	}
+	var rows []model.CampaignParticipant
+	if err := db.Where("user_id = ? AND campaign_id IN ?", userID, campaignIDs).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	return rows, nil
 }

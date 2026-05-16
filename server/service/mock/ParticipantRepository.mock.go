@@ -3,6 +3,7 @@
 package mock
 
 import (
+	mysql "github.com/lianjin/campaign-center-api/server/repository/mysql"
 	model "github.com/lianjin/campaign-center-api/server/repository/mysql/model"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -53,6 +54,51 @@ func (_m *MockParticipantRepository) GetByCampaignAndUser(campaignID int64, user
 
 	if rf, ok := ret.Get(1).(func(int64, int64) error); ok {
 		r1 = rf(campaignID, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ListByCampaign provides a mock function with given fields: filter
+func (_m *MockParticipantRepository) ListByCampaign(filter mysql.ParticipationListFilter) ([]model.CampaignParticipant, int64, error) {
+	ret := _m.Called(filter)
+
+	var r0 []model.CampaignParticipant
+	if v := ret.Get(0); v != nil {
+		r0 = v.([]model.CampaignParticipant)
+	}
+	var r1 int64
+	if v := ret.Get(1); v != nil {
+		r1 = v.(int64)
+	}
+	return r0, r1, ret.Error(2)
+}
+
+// ListByUserAndCampaignIDs provides a mock function with given fields: userID, campaignIDs
+func (_m *MockParticipantRepository) ListByUserAndCampaignIDs(userID int64, campaignIDs []int64) ([]model.CampaignParticipant, error) {
+	ret := _m.Called(userID, campaignIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListByUserAndCampaignIDs")
+	}
+
+	var r0 []model.CampaignParticipant
+	var r1 error
+	if rf, ok := ret.Get(0).(func(int64, []int64) ([]model.CampaignParticipant, error)); ok {
+		return rf(userID, campaignIDs)
+	}
+	if rf, ok := ret.Get(0).(func(int64, []int64) []model.CampaignParticipant); ok {
+		r0 = rf(userID, campaignIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]model.CampaignParticipant)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(int64, []int64) error); ok {
+		r1 = rf(userID, campaignIDs)
 	} else {
 		r1 = ret.Error(1)
 	}

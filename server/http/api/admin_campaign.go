@@ -14,10 +14,15 @@ import (
 
 // RewardRulesReq reward rule payload (JSON body fragment).
 type RewardRulesReq struct {
-	TopupThreshold  float64 `json:"topupThreshold" binding:"required"`
-	RewardAmount    float64 `json:"rewardAmount" binding:"required"`
-	RewardType      string  `json:"rewardType" binding:"required"`
-	MaxClaimPerUser int     `json:"maxClaimPerUser" binding:"required"`
+	TopupThreshold   float64 `json:"topupThreshold" binding:"required"`
+	RewardType       string  `json:"rewardType" binding:"required"`
+	RewardAmount     float64 `json:"rewardAmount"`
+	RewardCurrency   string  `json:"rewardCurrency"`
+	RewardMode       string  `json:"rewardMode"`
+	RewardPercentage float64 `json:"rewardPercentage"`
+	MaxRewardAmount  float64 `json:"maxRewardAmount"`
+	MaxClaimPerUser  int     `json:"maxClaimPerUser" binding:"required"`
+	MinObtainDays    int     `json:"minObtainDays"`
 }
 
 // CreateCampaignReq POST /admin/campaigns body.
@@ -54,6 +59,20 @@ type PublishOperatorReq struct {
 
 func parseRFC3339(s string) (time.Time, error) {
 	return time.Parse(time.RFC3339, s)
+}
+
+func rewardRulesPayload(req RewardRulesReq) model.RewardRulesPayload {
+	return model.RewardRulesPayload{
+		TopupThreshold:   req.TopupThreshold,
+		RewardType:       req.RewardType,
+		RewardAmount:     req.RewardAmount,
+		RewardCurrency:   req.RewardCurrency,
+		RewardMode:       req.RewardMode,
+		RewardPercentage: req.RewardPercentage,
+		MaxRewardAmount:  req.MaxRewardAmount,
+		MaxClaimPerUser:  req.MaxClaimPerUser,
+		MinObtainDays:    req.MinObtainDays,
+	}
 }
 
 // AdminCreateCampaign creates a draft campaign.
@@ -102,13 +121,8 @@ func AdminCreateCampaign(c *gin.Context) {
 		CampaignStartTime:     cs,
 		CampaignEndTime:       ce,
 		TargetUserSegment:     req.TargetUserSegment,
-		RewardRules: model.RewardRulesPayload{
-			TopupThreshold:  req.RewardRules.TopupThreshold,
-			RewardAmount:    req.RewardRules.RewardAmount,
-			RewardType:      req.RewardRules.RewardType,
-			MaxClaimPerUser: req.RewardRules.MaxClaimPerUser,
-		},
-		LandingPageID: req.LandingPageID,
+		RewardRules:           rewardRulesPayload(req.RewardRules),
+		LandingPageID:         req.LandingPageID,
 	})
 	if err != nil {
 		if err == mysql.ErrDatabaseDisabled {
@@ -175,13 +189,8 @@ func AdminUpdateCampaign(c *gin.Context) {
 		CampaignStartTime:     cs,
 		CampaignEndTime:       ce,
 		TargetUserSegment:     req.TargetUserSegment,
-		RewardRules: model.RewardRulesPayload{
-			TopupThreshold:  req.RewardRules.TopupThreshold,
-			RewardAmount:    req.RewardRules.RewardAmount,
-			RewardType:      req.RewardRules.RewardType,
-			MaxClaimPerUser: req.RewardRules.MaxClaimPerUser,
-		},
-		LandingPageID: req.LandingPageID,
+		RewardRules:           rewardRulesPayload(req.RewardRules),
+		LandingPageID:         req.LandingPageID,
 	})
 	if err != nil {
 		if service.IsCampaignNotDraft(err) {
@@ -288,10 +297,15 @@ func AdminGetCampaign(c *gin.Context) {
 		"campaignEndTime":       campaign.CampaignEndTime.Format(time.RFC3339),
 		"targetUserSegment":     campaign.TargetUserSegment,
 		"rewardRules": gin.H{
-			"topupThreshold":  rules.TopupThreshold,
-			"rewardAmount":    rules.RewardAmount,
-			"rewardType":      rules.RewardType,
-			"maxClaimPerUser": rules.MaxClaimPerUser,
+			"topupThreshold":   rules.TopupThreshold,
+			"rewardType":       rules.RewardType,
+			"rewardAmount":     rules.RewardAmount,
+			"rewardCurrency":   rules.RewardCurrency,
+			"rewardMode":       rules.RewardMode,
+			"rewardPercentage": rules.RewardPercentage,
+			"maxRewardAmount":  rules.MaxRewardAmount,
+			"maxClaimPerUser":  rules.MaxClaimPerUser,
+			"minObtainDays":    rules.MinObtainDays,
 		},
 		"status":        campaign.Status,
 		"landingPageId": campaign.LandingPageID,
@@ -326,6 +340,48 @@ func AdminPublishCampaign(c *gin.Context) {
 	if err != nil {
 		if mysql.IsNotFound(err) {
 			data.JSON(c, http.StatusNotFound, -1, "campaign not found", nil)
+			return
+		}
+		handleRepoErr(c, err)
+		return
+	}
+	data.OK(c, gin.H{"campaignId": updated.ID, "status": updated.Status})
+}
+
+// AdminArchiveCampaign archives a draft campaign, or a published campaign when current time is outside the active window (before start or after end).
+// @Summary Archive campaign (admin)
+// @Tags admin-campaign
+// @Accept json
+// @Produce json
+// @Param campaignId path int true "Campaign ID"
+// @Param body body PublishOperatorReq true "Operator"
+// @Success 200 {object} data.StandardResponse "success"
+// @Failure 400 {object} data.StandardResponse "bad request"
+// @Failure 404 {object} data.StandardResponse "not found"
+// @Failure 409 {object} data.StandardResponse "not eligible or already archived"
+// @Failure 503 {object} data.StandardResponse "database unavailable"
+// @Router /admin/campaigns/{campaignId}/archive [post]
+func AdminArchiveCampaign(c *gin.Context) {
+	idStr := c.Param("campaignId")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		data.JSON(c, http.StatusBadRequest, -1, "invalid campaignId", nil)
+		return
+	}
+	var req PublishOperatorReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
+		return
+	}
+	svc := service.GetCampaignAdminService()
+	updated, err := svc.ArchiveCampaign(id, req.Operator)
+	if err != nil {
+		if mysql.IsNotFound(err) {
+			data.JSON(c, http.StatusNotFound, -1, "campaign not found", nil)
+			return
+		}
+		if service.IsCampaignAlreadyArchived(err) || service.IsCampaignNotArchivable(err) {
+			data.JSON(c, http.StatusConflict, -1, err.Error(), nil)
 			return
 		}
 		handleRepoErr(c, err)

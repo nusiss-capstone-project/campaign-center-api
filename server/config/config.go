@@ -12,10 +12,24 @@ var (
 )
 
 type Conf struct {
-	GrpcConfig  *GrpcConfig  `mapstructure:"grpc"`
-	LogConfig   *LogConfig   `mapstructure:"log"`
-	HttpConfig  *HttpConfig  `mapstructure:"http"`
-	RedisConfig *RedisConfig `mapstructure:"redis"`
+	GrpcConfig   *GrpcConfig   `mapstructure:"grpc"`
+	LogConfig    *LogConfig    `mapstructure:"log"`
+	HttpConfig   *HttpConfig   `mapstructure:"http"`
+	RedisConfig  *RedisConfig  `mapstructure:"redis"`
+	SystemConfig *SystemConfig `mapstructure:"system"`
+	OpenAIConfig *OpenAIConfig `mapstructure:"openai"`
+}
+
+type SystemConfig struct {
+	AllowedOrigins []string `mapstructure:"allowed_origins"`
+}
+
+// OpenAIConfig drives ChatGPT translation calls (optional in dev).
+// APIKey is loaded from config then overridden by OPENAI_API_KEY if set.
+type OpenAIConfig struct {
+	APIKey  string `mapstructure:"api_key"`
+	BaseURL string `mapstructure:"base_url"`
+	Model   string `mapstructure:"model"`
 }
 
 type HttpConfig struct {
@@ -64,6 +78,7 @@ func Init() {
 	viper.SetDefault("redis.enabled", false)
 	viper.SetDefault("redis.host", "127.0.0.1")
 	viper.SetDefault("redis.port", "6379")
+	viper.SetDefault("openai.model", "gpt-4o-mini")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
@@ -72,5 +87,24 @@ func Init() {
 	}
 	if err := viper.Unmarshal(Config); err != nil {
 		panic(err)
+	}
+	applyConfigDefaults()
+	applyOpenAIAPIKeyFromEnv()
+}
+
+func applyConfigDefaults() {
+	if Config.SystemConfig == nil {
+		Config.SystemConfig = &SystemConfig{}
+	}
+	if Config.OpenAIConfig == nil {
+		Config.OpenAIConfig = &OpenAIConfig{}
+	}
+}
+
+// applyOpenAIAPIKeyFromEnv sets OpenAI API key from OPENAI_API_KEY when non-empty
+// (overrides config file / CAMPAIGN_CENTER_OPENAI_API_KEY from viper).
+func applyOpenAIAPIKeyFromEnv() {
+	if v := strings.TrimSpace(os.Getenv("OPENAI_API_KEY")); v != "" {
+		Config.OpenAIConfig.APIKey = v
 	}
 }

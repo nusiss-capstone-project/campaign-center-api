@@ -15,6 +15,7 @@ type CampaignAdminService interface {
 	ListCampaigns(filter mysql.CampaignListFilter) ([]model.Campaign, int64, error)
 	GetCampaign(id int64) (*model.Campaign, error)
 	PublishCampaign(id int64, operator string) (*model.Campaign, error)
+	ArchiveCampaign(id int64, operator string) (*model.Campaign, error)
 }
 
 // CreateCampaignParams input for creating a campaign.
@@ -49,7 +50,7 @@ type campaignAdminService struct {
 }
 
 var (
-	campaignAdminServiceOnce   sync.Once
+	campaignAdminServiceOnce sync.Once
 	campaignAdminServiceInst CampaignAdminService
 )
 
@@ -129,4 +130,27 @@ func (s *campaignAdminService) GetCampaign(id int64) (*model.Campaign, error) {
 
 func (s *campaignAdminService) PublishCampaign(id int64, operator string) (*model.Campaign, error) {
 	return s.campaigns.Publish(id, operator)
+}
+
+func (s *campaignAdminService) ArchiveCampaign(id int64, operator string) (*model.Campaign, error) {
+	c, err := s.campaigns.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	switch c.Status {
+	case model.CampaignStatusArchive:
+		return nil, errCampaignAlreadyArchived
+	case model.CampaignStatusDraft:
+		// allowed
+	case model.CampaignStatusPublished:
+		now := time.Now()
+		// Active window [CampaignStartTime, CampaignEndTime] inclusive; archive only when outside it (not started yet or already ended).
+		inActivity := !now.Before(c.CampaignStartTime) && !now.After(c.CampaignEndTime)
+		if inActivity {
+			return nil, errCampaignNotArchivable
+		}
+	default:
+		return nil, errCampaignNotArchivable
+	}
+	return s.campaigns.Archive(id, operator)
 }

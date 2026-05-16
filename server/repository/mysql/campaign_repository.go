@@ -22,7 +22,9 @@ type CampaignRepository interface {
 	Update(c *model.Campaign) error
 	GetByID(id int64) (*model.Campaign, error)
 	List(f CampaignListFilter) ([]model.Campaign, int64, error)
+	ListPublishedActiveOrUpcoming(now time.Time) ([]model.Campaign, error)
 	Publish(id int64, operator string) (*model.Campaign, error)
+	Archive(id int64, operator string) (*model.Campaign, error)
 }
 
 type campaignRepository struct{}
@@ -119,6 +121,21 @@ func (r *campaignRepository) List(f CampaignListFilter) ([]model.Campaign, int64
 	return items, total, nil
 }
 
+func (r *campaignRepository) ListPublishedActiveOrUpcoming(now time.Time) ([]model.Campaign, error) {
+	db, err := r.db()
+	if err != nil {
+		return nil, err
+	}
+	var items []model.Campaign
+	if err := db.Model(&model.Campaign{}).
+		Where("status = ? AND campaign_end_time >= ?", model.CampaignStatusPublished, now).
+		Order("campaign_start_time ASC").
+		Find(&items).Error; err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 func (r *campaignRepository) Publish(id int64, operator string) (*model.Campaign, error) {
 	db, err := r.db()
 	if err != nil {
@@ -147,6 +164,44 @@ func (r *campaignRepository) Publish(id int64, operator string) (*model.Campaign
 			Action:       "PUBLISH",
 			OperatorName: operator,
 			DetailJSON:   `{"action":"publish"}`,
+			CreatedAt:    now,
+		}
+		return tx.Create(&log).Error
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &updated, nil
+}
+
+func (r *campaignRepository) Archive(id int64, operator string) (*model.Campaign, error) {
+	db, err := r.db()
+	if err != nil {
+		return nil, err
+	}
+	var updated model.Campaign
+	now := time.Now()
+	err = db.Transaction(func(tx *gorm.DB) error {
+		res := tx.Model(&model.Campaign{}).Where("id = ? and status <> ?", id, model.CampaignStatusArchive).Updates(map[string]interface{}{
+			"status":     model.CampaignStatusArchive,
+			"updated_by": operator,
+			"updated_at": now,
+		})
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			return gorm.ErrRecordNotFound
+		}
+		if err := tx.Where("id = ?", id).First(&updated).Error; err != nil {
+			return err
+		}
+		log := model.AuditLog{
+			EntityType:   "campaign",
+			EntityID:     id,
+			Action:       "ARCHIVE",
+			OperatorName: operator,
+			DetailJSON:   `{"action":"archive"}`,
 			CreatedAt:    now,
 		}
 		return tx.Create(&log).Error

@@ -3,7 +3,7 @@ module github.com/lianjin/campaign-center-api/client
 go 1.25.9
 
 require (
-	github.com/lianjin/campaign-center-api/common v0.0.0
+	github.com/lianjin/campaign-center-api/common v0.0.1
 	google.golang.org/grpc v1.80.0
 )
 
@@ -14,5 +14,3 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260120221211-b8f7ae30c516 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
-
-replace github.com/lianjin/campaign-center-api/common => ../common

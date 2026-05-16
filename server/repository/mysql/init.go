@@ -24,10 +24,15 @@ func Init() (*gorm.DB, error) {
 	if err := DB.AutoMigrate(
 		&model.Campaign{},
 		&model.CampaignLandingPage{},
+		&model.CampaignLandingPageTranslation{},
 		&model.User{},
+		&model.UserAuthMapping{},
 		&model.CampaignParticipant{},
 		&model.RewardTransaction{},
 		&model.AuditLog{},
+		&model.UserAccount{},
+		&model.AccountTransaction{},
+		&model.CampaignPerformanceDaily{},
 	); err != nil {
 		return DB, err
 	}
