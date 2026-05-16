@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
 	"runtime/debug"
 	"syscall"
+	"time"
 
 	"github.com/lianjin/campaign-center-api/server/config"
 	serverhttp "github.com/lianjin/campaign-center-api/server/http"
@@ -38,10 +40,14 @@ func main() {
 		log.Logger.Fatal("MySQL initialization failed", "error", err)
 		panic("MySQL initialization failed")
 	}
-	shutdownTrace := telemetry.InitTracer()
-	defer shutdownTrace()
-	shutdownMetrics := telemetry.InitMetrics()
-	defer shutdownMetrics()
+	shutdownTelemetry := telemetry.Init(context.Background())
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := shutdownTelemetry(ctx); err != nil {
+			log.Logger.Errorw("Telemetry shutdown failed", "error", err)
+		}
+	}()
 	log.Logger.Info("Telemetry initialized.")
 	go serverhttp.Init(sigCh)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)

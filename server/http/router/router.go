@@ -19,15 +19,15 @@ const serviceURIPrefix = "/campaign-center-api/v1"
 
 func NewRouter() *gin.Engine {
 	r := gin.New()
-	r.Use(gin.Logger(), gin.Recovery())
+	r.Use(log.RecoveryMiddleware())
 	r.Use(corsMiddleware())
 
 	basicGroup := r.Group(serviceURIPrefix)
 	basicGroup.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	basicGroup.GET("/ping", otelgin.Middleware(data.ServiceName), log.TraceLoggerMiddleware(), api.Ping)
+	basicGroup.GET("/ping", otelgin.Middleware(data.ServiceName), log.HTTPObservabilityMiddleware(), api.Ping)
 
 	admin := basicGroup.Group("/admin")
-	admin.Use(otelgin.Middleware(data.ServiceName), log.TraceLoggerMiddleware())
+	admin.Use(otelgin.Middleware(data.ServiceName), log.HTTPObservabilityMiddleware())
 	{
 		admin.POST("/campaigns", api.AdminCreateCampaign)
 		admin.PUT("/campaigns/:campaignId", api.AdminUpdateCampaign)
@@ -45,7 +45,7 @@ func NewRouter() *gin.Engine {
 
 	// User-facing campaign APIs
 	web := basicGroup.Group("/web")
-	web.Use(otelgin.Middleware(data.ServiceName), log.TraceLoggerMiddleware())
+	web.Use(otelgin.Middleware(data.ServiceName), log.HTTPObservabilityMiddleware())
 	{
 		web.GET("/campaigns/:campaignId/landing-page", api.UserGetCampaignLanding)
 		web.POST("/campaigns/:campaignId/join", api.UserJoinCampaign)
