@@ -21,13 +21,15 @@ const serviceURIPrefix = "/campaign-center-api/v1"
 func NewRouter() *gin.Engine {
 	r := gin.New()
 	r.Use(log.RecoveryMiddleware())
+	r.Use(otelgin.Middleware(data.ServiceName))
+	r.Use(log.HTTPObservabilityMiddleware())
 	r.Use(corsMiddleware())
 
 	basicGroup := r.Group(serviceURIPrefix)
 	basicGroup.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	admin := basicGroup.Group("/admin")
-	admin.Use(otelgin.Middleware(data.ServiceName), log.HTTPObservabilityMiddleware(), auth.RequireAdmin())
+	admin.Use(auth.RequireAdmin())
 	{
 		admin.POST("/campaigns", api.AdminCreateCampaign)
 		admin.PUT("/campaigns/:campaignId", api.AdminUpdateCampaign)
@@ -52,7 +54,7 @@ func NewRouter() *gin.Engine {
 
 	// User-facing campaign APIs
 	web := basicGroup.Group("/web")
-	web.Use(otelgin.Middleware(data.ServiceName), log.HTTPObservabilityMiddleware(), auth.RequireUser())
+	web.Use(auth.RequireUser())
 	{
 		web.GET("/account/summary", api.UserGetAccountSummary)
 		web.GET("/account/transactions", api.UserListAccountTransactions)
@@ -71,10 +73,10 @@ func corsMiddleware() gin.HandlerFunc {
 			"GET", "POST", "PUT", "DELETE", "OPTIONS",
 		},
 		AllowHeaders: []string{
-			"Origin", "Content-Type", "Accept", "Authorization",
+			"Origin", "Content-Type", "Accept", "Authorization", log.RequestIDHeader,
 		},
 		ExposeHeaders: []string{
-			"Content-Length",
+			"Content-Length", log.RequestIDHeader,
 		},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,

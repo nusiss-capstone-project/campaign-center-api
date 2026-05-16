@@ -3,6 +3,7 @@ package telemetry
 import (
 	"context"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,8 +30,13 @@ func Init(ctx context.Context) shutdownFunc {
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{}, propagation.Baggage{}))
 
-	if !exportEnabled() {
-		appLog.Logger.Infow(disabledMessage,
+	if missing := missingOTLPConfig(); len(missing) > 0 {
+		message := "OTLP export disabled, required configuration missing"
+		if contains(missing, "OTEL_EXPORTER_OTLP_ENDPOINT") {
+			message = disabledMessage
+		}
+		appLog.Logger.Infow(message,
+			"missing", strings.Join(missing, ","),
 			"otel_exporter_otlp_endpoint_set", os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") != "",
 			"otel_exporter_otlp_headers_set", os.Getenv("OTEL_EXPORTER_OTLP_HEADERS") != "",
 			"otel_exporter_otlp_protocol", os.Getenv("OTEL_EXPORTER_OTLP_PROTOCOL"),
@@ -63,6 +69,8 @@ func Init(ctx context.Context) shutdownFunc {
 	appLog.Logger.Infow("OpenTelemetry export initialized",
 		"otel_exporter_otlp_endpoint", os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"),
 		"otel_exporter_otlp_protocol", os.Getenv("OTEL_EXPORTER_OTLP_PROTOCOL"),
+		"traces_enabled", true,
+		"metrics_enabled", mp != nil,
 	)
 
 	return func(ctx context.Context) error {
@@ -83,7 +91,7 @@ func initTracer(ctx context.Context, res *resource.Resource) (*sdktrace.TracerPr
 		return nil, err
 	}
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithSampler(traceSampler()),
 		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(res),
 	)
@@ -120,10 +128,28 @@ func serviceName() string {
 	return data.ServiceName
 }
 
-func exportEnabled() bool {
-	return strings.TrimSpace(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")) != "" &&
-		strings.TrimSpace(os.Getenv("OTEL_EXPORTER_OTLP_HEADERS")) != "" &&
-		strings.TrimSpace(os.Getenv("OTEL_EXPORTER_OTLP_PROTOCOL")) != ""
+func missingOTLPConfig() []string {
+	required := []string{
+		"OTEL_EXPORTER_OTLP_ENDPOINT",
+		"OTEL_EXPORTER_OTLP_HEADERS",
+		"OTEL_EXPORTER_OTLP_PROTOCOL",
+	}
+	missing := make([]string, 0, len(required))
+	for _, key := range required {
+		if strings.TrimSpace(os.Getenv(key)) == "" {
+			missing = append(missing, key)
+		}
+	}
+	return missing
+}
+
+func contains(values []string, needle string) bool {
+	for _, value := range values {
+		if value == needle {
+			return true
+		}
+	}
+	return false
 }
 
 func parseResourceAttributes(raw string) []attribute.KeyValue {
@@ -141,4 +167,20 @@ func parseResourceAttributes(raw string) []attribute.KeyValue {
 		attrs = append(attrs, attribute.String(key, strings.TrimSpace(value)))
 	}
 	return attrs
+}
+
+func traceSampler() sdktrace.Sampler {
+	ratio := 1.0
+	if raw := strings.TrimSpace(os.Getenv("OTEL_TRACES_SAMPLER_ARG")); raw != "" {
+		if parsed, err := strconv.ParseFloat(raw, 64); err == nil {
+			ratio = parsed
+		}
+	}
+	if ratio < 0 {
+		ratio = 0
+	}
+	if ratio > 1 {
+		ratio = 1
+	}
+	return sdktrace.ParentBased(sdktrace.TraceIDRatioBased(ratio))
 }

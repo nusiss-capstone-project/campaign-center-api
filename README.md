@@ -11,8 +11,9 @@ Backend API for campaign-center.
 ## Observability
 
 The server always writes structured JSON logs locally and in Railway. OpenTelemetry
-export is optional: when OTLP settings are missing, the app logs
-`OTLP endpoint not configured, telemetry export disabled` and starts normally.
+export is optional: when OTLP settings are missing, the app logs the missing
+variables and starts normally. If the endpoint itself is absent, it logs
+`OTLP endpoint not configured, telemetry export disabled`.
 
 ### Local Development
 
@@ -42,8 +43,9 @@ APP_ENV=production
 OTEL_SERVICE_NAME=campaign-center-api
 OTEL_EXPORTER_OTLP_ENDPOINT=https://otlp-gateway-<region>.grafana.net/otlp
 OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
-OTEL_EXPORTER_OTLP_HEADERS=Authorization=Basic <base64-instance-id-api-token>
+OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic <base64-instance-id-api-token>"
 OTEL_RESOURCE_ATTRIBUTES=deployment.environment=railway,service.namespace=campaign-center
+OTEL_TRACES_SAMPLER_ARG=1.0
 ```
 
 Notes:
@@ -51,6 +53,9 @@ Notes:
 - `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, and
   `OTEL_EXPORTER_OTLP_PROTOCOL` must all be present before export is enabled.
 - Only `http/protobuf` is supported by this lightweight setup.
+- Trace sampling is parent-based. `OTEL_TRACES_SAMPLER_ARG` controls sampling
+  for new root traces (`1.0` = 100%, `0.1` = 10%) while respecting upstream
+  sampled/unsampled `traceparent` decisions.
 - Do not configure a local OpenTelemetry Collector for Railway; the app exports
   directly to Grafana Cloud OTLP.
 

@@ -34,7 +34,7 @@ func InitLogger() {
 		consoleCore := zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), getLogLevel())
 		core = zapcore.NewTee(core, consoleCore)
 	}
-	Logger = zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel)).
+	Logger = zap.New(core, zap.AddCaller()).
 		With(zap.String("service", serviceName()), zap.String("env", envName())).
 		Sugar()
 }
