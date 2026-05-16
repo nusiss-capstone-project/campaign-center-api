@@ -9,6 +9,7 @@ import (
 
 	"github.com/lianjin/campaign-center-api/server/http/data"
 	appLog "github.com/lianjin/campaign-center-api/server/log"
+	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
@@ -66,11 +67,20 @@ func Init(ctx context.Context) shutdownFunc {
 	if err != nil {
 		appLog.Logger.Errorw("failed to initialize metric exporter, telemetry metrics disabled", "error", err)
 	}
+	runtimeMetricsEnabled := false
+	if mp != nil {
+		if err := startRuntimeMetrics(mp); err != nil {
+			appLog.Logger.Errorw("failed to start Go runtime metrics", "error", err)
+		} else {
+			runtimeMetricsEnabled = true
+		}
+	}
 	appLog.Logger.Infow("OpenTelemetry export initialized",
 		"otel_exporter_otlp_endpoint", os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"),
 		"otel_exporter_otlp_protocol", os.Getenv("OTEL_EXPORTER_OTLP_PROTOCOL"),
 		"traces_enabled", true,
 		"metrics_enabled", mp != nil,
+		"runtime_metrics_enabled", runtimeMetricsEnabled,
 	)
 
 	return func(ctx context.Context) error {
@@ -110,6 +120,13 @@ func initMetrics(ctx context.Context, res *resource.Resource) (*sdkmetric.MeterP
 	)
 	otel.SetMeterProvider(mp)
 	return mp, nil
+}
+
+func startRuntimeMetrics(mp *sdkmetric.MeterProvider) error {
+	return otelruntime.Start(
+		otelruntime.WithMeterProvider(mp),
+		otelruntime.WithMinimumReadMemStatsInterval(15*time.Second),
+	)
 }
 
 func newResource(ctx context.Context) (*resource.Resource, error) {
