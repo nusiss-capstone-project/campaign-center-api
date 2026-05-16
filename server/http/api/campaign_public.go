@@ -18,6 +18,27 @@ type SimulateTopUpReq struct {
 	Amount float64 `json:"amount" binding:"required"`
 }
 
+// UserListCampaigns returns published ongoing and upcoming campaigns.
+// @Summary List available campaigns (user)
+// @Tags user-campaign
+// @Produce json
+// @Success 200 {object} data.StandardResponse "success"
+// @Failure 503 {object} data.StandardResponse "database unavailable"
+// @Router /web/campaigns [get]
+func UserListCampaigns(c *gin.Context) {
+	userID, ok := auth.GetUserID(c.Request.Context())
+	if !ok {
+		authError(c)
+		return
+	}
+	reply, err := service.GetUserCampaignService().ListAvailableCampaigns(userID)
+	if err != nil {
+		handleRepoErr(c, err)
+		return
+	}
+	data.JSON(c, reply.HTTPStatus, reply.Code, reply.Message, reply.Data)
+}
+
 // UserGetCampaignLanding returns landing UI payload for a campaign (template variables resolved).
 // @Summary Get campaign landing page (user)
 // @Tags user-campaign

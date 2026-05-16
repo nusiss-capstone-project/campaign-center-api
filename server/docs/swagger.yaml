@@ -245,6 +245,32 @@ definitions:
     - targetMarket
     - targetUserSegment
     type: object
+  api.UserProfileData:
+    properties:
+      email:
+        example: a***e@example.com
+        type: string
+      kycChecked:
+        example: true
+        type: boolean
+      registeredAt:
+        example: "2026-05-16T10:00:00Z"
+        type: string
+      username:
+        example: alice
+        type: string
+    type: object
+  api.UserProfileHTTPResponse:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/api.UserProfileData'
+      message:
+        example: success
+        type: string
+    type: object
   data.StandardResponse:
     properties:
       code:
@@ -978,6 +1004,22 @@ paths:
       summary: List account transactions (user)
       tags:
       - user-account
+  /web/campaigns:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: List available campaigns (user)
+      tags:
+      - user-campaign
   /web/campaigns/{campaignId}/join:
     post:
       consumes:
@@ -1070,6 +1112,26 @@ paths:
       summary: Simulate top-up with account recharge (user)
       tags:
       - user-campaign
+  /web/user-profile:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/api.UserProfileHTTPResponse'
+        "404":
+          description: user not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Get user profile (user)
+      tags:
+      - user-profile
 schemes:
 - http
 - https

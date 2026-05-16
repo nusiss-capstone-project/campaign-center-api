@@ -14,6 +14,7 @@ import (
 
 // UserCampaignService user-facing campaign flows.
 type UserCampaignService interface {
+	ListAvailableCampaigns(userID int64) (*HTTPReply, error)
 	GetLandingPageUI(campaignID, userID int64, lang string) (*HTTPReply, error)
 	JoinCampaign(campaignID, userID int64) (*HTTPReply, error)
 	SimulateTopUp(campaignID, userID int64, amount float64) (*HTTPReply, error)
@@ -71,6 +72,52 @@ func GetUserCampaignService() UserCampaignService {
 	return userCampaignServiceInst
 }
 
+func (s *userCampaignService) ListAvailableCampaigns(userID int64) (*HTTPReply, error) {
+	now := time.Now()
+	campaigns, err := s.campaigns.ListPublishedActiveOrUpcoming(now)
+	if err != nil {
+		return nil, err
+	}
+	campaignIDs := make([]int64, 0, len(campaigns))
+	for _, campaign := range campaigns {
+		campaignIDs = append(campaignIDs, campaign.ID)
+	}
+	participants, err := s.participants.ListByUserAndCampaignIDs(userID, campaignIDs)
+	if err != nil {
+		return nil, err
+	}
+	joinedByCampaign := make(map[int64]bool, len(participants))
+	for _, participant := range participants {
+		if participant.JoinStatus == model.JoinStatusJoined {
+			joinedByCampaign[participant.CampaignID] = true
+		}
+	}
+
+	ongoing := make([]map[string]any, 0)
+	upcoming := make([]map[string]any, 0)
+	for _, campaign := range campaigns {
+		item := campaignListItem(campaign)
+		if !now.Before(campaign.CampaignStartTime) && !now.After(campaign.CampaignEndTime) {
+			item["joined"] = joinedByCampaign[campaign.ID]
+			ongoing = append(ongoing, item)
+			continue
+		}
+		if now.Before(campaign.CampaignStartTime) {
+			upcoming = append(upcoming, item)
+		}
+	}
+
+	return &HTTPReply{
+		HTTPStatus: http.StatusOK,
+		Code:       data.CodeSuccess,
+		Message:    "success",
+		Data: map[string]any{
+			"ongoing":  ongoing,
+			"upcoming": upcoming,
+		},
+	}, nil
+}
+
 func (s *userCampaignService) GetLandingPageUI(campaignID, userID int64, lang string) (*HTTPReply, error) {
 	campaign, err := s.campaigns.GetByID(campaignID)
 	if err != nil {
@@ -97,9 +144,12 @@ func (s *userCampaignService) GetLandingPageUI(campaignID, userID int64, lang st
 	if err != nil {
 		return nil, err
 	}
-	title := replaceLandingTemplates(texts.Title, rules.TopupThreshold, rules.RewardAmount)
+	templateVars := buildLandingTemplateVars(campaign, rules)
+	title := replaceLandingTemplates(texts.Title, templateVars)
+	description := replaceLandingTemplates(texts.Description, templateVars)
+	terms := replaceLandingTemplates(texts.Terms, templateVars)
 	payload, err := s.buildLandingPageUIPayload(
-		campaign, campaignID, userID, lp, texts.Lang, title, texts.Description, texts.Terms, rules,
+		campaign, campaignID, userID, lp, texts.Lang, title, description, terms, rules,
 	)
 	if err != nil {
 		return nil, err
@@ -347,12 +397,7 @@ func (s *userCampaignService) buildLandingPageUIPayload(
 			"bannerImageUrl": lp.BannerImageURL,
 			"title":          title, "description": descBase, "terms": termsBase,
 		},
-		"rewardRule": map[string]any{
-			"topupThreshold":  rules.TopupThreshold,
-			"rewardAmount":    rules.RewardAmount,
-			"rewardType":      rules.RewardType,
-			"maxClaimPerUser": rules.MaxClaimPerUser,
-		},
+		"rewardRule": rules,
 		"userStatus": map[string]any{
 			"joined": joined, "taskStatus": taskStatus, "rewardStatus": rewardStatus,
 		},
@@ -361,6 +406,15 @@ func (s *userCampaignService) buildLandingPageUIPayload(
 
 func landingPageUIReply(payload map[string]any) *HTTPReply {
 	return &HTTPReply{HTTPStatus: http.StatusOK, Code: data.CodeSuccess, Message: "success", Data: payload}
+}
+
+func campaignListItem(campaign model.Campaign) map[string]any {
+	return map[string]any{
+		"id":        campaign.ID,
+		"name":      campaign.Name,
+		"startTime": campaign.CampaignStartTime.Format(time.RFC3339),
+		"endTime":   campaign.CampaignEndTime.Format(time.RFC3339),
+	}
 }
 
 func (s *userCampaignService) simulateTopUpAfterRecharge(
@@ -443,9 +497,33 @@ func topUpReply(
 	}, nil
 }
 
-func replaceLandingTemplates(title string, threshold, reward float64) string {
-	s := strings.ReplaceAll(title, "{{threshold}}", formatMoney(threshold))
-	return strings.ReplaceAll(s, "{{reward}}", formatMoney(reward))
+func buildLandingTemplateVars(campaign *model.Campaign, rules model.RewardRulesPayload) map[string]string {
+	vars := map[string]string{
+		"topupThreshold":    formatMoney(rules.TopupThreshold),
+		"rewardType":        rules.RewardType,
+		"rewardAmount":      formatMoney(rules.RewardAmount),
+		"rewardCurrency":    rules.RewardCurrency,
+		"rewardMode":        rules.RewardMode,
+		"rewardPercentage":  formatMoney(rules.RewardPercentage),
+		"maxRewardAmount":   formatMoney(rules.MaxRewardAmount),
+		"maxClaimPerUser":   strconv.Itoa(rules.MaxClaimPerUser),
+		"minObtainDays":     strconv.Itoa(rules.MinObtainDays),
+		"campaignStartDate": campaign.CampaignStartTime.Format("2006-01-02"),
+		"campaignEndDate":   campaign.CampaignEndTime.Format("2006-01-02"),
+	}
+
+	// Keep existing landing page templates working while newer content migrates
+	// to the explicit reward rule variable names above.
+	vars["threshold"] = vars["topupThreshold"]
+	vars["reward"] = vars["rewardAmount"]
+	return vars
+}
+
+func replaceLandingTemplates(text string, vars map[string]string) string {
+	for key, value := range vars {
+		text = strings.ReplaceAll(text, "{{"+key+"}}", value)
+	}
+	return text
 }
 
 func formatMoney(v float64) string {

@@ -19,7 +19,22 @@ const (
 )
 
 const (
-	UserSegmentNewUser = "NEW_USER"
+	MarketGlobal = "GLOBAL"
+	MarketUS     = "US"
+	MarketEU     = "EU"
+	MarketSEA    = "SEA"
+	MarketHK     = "HK"
+	MarketJP     = "JP"
+	MarketSG     = "SG"
+)
+
+const (
+	UserSegmentNewUser            = "NEW_USER"
+	UserSegmentVIPUser            = "VIP_USER"
+	UserSegmentInactiveUser       = "INACTIVE_USER"
+	UserSegmentHighNetWorth       = "HIGH_NET_WORTH"
+	UserSegmentFirstTimeDepositor = "FIRST_TIME_DEPOSITOR"
+	UserSegmentAllUsers           = "ALL_USERS"
 )
 
 const (
@@ -51,7 +66,12 @@ const (
 )
 
 const (
-	RewardTypeBonusCredit = "BONUS_CREDIT"
+	RewardTypeBonusCredit      = "BONUS_CREDIT"
+	RewardTypeTokenBonus       = "TOKEN_BONUS"
+	RewardTypeTradingFeeRebate = "TRADING_FEE_REBATE"
+	RewardTypeVoucher          = "VOUCHER"
+	RewardTypeMysteryBox       = "MYSTERY_BOX"
+	RewardTypePoints           = "POINTS"
 )
 
 const (

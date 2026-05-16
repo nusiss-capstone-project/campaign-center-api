@@ -1096,6 +1096,31 @@ const docTemplate = `{
                 }
             }
         },
+        "/web/campaigns": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-campaign"
+                ],
+                "summary": "List available campaigns (user)",
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/web/campaigns/{campaignId}/join": {
             "post": {
                 "consumes": [
@@ -1224,6 +1249,37 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "bad request",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/web/user-profile": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-profile"
+                ],
+                "summary": "Get user profile (user)",
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/api.UserProfileHTTPResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "user not found",
                         "schema": {
                             "$ref": "#/definitions/data.StandardResponse"
                         }
@@ -1590,6 +1646,43 @@ const docTemplate = `{
                 },
                 "targetUserSegment": {
                     "type": "string"
+                }
+            }
+        },
+        "api.UserProfileData": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "a***e@example.com"
+                },
+                "kycChecked": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "registeredAt": {
+                    "type": "string",
+                    "example": "2026-05-16T10:00:00Z"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "alice"
+                }
+            }
+        },
+        "api.UserProfileHTTPResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "$ref": "#/definitions/api.UserProfileData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
                 }
             }
         },
