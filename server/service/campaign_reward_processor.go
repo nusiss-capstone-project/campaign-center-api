@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lianjin/campaign-center-api/server/log"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
 )
@@ -45,7 +46,18 @@ func NewCampaignRewardNotifierForTest(p *CampaignRewardProcessor) CampaignReward
 
 func (p *CampaignRewardProcessor) runWorker(ch <-chan TopUpRewardEvent) {
 	for event := range ch {
-		_ = p.HandleTopUpReward(event)
+		if err := p.HandleTopUpReward(event); err != nil {
+			log.Logger.Errorw("campaign_reward_event_failed",
+				"error", err,
+				"campaign_id", event.CampaignID,
+				"user_id", event.UserID,
+				"participant_id", event.ParticipantID,
+				"topup_amount", event.TopupAmount,
+				"reward_amount", event.RewardAmount,
+				"reward_type", event.RewardType,
+				"manual_review", event.ManualReview,
+			)
+		}
 	}
 }
 

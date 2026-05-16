@@ -7,9 +7,9 @@ import (
 	"strings"
 	"sync"
 
-	openai "github.com/sashabaranov/go-openai"
 	"github.com/lianjin/campaign-center-api/server/config"
 	"github.com/lianjin/campaign-center-api/server/log"
+	openai "github.com/sashabaranov/go-openai"
 )
 
 const landingTranslateSystemPrompt = `You are a professional multilingual translation assistant for marketing campaign content.

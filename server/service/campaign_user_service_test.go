@@ -20,6 +20,27 @@ type noopRewardNotifier struct{}
 
 func (noopRewardNotifier) NotifyTopUpReward(service.TopUpRewardEvent) {}
 
+type staticLandingPageTranslationRepo struct {
+	row *model.CampaignLandingPageTranslation
+}
+
+func (r staticLandingPageTranslationRepo) GetByLandingPageAndLang(
+	landingPageID int64, lang string,
+) (*model.CampaignLandingPageTranslation, error) {
+	if r.row == nil || r.row.LandingPageID != landingPageID || r.row.Lang != lang {
+		return nil, nil
+	}
+	return r.row, nil
+}
+
+func (staticLandingPageTranslationRepo) ListLangsByLandingPageID(int64) ([]string, error) {
+	return []string{}, nil
+}
+
+func (staticLandingPageTranslationRepo) Upsert(*model.CampaignLandingPageTranslation) error {
+	return nil
+}
+
 func newTestUserCampaignService(
 	t *testing.T,
 	cm *servicemock.MockCampaignRepository,
@@ -34,13 +55,14 @@ func newTestUserCampaignService(
 	if trans == nil {
 		trans = mysql.NewNoopLandingPageTranslationRepository()
 	}
+	translationSvc := service.NewLandingPageTranslationService(lm, trans, nil)
 	if am == nil {
 		am = &servicemock.MockAccountService{}
 	}
 	if rn == nil {
 		rn = noopRewardNotifier{}
 	}
-	return service.NewUserCampaignService(cm, lm, trans, pm, um, am, rn)
+	return service.NewUserCampaignService(cm, lm, translationSvc, pm, um, am, rn)
 }
 
 func defaultRechargeMock(t *testing.T) *servicemock.MockAccountService {
@@ -123,6 +145,38 @@ func TestUserCampaignService_GetLandingPageUI_fallbackWhenMissingTranslation(t *
 	lp := dataMap["landingPage"].(map[string]any)
 	require.Equal(t, "zh-CN", lp["lang"])
 	require.Equal(t, "ZH", lp["title"])
+}
+
+func TestUserCampaignService_GetLandingPageUI_usesTranslationService(t *testing.T) {
+	cm := servicemock.NewMockCampaignRepository(t)
+	cm.On("GetByID", int64(1)).Return(&model.Campaign{
+		ID: 1, LandingPageID: 10, RewardRules: rewardRulesJSON(t),
+	}, nil)
+	lm := servicemock.NewMockLandingPageRepository(t)
+	lm.On("GetByID", int64(10)).Return(&model.CampaignLandingPage{
+		ID: 10, DefaultLang: "en", Title: "Default {{threshold}}", Description: "d", Terms: "t",
+	}, nil)
+	trans := staticLandingPageTranslationRepo{row: &model.CampaignLandingPageTranslation{
+		LandingPageID: 10,
+		Lang:          "ja",
+		Title:         "JA {{threshold}} {{reward}}",
+		Description:   "説明",
+		Terms:         "条件",
+	}}
+	svc := newTestUserCampaignService(t, cm, lm, trans,
+		servicemock.NewMockParticipantRepository(t),
+		servicemock.NewMockUserRepository(t), nil, nil,
+	)
+
+	reply, err := svc.GetLandingPageUI(1, 0, "ja")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, reply.HTTPStatus)
+	dataMap := reply.Data.(map[string]any)
+	lp := dataMap["landingPage"].(map[string]any)
+	require.Equal(t, "ja", lp["lang"])
+	require.Equal(t, "JA 100 10", lp["title"])
+	require.Equal(t, "説明", lp["description"])
+	require.Equal(t, "条件", lp["terms"])
 }
 
 func TestUserCampaignService_GetLandingPageUI_success(t *testing.T) {

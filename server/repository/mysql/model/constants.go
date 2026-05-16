@@ -73,8 +73,8 @@ const DefaultCurrency = "USDT"
 const (
 	AccountTxnTypeRecharge        = "RECHARGE"
 	AccountTxnTypeCampaignReward  = "CAMPAIGN_REWARD"
-	AccountTxnStatusSuccess         = "SUCCESS"
-	AccountTxnStatusFailed          = "FAILED"
-	AccountTxnRelatedTypeCampaign   = "CAMPAIGN"
-	AccountTxnRelatedTypeRecharge   = "RECHARGE"
+	AccountTxnStatusSuccess       = "SUCCESS"
+	AccountTxnStatusFailed        = "FAILED"
+	AccountTxnRelatedTypeCampaign = "CAMPAIGN"
+	AccountTxnRelatedTypeRecharge = "RECHARGE"
 )

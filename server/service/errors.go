@@ -16,6 +16,8 @@ var errLandingPageNotDraft = errors.New("only draft landing pages can be updated
 
 var errTranslationSourceEmpty = errors.New("translation source text is empty")
 
+var errInvalidAccountInput = errors.New("invalid account input")
+
 // IsCampaignNotDraft reports whether err is the draft-only update constraint.
 func IsCampaignNotDraft(err error) bool {
 	return errors.Is(err, errCampaignNotDraft)
@@ -44,4 +46,9 @@ func IsOpenAINotConfigured(err error) bool {
 // IsTranslationSourceEmpty reports empty merged source for LLM.
 func IsTranslationSourceEmpty(err error) bool {
 	return errors.Is(err, errTranslationSourceEmpty)
+}
+
+// IsInvalidAccountInput reports account operation validation failures.
+func IsInvalidAccountInput(err error) bool {
+	return errors.Is(err, errInvalidAccountInput)
 }

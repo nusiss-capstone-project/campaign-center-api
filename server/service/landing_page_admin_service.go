@@ -27,13 +27,27 @@ type CreateLandingPageParams struct {
 	Terms          string
 }
 
+// LandingPageDetailView is resolved landing page text for admin or user display.
+type LandingPageDetailView struct {
+	ID             int64
+	Lang           string
+	DefaultLang    string
+	BannerImageURL string
+	Title          string
+	Description    string
+	Terms          string
+	Status         int16
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
 type landingPageAdminService struct {
-	pages         mysql.LandingPageRepository
-	translations  mysql.LandingPageTranslationRepository
+	pages        mysql.LandingPageRepository
+	translations mysql.LandingPageTranslationRepository
 }
 
 var (
-	landingPageAdminServiceOnce   sync.Once
+	landingPageAdminServiceOnce sync.Once
 	landingPageAdminServiceInst LandingPageAdminService
 )
 
@@ -98,7 +112,50 @@ func (s *landingPageAdminService) ListLandingPages(filter mysql.LandingPageListF
 	return s.pages.List(filter)
 }
 
+func (s *landingPageAdminService) GetLandingPage(id int64, lang string) (*LandingPageDetailView, error) {
+	page, err := s.pages.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	view := landingPageViewFromRow(page)
+	if lang == "" || lang == page.DefaultLang {
+		view.Lang = page.DefaultLang
+		return view, nil
+	}
+	tr, err := s.translations.GetByLandingPageAndLang(id, lang)
+	if err != nil {
+		return nil, err
+	}
+	if tr != nil {
+		applyTranslationToView(view, lang, tr.Title, tr.Description, tr.Terms)
+		return view, nil
+	}
+	view.Lang = page.DefaultLang
+	return view, nil
+}
+
 func (s *landingPageAdminService) PublishLandingPage(id int64, operator string) (*model.CampaignLandingPage, error) {
 	log.Logger.Infow("landing_page_publish", "id", id, "operator", operator)
 	return s.pages.Publish(id, operator)
+}
+
+func landingPageViewFromRow(p *model.CampaignLandingPage) *LandingPageDetailView {
+	return &LandingPageDetailView{
+		ID:             p.ID,
+		DefaultLang:    p.DefaultLang,
+		BannerImageURL: p.BannerImageURL,
+		Title:          p.Title,
+		Description:    p.Description,
+		Terms:          p.Terms,
+		Status:         p.Status,
+		CreatedAt:      p.CreatedAt,
+		UpdatedAt:      p.UpdatedAt,
+	}
+}
+
+func applyTranslationToView(v *LandingPageDetailView, lang, title, description, terms string) {
+	v.Lang = lang
+	v.Title = title
+	v.Description = description
+	v.Terms = terms
 }

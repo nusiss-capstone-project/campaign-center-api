@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -45,6 +46,7 @@ type AccountService interface {
 type accountService struct {
 	accounts mysql.UserAccountRepository
 	txns     mysql.AccountTransactionRepository
+	users    mysql.UserRepository
 }
 
 var _ AccountService = (*accountService)(nil)
@@ -55,8 +57,12 @@ var (
 )
 
 // NewAccountService builds an account service (for tests).
-func NewAccountService(accounts mysql.UserAccountRepository, txns mysql.AccountTransactionRepository) AccountService {
-	return &accountService{accounts: accounts, txns: txns}
+func NewAccountService(
+	accounts mysql.UserAccountRepository,
+	txns mysql.AccountTransactionRepository,
+	users mysql.UserRepository,
+) AccountService {
+	return &accountService{accounts: accounts, txns: txns, users: users}
 }
 
 // GetAccountService returns the singleton account service.
@@ -65,6 +71,7 @@ func GetAccountService() AccountService {
 		accountServiceInst = NewAccountService(
 			mysql.GetUserAccountRepository(),
 			mysql.GetAccountTransactionRepository(),
+			mysql.GetUserRepository(),
 		)
 	})
 	return accountServiceInst
@@ -95,8 +102,27 @@ func (s *accountService) GetSummary(userID int64, currency string) (*AccountSumm
 }
 
 func (s *accountService) Recharge(userID int64, amount float64, currency string) (*RechargeResult, error) {
+	if err := s.validateRechargeInput(userID, amount); err != nil {
+		return nil, err
+	}
 	return s.credit(userID, amount, currency, model.AccountTxnTypeRecharge,
 		model.AccountTxnRelatedTypeRecharge, 0, "recharge")
+}
+
+func (s *accountService) validateRechargeInput(userID int64, amount float64) error {
+	if userID <= 0 {
+		return fmt.Errorf("%w: userID must be positive", errInvalidAccountInput)
+	}
+	if amount <= 0 {
+		return fmt.Errorf("%w: amount must be positive", errInvalidAccountInput)
+	}
+	if _, err := s.users.GetByID(userID); err != nil {
+		if mysql.IsNotFound(err) {
+			return fmt.Errorf("%w: user not found", errInvalidAccountInput)
+		}
+		return err
+	}
+	return nil
 }
 
 func (s *accountService) CreditCampaignReward(
