@@ -22,6 +22,7 @@ type CampaignRepository interface {
 	Update(c *model.Campaign) error
 	GetByID(id int64) (*model.Campaign, error)
 	List(f CampaignListFilter) ([]model.Campaign, int64, error)
+	ListPublishedActiveOrUpcoming(now time.Time) ([]model.Campaign, error)
 	Publish(id int64, operator string) (*model.Campaign, error)
 	Archive(id int64, operator string) (*model.Campaign, error)
 }
@@ -118,6 +119,21 @@ func (r *campaignRepository) List(f CampaignListFilter) ([]model.Campaign, int64
 		return nil, 0, err
 	}
 	return items, total, nil
+}
+
+func (r *campaignRepository) ListPublishedActiveOrUpcoming(now time.Time) ([]model.Campaign, error) {
+	db, err := r.db()
+	if err != nil {
+		return nil, err
+	}
+	var items []model.Campaign
+	if err := db.Model(&model.Campaign{}).
+		Where("status = ? AND campaign_end_time >= ?", model.CampaignStatusPublished, now).
+		Order("campaign_start_time ASC").
+		Find(&items).Error; err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 func (r *campaignRepository) Publish(id int64, operator string) (*model.Campaign, error) {

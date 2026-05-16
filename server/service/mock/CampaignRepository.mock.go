@@ -3,6 +3,8 @@
 package mock
 
 import (
+	time "time"
+
 	mysql "github.com/lianjin/campaign-center-api/server/repository/mysql"
 	model "github.com/lianjin/campaign-center-api/server/repository/mysql/model"
 	mock "github.com/stretchr/testify/mock"
@@ -126,6 +128,36 @@ func (_m *MockCampaignRepository) List(f mysql.CampaignListFilter) ([]model.Camp
 	}
 
 	return r0, r1, r2
+}
+
+// ListPublishedActiveOrUpcoming provides a mock function with given fields: now
+func (_m *MockCampaignRepository) ListPublishedActiveOrUpcoming(now time.Time) ([]model.Campaign, error) {
+	ret := _m.Called(now)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListPublishedActiveOrUpcoming")
+	}
+
+	var r0 []model.Campaign
+	var r1 error
+	if rf, ok := ret.Get(0).(func(time.Time) ([]model.Campaign, error)); ok {
+		return rf(now)
+	}
+	if rf, ok := ret.Get(0).(func(time.Time) []model.Campaign); ok {
+		r0 = rf(now)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]model.Campaign)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(time.Time) error); ok {
+		r1 = rf(now)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // Publish provides a mock function with given fields: id, operator

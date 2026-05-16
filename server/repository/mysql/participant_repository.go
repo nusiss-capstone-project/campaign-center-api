@@ -23,6 +23,7 @@ type ParticipantRepository interface {
 	Create(p *model.CampaignParticipant) error
 	Save(p *model.CampaignParticipant) error
 	ListByCampaign(filter ParticipationListFilter) ([]model.CampaignParticipant, int64, error)
+	ListByUserAndCampaignIDs(userID int64, campaignIDs []int64) ([]model.CampaignParticipant, error)
 }
 
 type participantRepository struct{}
@@ -105,4 +106,21 @@ func (r *participantRepository) ListByCampaign(filter ParticipationListFilter) (
 		return nil, 0, err
 	}
 	return rows, total, nil
+}
+
+func (r *participantRepository) ListByUserAndCampaignIDs(
+	userID int64, campaignIDs []int64,
+) ([]model.CampaignParticipant, error) {
+	if len(campaignIDs) == 0 {
+		return []model.CampaignParticipant{}, nil
+	}
+	db, err := r.db()
+	if err != nil {
+		return nil, err
+	}
+	var rows []model.CampaignParticipant
+	if err := db.Where("user_id = ? AND campaign_id IN ?", userID, campaignIDs).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	return rows, nil
 }

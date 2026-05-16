@@ -57,8 +57,10 @@ func NewRouter() *gin.Engine {
 	web := basicGroup.Group("/web")
 	web.Use(auth.RequireUser())
 	{
+		web.GET("/user-profile", api.UserGetProfile)
 		web.GET("/account/summary", api.UserGetAccountSummary)
 		web.GET("/account/transactions", api.UserListAccountTransactions)
+		web.GET("/campaigns", api.UserListCampaigns)
 		web.GET("/campaigns/:campaignId/landing-page", api.UserGetCampaignLanding)
 		web.POST("/campaigns/:campaignId/join", api.UserJoinCampaign)
 		web.POST("/campaigns/:campaignId/top-up", api.UserSimulateTopUp)

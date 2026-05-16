@@ -179,6 +179,38 @@ func TestUserCampaignService_GetLandingPageUI_usesTranslationService(t *testing.
 	require.Equal(t, "条件", lp["terms"])
 }
 
+func TestUserCampaignService_GetLandingPageUI_replacesLandingTemplateVariables(t *testing.T) {
+	cm := servicemock.NewMockCampaignRepository(t)
+	cm.On("GetByID", int64(1)).Return(&model.Campaign{
+		ID: 1, LandingPageID: 10,
+		CampaignStartTime: time.Date(2026, 5, 20, 10, 0, 0, 0, time.UTC),
+		CampaignEndTime:   time.Date(2026, 6, 1, 10, 0, 0, 0, time.UTC),
+		RewardRules: `{"topupThreshold":100,"rewardType":"TOKEN_BONUS","rewardAmount":12.5,` +
+			`"rewardCurrency":"USDT","rewardMode":"PERCENTAGE","rewardPercentage":8.5,` +
+			`"maxRewardAmount":50,"maxClaimPerUser":2,"minObtainDays":7}`,
+	}, nil)
+	lm := servicemock.NewMockLandingPageRepository(t)
+	lm.On("GetByID", int64(10)).Return(&model.CampaignLandingPage{
+		ID:          10,
+		DefaultLang: "en-US",
+		Title:       "Deposit {{topupThreshold}} {{rewardCurrency}}",
+		Description: "Get {{rewardPercentage}}% after {{minObtainDays}} days",
+		Terms: "{{campaignStartDate}}-{{campaignEndDate}} {{rewardType}} " +
+			"{{rewardMode}} {{rewardAmount}} {{maxRewardAmount}} {{maxClaimPerUser}}",
+	}, nil)
+	svc := newTestUserCampaignService(t, cm, lm, nil,
+		servicemock.NewMockParticipantRepository(t),
+		servicemock.NewMockUserRepository(t), nil, nil,
+	)
+
+	reply, err := svc.GetLandingPageUI(1, 0, "en-US")
+	require.NoError(t, err)
+	lp := reply.Data.(map[string]any)["landingPage"].(map[string]any)
+	require.Equal(t, "Deposit 100 USDT", lp["title"])
+	require.Equal(t, "Get 8.5% after 7 days", lp["description"])
+	require.Equal(t, "2026-05-20-2026-06-01 TOKEN_BONUS PERCENTAGE 12.5 50 2", lp["terms"])
+}
+
 func TestUserCampaignService_GetLandingPageUI_success(t *testing.T) {
 	cm := servicemock.NewMockCampaignRepository(t)
 	now := time.Now()
@@ -190,9 +222,13 @@ func TestUserCampaignService_GetLandingPageUI_success(t *testing.T) {
 	}, nil)
 	pm := servicemock.NewMockParticipantRepository(t)
 	pm.On("GetByCampaignAndUser", int64(1), int64(5)).Return(nil, gorm.ErrRecordNotFound)
+	um := servicemock.NewMockUserRepository(t)
+	um.On("GetByID", int64(5)).Return(&model.User{
+		ID: 5, KYCStatus: model.KYCStatusPassed, Segment: model.UserSegmentNewUser, Market: "US",
+	}, nil)
 
 	svc := newTestUserCampaignService(t, cm, lm, nil, pm,
-		servicemock.NewMockUserRepository(t), nil, nil,
+		um, nil, nil,
 	)
 	reply, err := svc.GetLandingPageUI(1, 5, "en-US")
 	require.NoError(t, err)
@@ -324,4 +360,111 @@ func TestUserCampaignService_SimulateTopUp_granted(t *testing.T) {
 	d := reply.Data.(map[string]any)
 	require.Equal(t, "TXN_TEST", d["rechargeTransactionNo"])
 	rn.AssertExpectations(t)
+}
+
+func TestUserCampaignService_ListAvailableCampaigns_groupsOngoingAndUpcoming(t *testing.T) {
+	now := time.Now()
+	ongoing := model.Campaign{
+		ID: 1, Name: "Ongoing",
+		CampaignStartTime: now.Add(-time.Hour), CampaignEndTime: now.Add(time.Hour),
+		TargetMarket: model.MarketUS, TargetUserSegment: model.UserSegmentNewUser,
+	}
+	upcoming := model.Campaign{
+		ID: 2, Name: "Upcoming",
+		CampaignStartTime: now.Add(time.Hour), CampaignEndTime: now.Add(2 * time.Hour),
+		TargetMarket: model.MarketUS, TargetUserSegment: model.UserSegmentNewUser,
+	}
+	cm := servicemock.NewMockCampaignRepository(t)
+	cm.On("ListPublishedActiveOrUpcoming", mock.AnythingOfType("time.Time")).
+		Return([]model.Campaign{ongoing, upcoming}, nil)
+	um := servicemock.NewMockUserRepository(t)
+	um.On("GetByID", int64(100)).Return(&model.User{
+		ID: 100, KYCStatus: model.KYCStatusPassed, Segment: model.UserSegmentNewUser, Market: model.MarketUS,
+	}, nil)
+	pm := servicemock.NewMockParticipantRepository(t)
+	pm.On("ListByUserAndCampaignIDs", int64(100), []int64{1, 2}).
+		Return([]model.CampaignParticipant{{CampaignID: 1, JoinStatus: model.JoinStatusJoined}}, nil)
+
+	svc := newTestUserCampaignService(t, cm,
+		servicemock.NewMockLandingPageRepository(t), nil, pm,
+		um, nil, nil,
+	)
+	reply, err := svc.ListAvailableCampaigns(100)
+	require.NoError(t, err)
+	require.Equal(t, data.CodeSuccess, reply.Code)
+
+	payload := reply.Data.(map[string]any)
+	ongoingItems := payload["ongoing"].([]map[string]any)
+	upcomingItems := payload["upcoming"].([]map[string]any)
+	require.Len(t, ongoingItems, 1)
+	require.Len(t, upcomingItems, 1)
+	require.Equal(t, int64(1), ongoingItems[0]["id"])
+	require.Equal(t, "Ongoing", ongoingItems[0]["name"])
+	require.Equal(t, true, ongoingItems[0]["joined"])
+	require.Equal(t, int64(2), upcomingItems[0]["id"])
+	require.NotContains(t, upcomingItems[0], "joined")
+}
+
+func TestUserCampaignService_ListAvailableCampaigns_filtersIneligibleCampaigns(t *testing.T) {
+	now := time.Now()
+	eligible := model.Campaign{
+		ID: 1, Name: "Eligible",
+		CampaignStartTime: now.Add(-time.Hour), CampaignEndTime: now.Add(time.Hour),
+		TargetMarket: model.MarketUS, TargetUserSegment: model.UserSegmentNewUser,
+	}
+	segmentMismatch := model.Campaign{
+		ID: 2, Name: "VIP",
+		CampaignStartTime: now.Add(-time.Hour), CampaignEndTime: now.Add(time.Hour),
+		TargetMarket: model.MarketUS, TargetUserSegment: model.UserSegmentVIPUser,
+	}
+	public := model.Campaign{
+		ID: 3, Name: "Public",
+		CampaignStartTime: now.Add(time.Hour), CampaignEndTime: now.Add(2 * time.Hour),
+		TargetMarket: model.MarketGlobal, TargetUserSegment: model.UserSegmentAllUsers,
+	}
+	cm := servicemock.NewMockCampaignRepository(t)
+	cm.On("ListPublishedActiveOrUpcoming", mock.AnythingOfType("time.Time")).
+		Return([]model.Campaign{eligible, segmentMismatch, public}, nil)
+	um := servicemock.NewMockUserRepository(t)
+	um.On("GetByID", int64(100)).Return(&model.User{
+		ID: 100, KYCStatus: model.KYCStatusPassed, Segment: model.UserSegmentNewUser, Market: model.MarketUS,
+	}, nil)
+	pm := servicemock.NewMockParticipantRepository(t)
+	pm.On("ListByUserAndCampaignIDs", int64(100), []int64{1, 3}).
+		Return([]model.CampaignParticipant{}, nil)
+
+	svc := newTestUserCampaignService(t, cm,
+		servicemock.NewMockLandingPageRepository(t), nil, pm, um, nil, nil,
+	)
+	reply, err := svc.ListAvailableCampaigns(100)
+	require.NoError(t, err)
+
+	payload := reply.Data.(map[string]any)
+	ongoingItems := payload["ongoing"].([]map[string]any)
+	upcomingItems := payload["upcoming"].([]map[string]any)
+	require.Len(t, ongoingItems, 1)
+	require.Len(t, upcomingItems, 1)
+	require.Equal(t, int64(1), ongoingItems[0]["id"])
+	require.Equal(t, int64(3), upcomingItems[0]["id"])
+}
+
+func TestUserCampaignService_GetLandingPageUI_hidesIneligibleCampaign(t *testing.T) {
+	now := time.Now()
+	camp := publishedCampaign(now.Add(-time.Hour), now.Add(time.Hour))
+	camp.TargetUserSegment = model.UserSegmentVIPUser
+	cm := servicemock.NewMockCampaignRepository(t)
+	cm.On("GetByID", int64(1)).Return(camp, nil)
+	um := servicemock.NewMockUserRepository(t)
+	um.On("GetByID", int64(100)).Return(&model.User{
+		ID: 100, KYCStatus: model.KYCStatusPassed, Segment: model.UserSegmentNewUser, Market: model.MarketUS,
+	}, nil)
+
+	svc := newTestUserCampaignService(t, cm,
+		servicemock.NewMockLandingPageRepository(t), nil,
+		servicemock.NewMockParticipantRepository(t), um, nil, nil,
+	)
+	reply, err := svc.GetLandingPageUI(1, 100, "en-US")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNotFound, reply.HTTPStatus)
+	require.Equal(t, "campaign not found", reply.Message)
 }
