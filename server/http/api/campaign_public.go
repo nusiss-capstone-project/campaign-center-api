@@ -5,18 +5,16 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lianjin/campaign-center-api/server/auth"
 	"github.com/lianjin/campaign-center-api/server/http/data"
 	"github.com/lianjin/campaign-center-api/server/service"
 )
 
 // JoinCampaignReq POST join body.
-type JoinCampaignReq struct {
-	UserID int64 `json:"userId" binding:"required"`
-}
+type JoinCampaignReq struct{}
 
 // SimulateTopUpReq POST top-up body.
 type SimulateTopUpReq struct {
-	UserID int64   `json:"userId" binding:"required"`
 	Amount float64 `json:"amount" binding:"required"`
 }
 
@@ -25,7 +23,6 @@ type SimulateTopUpReq struct {
 // @Tags user-campaign
 // @Produce json
 // @Param campaignId path int true "Campaign ID"
-// @Param userId query int false "User ID for participation status"
 // @Param lang query string false "Preferred language; falls back to default"
 // @Success 200 {object} data.StandardResponse "success"
 // @Failure 404 {object} data.StandardResponse "not found"
@@ -37,13 +34,10 @@ func UserGetCampaignLanding(c *gin.Context) {
 		data.JSON(c, http.StatusBadRequest, -1, "invalid campaignId", nil)
 		return
 	}
-	var userID int64
-	if userIDParam, ok := c.GetQuery("userId"); ok {
-		userID, err = strconv.ParseInt(userIDParam, 10, 64)
-		if err != nil {
-			data.JSON(c, http.StatusBadRequest, -1, "invalid userId", nil)
-			return
-		}
+	userID, ok := auth.GetUserID(c.Request.Context())
+	if !ok {
+		authError(c)
+		return
 	}
 	lang := c.Query("lang")
 	if lang == "" {
@@ -64,7 +58,6 @@ func UserGetCampaignLanding(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param campaignId path int true "Campaign ID"
-// @Param body body JoinCampaignReq true "User id"
 // @Success 200 {object} data.StandardResponse "success or business error code in body"
 // @Failure 400 {object} data.StandardResponse "bad request"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
@@ -75,13 +68,13 @@ func UserJoinCampaign(c *gin.Context) {
 		data.JSON(c, http.StatusBadRequest, -1, "invalid campaignId", nil)
 		return
 	}
-	var req JoinCampaignReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
+	userID, ok := auth.GetUserID(c.Request.Context())
+	if !ok {
+		authError(c)
 		return
 	}
 
-	reply, err := service.GetUserCampaignService().JoinCampaign(campaignID, req.UserID)
+	reply, err := service.GetUserCampaignService().JoinCampaign(campaignID, userID)
 	if err != nil {
 		handleRepoErr(c, err)
 		return
@@ -95,7 +88,7 @@ func UserJoinCampaign(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param campaignId path int true "Campaign ID"
-// @Param body body SimulateTopUpReq true "User and amount"
+// @Param body body SimulateTopUpReq true "Top-up amount"
 // @Success 200 {object} data.StandardResponse "success, manual review, or business error code"
 // @Failure 400 {object} data.StandardResponse "bad request"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
@@ -106,13 +99,18 @@ func UserSimulateTopUp(c *gin.Context) {
 		data.JSON(c, http.StatusBadRequest, -1, "invalid campaignId", nil)
 		return
 	}
+	userID, ok := auth.GetUserID(c.Request.Context())
+	if !ok {
+		authError(c)
+		return
+	}
 	var req SimulateTopUpReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
 		return
 	}
 
-	reply, err := service.GetUserCampaignService().SimulateTopUp(campaignID, req.UserID, req.Amount)
+	reply, err := service.GetUserCampaignService().SimulateTopUp(campaignID, userID, req.Amount)
 	if err != nil {
 		handleRepoErr(c, err)
 		return

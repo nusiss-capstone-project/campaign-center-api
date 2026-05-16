@@ -77,13 +77,6 @@ definitions:
     - sourceLang
     - targetLang
     type: object
-  api.JoinCampaignReq:
-    properties:
-      userId:
-        type: integer
-    required:
-    - userId
-    type: object
   api.LandingPageBody:
     properties:
       bannerImageUrl:
@@ -219,11 +212,8 @@ definitions:
     properties:
       amount:
         type: number
-      userId:
-        type: integer
     required:
     - amount
-    - userId
     type: object
   api.UpdateCampaignReq:
     properties:
@@ -933,11 +923,6 @@ paths:
   /web/account/summary:
     get:
       parameters:
-      - description: User ID
-        in: query
-        name: userId
-        required: true
-        type: integer
       - description: Currency (default USDT)
         in: query
         name: currency
@@ -963,11 +948,6 @@ paths:
   /web/account/transactions:
     get:
       parameters:
-      - description: User ID
-        in: query
-        name: userId
-        required: true
-        type: integer
       - description: Transaction type RECHARGE or CAMPAIGN_REWARD
         in: query
         name: type
@@ -1008,12 +988,6 @@ paths:
         name: campaignId
         required: true
         type: integer
-      - description: User id
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/api.JoinCampaignReq'
       produces:
       - application/json
       responses:
@@ -1039,10 +1013,6 @@ paths:
         in: path
         name: campaignId
         required: true
-        type: integer
-      - description: User ID for participation status
-        in: query
-        name: userId
         type: integer
       - description: Preferred language; falls back to default
         in: query
@@ -1076,7 +1046,7 @@ paths:
         name: campaignId
         required: true
         type: integer
-      - description: User and amount
+      - description: Top-up amount
         in: body
         name: body
         required: true

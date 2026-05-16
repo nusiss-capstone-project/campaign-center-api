@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/lianjin/campaign-center-api/server/auth"
 	"github.com/lianjin/campaign-center-api/server/config"
 	_ "github.com/lianjin/campaign-center-api/server/docs"
 	"github.com/lianjin/campaign-center-api/server/http/api"
@@ -27,7 +28,7 @@ func NewRouter() *gin.Engine {
 	basicGroup.GET("/ping", otelgin.Middleware(data.ServiceName), log.TraceLoggerMiddleware(), api.Ping)
 
 	admin := basicGroup.Group("/admin")
-	admin.Use(otelgin.Middleware(data.ServiceName), log.TraceLoggerMiddleware())
+	admin.Use(otelgin.Middleware(data.ServiceName), log.TraceLoggerMiddleware(), auth.RequireAdmin())
 	{
 		admin.POST("/campaigns", api.AdminCreateCampaign)
 		admin.PUT("/campaigns/:campaignId", api.AdminUpdateCampaign)
@@ -52,7 +53,7 @@ func NewRouter() *gin.Engine {
 
 	// User-facing campaign APIs
 	web := basicGroup.Group("/web")
-	web.Use(otelgin.Middleware(data.ServiceName), log.TraceLoggerMiddleware())
+	web.Use(otelgin.Middleware(data.ServiceName), log.TraceLoggerMiddleware(), auth.RequireUser())
 	{
 		web.GET("/account/summary", api.UserGetAccountSummary)
 		web.GET("/account/transactions", api.UserListAccountTransactions)

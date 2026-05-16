@@ -1017,13 +1017,6 @@ const docTemplate = `{
                 "summary": "Get account summary (user)",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "userId",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
                         "type": "string",
                         "description": "Currency (default USDT)",
                         "name": "currency",
@@ -1062,13 +1055,6 @@ const docTemplate = `{
                 ],
                 "summary": "List account transactions (user)",
                 "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "userId",
-                        "in": "query",
-                        "required": true
-                    },
                     {
                         "type": "string",
                         "description": "Transaction type RECHARGE or CAMPAIGN_REWARD",
@@ -1129,15 +1115,6 @@ const docTemplate = `{
                         "name": "campaignId",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "User id",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/api.JoinCampaignReq"
-                        }
                     }
                 ],
                 "responses": {
@@ -1178,12 +1155,6 @@ const docTemplate = `{
                         "name": "campaignId",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "User ID for participation status",
-                        "name": "userId",
-                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -1235,7 +1206,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "User and amount",
+                        "description": "Top-up amount",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -1374,17 +1345,6 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "example": "Top up \u003camount\u003e to get reward"
-                }
-            }
-        },
-        "api.JoinCampaignReq": {
-            "type": "object",
-            "required": [
-                "userId"
-            ],
-            "properties": {
-                "userId": {
-                    "type": "integer"
                 }
             }
         },
@@ -1583,15 +1543,11 @@ const docTemplate = `{
         "api.SimulateTopUpReq": {
             "type": "object",
             "required": [
-                "amount",
-                "userId"
+                "amount"
             ],
             "properties": {
                 "amount": {
                     "type": "number"
-                },
-                "userId": {
-                    "type": "integer"
                 }
             }
         },
