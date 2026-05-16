@@ -113,7 +113,6 @@ func participationItem(row model.CampaignParticipant) map[string]any {
 		"participationId": row.ID,
 		"campaignId":      row.CampaignID,
 		"userId":          row.UserID,
-		"joinStatus":      row.JoinStatus,
 		"joinAt":          row.JoinedAt.Format(time.RFC3339),
 		"rewardAmount":    row.RewardAmount,
 		"rewardStatus":    row.RewardStatus,
