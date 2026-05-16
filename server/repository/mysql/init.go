@@ -28,6 +28,9 @@ func Init() (*gorm.DB, error) {
 		&model.CampaignParticipant{},
 		&model.RewardTransaction{},
 		&model.AuditLog{},
+		&model.UserAccount{},
+		&model.AccountTransaction{},
+		&model.CampaignPerformanceDaily{},
 	); err != nil {
 		return DB, err
 	}

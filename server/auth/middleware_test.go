@@ -1,0 +1,89 @@
+package auth
+
+import (
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
+)
+
+type fakeAuthenticator struct {
+	user *User
+	err  error
+}
+
+func (a fakeAuthenticator) Authenticate(string) (*User, error) {
+	if a.err != nil {
+		return nil, a.err
+	}
+	return a.user, nil
+}
+
+func TestRequireUser_missingAuthorizationReturns401(t *testing.T) {
+	rec := exerciseAuthMiddleware(t, requireRole("", fakeAuthenticator{
+		user: &User{InternalUserID: 1, Role: RoleUser},
+	}), "")
+
+	require.Equal(t, http.StatusUnauthorized, rec.Code)
+	require.Contains(t, rec.Body.String(), "UNAUTHORIZED")
+}
+
+func TestRequireUser_invalidTokenReturns401(t *testing.T) {
+	rec := exerciseAuthMiddleware(t, requireRole("", fakeAuthenticator{
+		err: errors.New("bad token"),
+	}), "Bearer bad")
+
+	require.Equal(t, http.StatusUnauthorized, rec.Code)
+	require.Contains(t, rec.Body.String(), "UNAUTHORIZED")
+}
+
+func TestRequireUser_validUserCanAccess(t *testing.T) {
+	rec := exerciseAuthMiddleware(t, requireRole("", fakeAuthenticator{
+		user: &User{InternalUserID: 1, Role: RoleUser},
+	}), "Bearer ok")
+
+	require.Equal(t, http.StatusOK, rec.Code)
+}
+
+func TestRequireAdmin_userRoleReturns403(t *testing.T) {
+	rec := exerciseAuthMiddleware(t, requireRole(RoleAdmin, fakeAuthenticator{
+		user: &User{InternalUserID: 1, Role: RoleUser},
+	}), "Bearer ok")
+
+	require.Equal(t, http.StatusForbidden, rec.Code)
+	require.Contains(t, rec.Body.String(), "FORBIDDEN")
+}
+
+func TestRequireAdmin_adminRoleCanAccess(t *testing.T) {
+	rec := exerciseAuthMiddleware(t, requireRole(RoleAdmin, fakeAuthenticator{
+		user: &User{InternalUserID: 1, Role: RoleAdmin},
+	}), "Bearer ok")
+
+	require.Equal(t, http.StatusOK, rec.Code)
+}
+
+func exerciseAuthMiddleware(t *testing.T, mw gin.HandlerFunc, authorization string) *httptest.ResponseRecorder {
+	t.Helper()
+	t.Setenv("APP_ENV", "test")
+	t.Setenv("AUTH_DEV_BYPASS", "")
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(mw)
+	r.GET("/x", func(c *gin.Context) {
+		if _, ok := GetUserID(c.Request.Context()); !ok {
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		c.Status(http.StatusOK)
+	})
+	req := httptest.NewRequest(http.MethodGet, "/x", nil)
+	if authorization != "" {
+		req.Header.Set("Authorization", authorization)
+	}
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+	return rec
+}

@@ -17,7 +17,7 @@ USE `campaign_center`;
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `campaign_landing_pages` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `language` VARCHAR(16) DEFAULT NULL,
+  `default_lang` VARCHAR(16) DEFAULT 'en',
   `banner_image_url` VARCHAR(512) DEFAULT NULL,
   `title` VARCHAR(255) DEFAULT NULL,
   `description` TEXT,
@@ -28,6 +28,21 @@ CREATE TABLE IF NOT EXISTS `campaign_landing_pages` (
   `created_by` VARCHAR(255) NOT NULL DEFAULT '',
   `updated_by` VARCHAR(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `campaign_landing_page_translations` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `landing_page_id` BIGINT NOT NULL,
+  `lang` VARCHAR(16) NOT NULL,
+  `title` VARCHAR(255) DEFAULT NULL,
+  `description` TEXT,
+  `terms` TEXT,
+  `created_at` DATETIME(3) DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  `created_by` VARCHAR(255) NOT NULL DEFAULT '',
+  `updated_by` VARCHAR(255) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_landing_page_lang` (`landing_page_id`, `lang`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------------
@@ -133,7 +148,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- ---------------------------------------------------------------------------
 -- Optional dev seed (uncomment to load sample rows; adjust IDs as needed)
 -- ---------------------------------------------------------------------------
--- INSERT INTO `campaign_landing_pages` (`id`, `language`, `banner_image_url`, `title`, `description`, `terms`, `created_at`, `updated_at`, `status`, `created_by`, `updated_by`)
+-- INSERT INTO `campaign_landing_pages` (`id`, `default_lang`, `banner_image_url`, `title`, `description`, `terms`, `created_at`, `updated_at`, `status`, `created_by`, `updated_by`)
 -- VALUES
 --   (2001, 'en-US', 'https://example.com/banner.png', 'Top up {{threshold}} and get {{reward}} bonus', 'Join the campaign.', 'Terms apply.', NOW(3), NOW(3), 2, 'seed', 'seed');
 --
