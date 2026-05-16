@@ -12,9 +12,6 @@ on:
           - dev
           - production
 
-env:
-  RAILWAY_SERVICE: campaign-center-api
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -30,9 +27,11 @@ jobs:
         run: railway up --detach -e dev --service "${{ env.RAILWAY_SERVICE }}"
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_DEV }}
+          RAILWAY_SERVICE: campaign-center-api
 
       - name: Deploy to Production
         if: github.event.inputs.environment == 'production'
         run: railway up --detach -e production --service "${{ env.RAILWAY_SERVICE }}"
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PROD }}
+          RAILWAY_SERVICE: campaign-center-api-prod
