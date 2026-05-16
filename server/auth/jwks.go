@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/lianjin/campaign-center-api/server/log"
 )
 
 const jwksCacheTTL = 5 * time.Minute
@@ -45,8 +47,12 @@ func (c *jwksCache) publicKey(kid string) (*rsa.PublicKey, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if key, ok := c.keys[kid]; ok && time.Now().Before(c.expiresAt) {
-		return key, nil
+	now := time.Now()
+	if now.Before(c.expiresAt) {
+		if key, ok := c.keys[kid]; ok {
+			return key, nil
+		}
+		return nil, errors.New("clerk jwks key not found")
 	}
 	if err := c.refresh(); err != nil {
 		return nil, err
@@ -63,7 +69,11 @@ func (c *jwksCache) refresh() error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Logger.Errorf("failed to close clerk jwks response body", "error", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return errors.New("failed to fetch clerk jwks")
 	}
