@@ -27,6 +27,7 @@ func NewRouter() *gin.Engine {
 
 	basicGroup := r.Group(serviceURIPrefix)
 	basicGroup.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	basicGroup.GET("/ping", api.Ping)
 
 	admin := basicGroup.Group("/admin")
 	admin.Use(auth.RequireAdmin())
