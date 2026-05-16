@@ -55,6 +55,7 @@ const (
 
 const (
 	RewardStatusNotGranted    = "NOT_GRANTED"
+	RewardStatusPending       = "PENDING"
 	RewardStatusGranted       = "GRANTED"
 	RewardStatusPendingReview = "PENDING_REVIEW"
 )

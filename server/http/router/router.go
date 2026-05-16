@@ -71,7 +71,7 @@ func NewRouter() *gin.Engine {
 
 func corsMiddleware() gin.HandlerFunc {
 	return cors.New(cors.Config{
-		AllowOrigins: config.Config.SystemConfig.AllowedOrigins,
+		AllowOrigins: allowedOrigins(),
 		AllowMethods: []string{
 			"GET", "POST", "PUT", "DELETE", "OPTIONS",
 		},
@@ -84,4 +84,11 @@ func corsMiddleware() gin.HandlerFunc {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	})
+}
+
+func allowedOrigins() []string {
+	if config.Config == nil || config.Config.SystemConfig == nil {
+		return []string{}
+	}
+	return config.Config.SystemConfig.AllowedOrigins
 }

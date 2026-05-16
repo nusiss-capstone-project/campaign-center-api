@@ -125,6 +125,9 @@ func parseDateRange(c *gin.Context) (time.Time, time.Time, error) {
 	if err != nil {
 		return time.Time{}, time.Time{}, errInvalidDate("endDate")
 	}
+	if start.After(end) {
+		return time.Time{}, time.Time{}, errInvalidDateRange()
+	}
 	return start, end, nil
 }
 
@@ -143,3 +146,7 @@ func (e dateRangeError) Error() string { return string(e) }
 func errDateRangeRequired() error { return dateRangeError("startDate and endDate are required") }
 
 func errInvalidDate(field string) error { return dateRangeError("invalid " + field) }
+
+func errInvalidDateRange() error {
+	return dateRangeError("startDate must be before or equal to endDate")
+}

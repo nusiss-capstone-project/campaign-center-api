@@ -88,15 +88,22 @@ func Init() {
 	if err := viper.Unmarshal(Config); err != nil {
 		panic(err)
 	}
+	applyConfigDefaults()
 	applyOpenAIAPIKeyFromEnv()
+}
+
+func applyConfigDefaults() {
+	if Config.SystemConfig == nil {
+		Config.SystemConfig = &SystemConfig{}
+	}
+	if Config.OpenAIConfig == nil {
+		Config.OpenAIConfig = &OpenAIConfig{}
+	}
 }
 
 // applyOpenAIAPIKeyFromEnv sets OpenAI API key from OPENAI_API_KEY when non-empty
 // (overrides config file / CAMPAIGN_CENTER_OPENAI_API_KEY from viper).
 func applyOpenAIAPIKeyFromEnv() {
-	if Config.OpenAIConfig == nil {
-		Config.OpenAIConfig = &OpenAIConfig{}
-	}
 	if v := strings.TrimSpace(os.Getenv("OPENAI_API_KEY")); v != "" {
 		Config.OpenAIConfig.APIKey = v
 	}

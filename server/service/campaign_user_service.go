@@ -494,6 +494,7 @@ func (s *userCampaignService) simulateTopUpEnqueueReward(
 	balanceAfter float64,
 ) (*HTTPReply, error) {
 	participant.RiskStatus = model.RiskStatusApproved
+	participant.RewardStatus = model.RewardStatusPending
 	participant.RewardAmount = rules.RewardAmount
 	if err := s.participants.Save(participant); err != nil {
 		return nil, err
@@ -505,8 +506,8 @@ func (s *userCampaignService) simulateTopUpEnqueueReward(
 	})
 	return topUpReply(campaignID, userID, amount, rechargeTxnNo, balanceAfter, map[string]any{
 		"taskStatus": model.TaskStatusCompleted, "riskStatus": model.RiskStatusApproved,
-		"rewardStatus": model.RewardStatusGranted, "rewardAmount": rules.RewardAmount,
-	}, "success")
+		"rewardStatus": model.RewardStatusPending, "rewardAmount": rules.RewardAmount,
+	}, "reward processing")
 }
 
 func topUpReply(

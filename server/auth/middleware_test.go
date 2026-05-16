@@ -28,7 +28,8 @@ func TestRequireUser_missingAuthorizationReturns401(t *testing.T) {
 	}), "")
 
 	require.Equal(t, http.StatusUnauthorized, rec.Code)
-	require.Contains(t, rec.Body.String(), "UNAUTHORIZED")
+	require.Contains(t, rec.Body.String(), `"code":-1`)
+	require.Contains(t, rec.Body.String(), "Authentication required")
 }
 
 func TestRequireUser_invalidTokenReturns401(t *testing.T) {
@@ -37,7 +38,8 @@ func TestRequireUser_invalidTokenReturns401(t *testing.T) {
 	}), "Bearer bad")
 
 	require.Equal(t, http.StatusUnauthorized, rec.Code)
-	require.Contains(t, rec.Body.String(), "UNAUTHORIZED")
+	require.Contains(t, rec.Body.String(), `"code":-1`)
+	require.Contains(t, rec.Body.String(), "Authentication required")
 }
 
 func TestRequireUser_validUserCanAccess(t *testing.T) {
@@ -54,7 +56,8 @@ func TestRequireAdmin_userRoleReturns403(t *testing.T) {
 	}), "Bearer ok")
 
 	require.Equal(t, http.StatusForbidden, rec.Code)
-	require.Contains(t, rec.Body.String(), "FORBIDDEN")
+	require.Contains(t, rec.Body.String(), `"code":-1`)
+	require.Contains(t, rec.Body.String(), "Admin permission required")
 }
 
 func TestRequireAdmin_adminRoleCanAccess(t *testing.T) {
@@ -65,10 +68,43 @@ func TestRequireAdmin_adminRoleCanAccess(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 }
 
+func TestRequireAdmin_devBypassAllowsLoopbackOnly(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	t.Setenv("AUTH_DEV_BYPASS", "true")
+
+	rec := exerciseAuthMiddlewareWithRemoteAddr(t, requireRole(RoleAdmin, fakeAuthenticator{
+		err: errors.New("should not verify token"),
+	}), "", "127.0.0.1:12345")
+
+	require.Equal(t, http.StatusOK, rec.Code)
+}
+
+func TestRequireAdmin_devBypassRejectsNonLoopback(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	t.Setenv("AUTH_DEV_BYPASS", "true")
+
+	rec := exerciseAuthMiddlewareWithRemoteAddr(t, requireRole(RoleAdmin, fakeAuthenticator{
+		err: errors.New("bad token"),
+	}), "", "203.0.113.10:12345")
+
+	require.Equal(t, http.StatusUnauthorized, rec.Code)
+	require.Contains(t, rec.Body.String(), `"code":-1`)
+}
+
 func exerciseAuthMiddleware(t *testing.T, mw gin.HandlerFunc, authorization string) *httptest.ResponseRecorder {
 	t.Helper()
 	t.Setenv("APP_ENV", "test")
 	t.Setenv("AUTH_DEV_BYPASS", "")
+	return exerciseAuthMiddlewareWithRemoteAddr(t, mw, authorization, "192.0.2.1:12345")
+}
+
+func exerciseAuthMiddlewareWithRemoteAddr(
+	t *testing.T,
+	mw gin.HandlerFunc,
+	authorization string,
+	remoteAddr string,
+) *httptest.ResponseRecorder {
+	t.Helper()
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 	r.Use(mw)
@@ -80,6 +116,7 @@ func exerciseAuthMiddleware(t *testing.T, mw gin.HandlerFunc, authorization stri
 		c.Status(http.StatusOK)
 	})
 	req := httptest.NewRequest(http.MethodGet, "/x", nil)
+	req.RemoteAddr = remoteAddr
 	if authorization != "" {
 		req.Header.Set("Authorization", authorization)
 	}

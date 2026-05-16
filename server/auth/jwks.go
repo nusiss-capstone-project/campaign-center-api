@@ -71,7 +71,7 @@ func (c *jwksCache) refresh() error {
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			log.Logger.Errorf("failed to close clerk jwks response body", "error", err)
+			log.Logger.Errorw("failed to close clerk jwks response body", "error", err)
 		}
 	}()
 	if resp.StatusCode != http.StatusOK {

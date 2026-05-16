@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"net"
 	"os"
 	"strings"
 	"time"
@@ -127,7 +128,12 @@ func devBypassEnabled() bool {
 	return os.Getenv("APP_ENV") == "local" && strings.EqualFold(os.Getenv("AUTH_DEV_BYPASS"), "true")
 }
 
+func devBypassAllowed(clientIP string) bool {
+	ip := net.ParseIP(strings.TrimSpace(clientIP))
+	return ip != nil && ip.IsLoopback()
+}
+
 func devBypassUser() *User {
-	// Local demo only. Never enable AUTH_DEV_BYPASS outside APP_ENV=local.
+	// Localhost-only demo bypass. Never enable AUTH_DEV_BYPASS on network-accessible instances.
 	return &User{InternalUserID: 1, ClerkUserID: "dev_bypass", Email: "demo@example.com", Role: RoleAdmin}
 }

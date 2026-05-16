@@ -344,7 +344,11 @@ func TestUserCampaignService_SimulateTopUp_granted(t *testing.T) {
 	}, nil)
 	um := servicemock.NewMockUserRepository(t)
 	um.On("GetByID", int64(100)).Return(&model.User{RiskLevel: "LOW"}, nil)
-	pm.On("Save", mock.Anything).Return(nil)
+	pm.On("Save", mock.MatchedBy(func(p *model.CampaignParticipant) bool {
+		return p.RiskStatus == model.RiskStatusApproved &&
+			p.RewardStatus == model.RewardStatusPending &&
+			p.RewardAmount == 10
+	})).Return(nil)
 	am := defaultRechargeMock(t)
 	rn := &servicemock.MockCampaignRewardNotifier{}
 	rn.On("NotifyTopUpReward", mock.MatchedBy(func(e service.TopUpRewardEvent) bool {
@@ -359,6 +363,8 @@ func TestUserCampaignService_SimulateTopUp_granted(t *testing.T) {
 	require.Equal(t, data.CodeSuccess, reply.Code)
 	d := reply.Data.(map[string]any)
 	require.Equal(t, "TXN_TEST", d["rechargeTransactionNo"])
+	require.Equal(t, model.RewardStatusPending, d["rewardStatus"])
+	require.Equal(t, "reward processing", reply.Message)
 	rn.AssertExpectations(t)
 }
 

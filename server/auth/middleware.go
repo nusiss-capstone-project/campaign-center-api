@@ -36,7 +36,7 @@ func requireRole(role string, authenticator requestAuthenticator) gin.HandlerFun
 }
 
 func authenticateRequest(c *gin.Context, authenticator requestAuthenticator) (*User, bool) {
-	if devBypassEnabled() {
+	if devBypassEnabled() && devBypassAllowed(c.ClientIP()) {
 		return devBypassUser(), true
 	}
 	token, ok := bearerToken(c.GetHeader("Authorization"))
@@ -63,14 +63,16 @@ func bearerToken(header string) (string, bool) {
 
 func unauthorized(c *gin.Context) {
 	c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-		"code":    "UNAUTHORIZED",
+		"code":    -1,
+		"data":    nil,
 		"message": "Authentication required",
 	})
 }
 
 func forbidden(c *gin.Context) {
 	c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-		"code":    "FORBIDDEN",
+		"code":    -1,
+		"data":    nil,
 		"message": "Admin permission required",
 	})
 }
