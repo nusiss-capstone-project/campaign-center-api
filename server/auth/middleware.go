@@ -36,7 +36,7 @@ func requireRole(role string, authenticator requestAuthenticator) gin.HandlerFun
 }
 
 func authenticateRequest(c *gin.Context, authenticator requestAuthenticator) (*User, bool) {
-	if devBypassEnabled() && devBypassAllowed(c.ClientIP()) {
+	if devBypassEnabled() && devBypassAllowedRemoteAddr(c.Request.RemoteAddr) {
 		return devBypassUser(), true
 	}
 	token, ok := bearerToken(c.GetHeader("Authorization"))

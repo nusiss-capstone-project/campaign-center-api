@@ -91,6 +91,20 @@ func TestRequireAdmin_devBypassRejectsNonLoopback(t *testing.T) {
 	require.Contains(t, rec.Body.String(), `"code":-1`)
 }
 
+func TestRequireAdmin_devBypassRejectsSpoofedForwardedFor(t *testing.T) {
+	t.Setenv("APP_ENV", "local")
+	t.Setenv("AUTH_DEV_BYPASS", "true")
+
+	rec := exerciseAuthMiddlewareWithRequest(t, requireRole(RoleAdmin, fakeAuthenticator{
+		err: errors.New("bad token"),
+	}), "", "203.0.113.10:12345", map[string]string{
+		"X-Forwarded-For": "127.0.0.1",
+	})
+
+	require.Equal(t, http.StatusUnauthorized, rec.Code)
+	require.Contains(t, rec.Body.String(), `"code":-1`)
+}
+
 func exerciseAuthMiddleware(t *testing.T, mw gin.HandlerFunc, authorization string) *httptest.ResponseRecorder {
 	t.Helper()
 	t.Setenv("APP_ENV", "test")
@@ -103,6 +117,16 @@ func exerciseAuthMiddlewareWithRemoteAddr(
 	mw gin.HandlerFunc,
 	authorization string,
 	remoteAddr string,
+) *httptest.ResponseRecorder {
+	return exerciseAuthMiddlewareWithRequest(t, mw, authorization, remoteAddr, nil)
+}
+
+func exerciseAuthMiddlewareWithRequest(
+	t *testing.T,
+	mw gin.HandlerFunc,
+	authorization string,
+	remoteAddr string,
+	headers map[string]string,
 ) *httptest.ResponseRecorder {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
@@ -119,6 +143,9 @@ func exerciseAuthMiddlewareWithRemoteAddr(
 	req.RemoteAddr = remoteAddr
 	if authorization != "" {
 		req.Header.Set("Authorization", authorization)
+	}
+	for k, v := range headers {
+		req.Header.Set(k, v)
 	}
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)

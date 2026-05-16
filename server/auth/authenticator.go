@@ -133,6 +133,14 @@ func devBypassAllowed(clientIP string) bool {
 	return ip != nil && ip.IsLoopback()
 }
 
+func devBypassAllowedRemoteAddr(remoteAddr string) bool {
+	host, _, err := net.SplitHostPort(strings.TrimSpace(remoteAddr))
+	if err != nil {
+		host = remoteAddr
+	}
+	return devBypassAllowed(host)
+}
+
 func devBypassUser() *User {
 	// Localhost-only demo bypass. Never enable AUTH_DEV_BYPASS on network-accessible instances.
 	return &User{InternalUserID: 1, ClerkUserID: "dev_bypass", Email: "demo@example.com", Role: RoleAdmin}
