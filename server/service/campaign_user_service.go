@@ -78,8 +78,21 @@ func (s *userCampaignService) ListAvailableCampaigns(userID int64) (*HTTPReply, 
 	if err != nil {
 		return nil, err
 	}
+	user, err := s.users.GetByID(userID)
+	if err != nil {
+		if mysql.IsNotFound(err) {
+			return campaignListReply([]map[string]any{}, []map[string]any{}), nil
+		}
+		return nil, err
+	}
+
+	visibleCampaigns := make([]model.Campaign, 0, len(campaigns))
 	campaignIDs := make([]int64, 0, len(campaigns))
 	for _, campaign := range campaigns {
+		if campaignEligibilityRejectReason(user, campaign) != "" {
+			continue
+		}
+		visibleCampaigns = append(visibleCampaigns, campaign)
 		campaignIDs = append(campaignIDs, campaign.ID)
 	}
 	participants, err := s.participants.ListByUserAndCampaignIDs(userID, campaignIDs)
@@ -95,7 +108,7 @@ func (s *userCampaignService) ListAvailableCampaigns(userID int64) (*HTTPReply, 
 
 	ongoing := make([]map[string]any, 0)
 	upcoming := make([]map[string]any, 0)
-	for _, campaign := range campaigns {
+	for _, campaign := range visibleCampaigns {
 		item := campaignListItem(campaign)
 		if !now.Before(campaign.CampaignStartTime) && !now.After(campaign.CampaignEndTime) {
 			item["joined"] = joinedByCampaign[campaign.ID]
@@ -107,6 +120,10 @@ func (s *userCampaignService) ListAvailableCampaigns(userID int64) (*HTTPReply, 
 		}
 	}
 
+	return campaignListReply(ongoing, upcoming), nil
+}
+
+func campaignListReply(ongoing, upcoming []map[string]any) *HTTPReply {
 	return &HTTPReply{
 		HTTPStatus: http.StatusOK,
 		Code:       data.CodeSuccess,
@@ -115,7 +132,7 @@ func (s *userCampaignService) ListAvailableCampaigns(userID int64) (*HTTPReply, 
 			"ongoing":  ongoing,
 			"upcoming": upcoming,
 		},
-	}, nil
+	}
 }
 
 func (s *userCampaignService) GetLandingPageUI(campaignID, userID int64, lang string) (*HTTPReply, error) {
@@ -125,6 +142,18 @@ func (s *userCampaignService) GetLandingPageUI(campaignID, userID int64, lang st
 			return &HTTPReply{HTTPStatus: http.StatusNotFound, Code: -1, Message: "campaign not found"}, nil
 		}
 		return nil, err
+	}
+	if userID > 0 {
+		user, err := s.users.GetByID(userID)
+		if err != nil {
+			if mysql.IsNotFound(err) {
+				return &HTTPReply{HTTPStatus: http.StatusNotFound, Code: -1, Message: "campaign not found"}, nil
+			}
+			return nil, err
+		}
+		if campaignEligibilityRejectReason(user, *campaign) != "" {
+			return &HTTPReply{HTTPStatus: http.StatusNotFound, Code: -1, Message: "campaign not found"}, nil
+		}
 	}
 	if campaign.LandingPageID == 0 {
 		return &HTTPReply{HTTPStatus: http.StatusNotFound, Code: -1, Message: "landing page not configured"}, nil
@@ -195,28 +224,12 @@ func (s *userCampaignService) JoinCampaign(campaignID, userID int64) (*HTTPReply
 		}
 		return nil, err
 	}
-	if user.KYCStatus != model.KYCStatusPassed {
+	if reason := campaignEligibilityRejectReason(user, *campaign); reason != "" {
 		return &HTTPReply{
 			HTTPStatus: http.StatusOK,
 			Code:       data.CodeNotEligible,
 			Message:    "User is not eligible for this campaign",
-			Data:       map[string]any{"reason": model.RejectReasonKYCNotPassed},
-		}, nil
-	}
-	if user.Segment != campaign.TargetUserSegment {
-		return &HTTPReply{
-			HTTPStatus: http.StatusOK,
-			Code:       data.CodeNotEligible,
-			Message:    "User is not eligible for this campaign",
-			Data:       map[string]any{"reason": model.RejectReasonSegment},
-		}, nil
-	}
-	if user.Market != campaign.TargetMarket {
-		return &HTTPReply{
-			HTTPStatus: http.StatusOK,
-			Code:       data.CodeNotEligible,
-			Message:    "User is not eligible for this campaign",
-			Data:       map[string]any{"reason": "MARKET_MISMATCH"},
+			Data:       map[string]any{"reason": reason},
 		}, nil
 	}
 
@@ -415,6 +428,23 @@ func campaignListItem(campaign model.Campaign) map[string]any {
 		"startTime": campaign.CampaignStartTime.Format(time.RFC3339),
 		"endTime":   campaign.CampaignEndTime.Format(time.RFC3339),
 	}
+}
+
+func campaignEligibilityRejectReason(user *model.User, campaign model.Campaign) string {
+	if user == nil || user.KYCStatus != model.KYCStatusPassed {
+		return model.RejectReasonKYCNotPassed
+	}
+	if campaign.TargetUserSegment != "" &&
+		campaign.TargetUserSegment != model.UserSegmentAllUsers &&
+		user.Segment != campaign.TargetUserSegment {
+		return model.RejectReasonSegment
+	}
+	if campaign.TargetMarket != "" &&
+		campaign.TargetMarket != model.MarketGlobal &&
+		user.Market != campaign.TargetMarket {
+		return "MARKET_MISMATCH"
+	}
+	return ""
 }
 
 func (s *userCampaignService) simulateTopUpAfterRecharge(
