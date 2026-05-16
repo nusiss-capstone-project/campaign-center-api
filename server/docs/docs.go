@@ -282,6 +282,170 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/campaigns/{campaignId}/participations": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin-campaign-performance"
+                ],
+                "summary": "List campaign participations (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Campaign ID",
+                        "name": "campaignId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 20)",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by user ID",
+                        "name": "userId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by reward status e.g. GRANTED",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "campaign not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/campaigns/{campaignId}/performance/daily": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin-campaign-performance"
+                ],
+                "summary": "List campaign daily performance (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Campaign ID",
+                        "name": "campaignId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date YYYY-MM-DD",
+                        "name": "startDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date YYYY-MM-DD",
+                        "name": "endDate",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "campaign not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/campaigns/{campaignId}/performance/summary": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin-campaign-performance"
+                ],
+                "summary": "Get campaign performance summary (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Campaign ID",
+                        "name": "campaignId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "campaign not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/campaigns/{campaignId}/publish": {
             "post": {
                 "consumes": [
@@ -364,8 +528,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Language filter e.g. en-US",
-                        "name": "language",
+                        "description": "Default language filter e.g. en",
+                        "name": "defaultLang",
                         "in": "query"
                     }
                 ],
@@ -444,6 +608,12 @@ const docTemplate = `{
                         "name": "landingPageId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Requested language (falls back to default)",
+                        "name": "lang",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -524,6 +694,60 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/landing-pages/{landingPageId}/detail/{lang}": {
+            "get": {
+                "description": "title/description/terms come from campaign_landing_page_translations when a row exists for lang; otherwise from campaign_landing_pages. bannerImageUrl, status, timestamps always from campaign_landing_pages.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin-landing-page"
+                ],
+                "summary": "Get landing page detail by locale (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Landing page ID",
+                        "name": "landingPageId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Locale tag, e.g. ja, zh-CN",
+                        "name": "lang",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/api.LandingPageLocaleDetailHTTPResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid path",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/landing-pages/{landingPageId}/publish": {
             "post": {
                 "consumes": [
@@ -576,6 +800,190 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/landing-pages/{landingPageId}/translations": {
+            "get": {
+                "description": "Distinct lang values from the translation table only (excludes default_lang unless a translation row exists).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin-landing-page"
+                ],
+                "summary": "List translated locales for a landing page (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Landing page ID",
+                        "name": "landingPageId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/api.LandingPageTranslatedLangsHTTPResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid path",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "landing page not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/landing-pages/{landingPageId}/translations/generate": {
+            "post": {
+                "description": "Returns LLM-translated title/description/terms for the given landing page. Does not persist.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin-landing-page"
+                ],
+                "summary": "Generate landing page translation preview (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Landing page ID",
+                        "name": "landingPageId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Source/target languages and optional source copy (falls back to landing page fields when empty)",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.GenerateLandingTranslationReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/api.GenerateLandingTranslationHTTPResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "validation or empty source",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "landing page not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "OpenAI not configured or database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/landing-pages/{landingPageId}/translations/{lang}": {
+            "put": {
+                "description": "Creates or updates campaign_landing_page_translations for the given landing page and language code.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin-landing-page"
+                ],
+                "summary": "Upsert landing page translation (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Landing page ID",
+                        "name": "landingPageId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "BCP-47 or short language tag, e.g. ja, zh-CN",
+                        "name": "lang",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Translated fields",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.PutLandingTranslationReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/api.PutLandingTranslationHTTPResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "validation error",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "landing page not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/ping": {
             "get": {
                 "produces": [
@@ -593,6 +1001,96 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/web/account/summary": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-account"
+                ],
+                "summary": "Get account summary (user)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Currency (default USDT)",
+                        "name": "currency",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/web/account/transactions": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-account"
+                ],
+                "summary": "List account transactions (user)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Transaction type RECHARGE or CAMPAIGN_REWARD",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Pagination cursor (transaction id)",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
                         }
                     }
                 }
@@ -617,15 +1115,6 @@ const docTemplate = `{
                         "name": "campaignId",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "User id",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/api.JoinCampaignReq"
-                        }
                     }
                 ],
                 "responses": {
@@ -668,15 +1157,9 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "User ID for participation status",
-                        "name": "userId",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
-                        "description": "Must match landing page language when set",
-                        "name": "language",
+                        "description": "Preferred language; falls back to default",
+                        "name": "lang",
                         "in": "query"
                     }
                 ],
@@ -713,7 +1196,7 @@ const docTemplate = `{
                 "tags": [
                     "user-campaign"
                 ],
-                "summary": "Simulate top-up (user)",
+                "summary": "Simulate top-up with account recharge (user)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -723,7 +1206,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "User and amount",
+                        "description": "Top-up amount",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -802,14 +1285,66 @@ const docTemplate = `{
                 }
             }
         },
-        "api.JoinCampaignReq": {
+        "api.GenerateLandingTranslationData": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "lang": {
+                    "type": "string",
+                    "example": "ja"
+                },
+                "terms": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.GenerateLandingTranslationHTTPResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "$ref": "#/definitions/api.GenerateLandingTranslationData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "api.GenerateLandingTranslationReq": {
             "type": "object",
             "required": [
-                "userId"
+                "sourceLang",
+                "targetLang"
             ],
             "properties": {
-                "userId": {
-                    "type": "integer"
+                "description": {
+                    "type": "string",
+                    "example": "Recharge now and receive \u003creward_amount\u003e bonus"
+                },
+                "sourceLang": {
+                    "type": "string",
+                    "example": "en"
+                },
+                "targetLang": {
+                    "type": "string",
+                    "example": "ja"
+                },
+                "terms": {
+                    "type": "string",
+                    "example": "Reward will expire in \u003cdays\u003e days"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Top up \u003camount\u003e to get reward"
                 }
             }
         },
@@ -817,8 +1352,8 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "bannerImageUrl",
+                "defaultLang",
                 "description",
-                "language",
                 "terms",
                 "title"
             ],
@@ -826,10 +1361,10 @@ const docTemplate = `{
                 "bannerImageUrl": {
                     "type": "string"
                 },
-                "description": {
+                "defaultLang": {
                     "type": "string"
                 },
-                "language": {
+                "description": {
                     "type": "string"
                 },
                 "terms": {
@@ -840,6 +1375,87 @@ const docTemplate = `{
                 }
             }
         },
+        "api.LandingPageLocaleDetailData": {
+            "type": "object",
+            "properties": {
+                "bannerImageUrl": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "defaultLang": {
+                    "type": "string",
+                    "example": "en"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 2001
+                },
+                "lang": {
+                    "type": "string",
+                    "example": "ja"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "terms": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.LandingPageLocaleDetailHTTPResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "$ref": "#/definitions/api.LandingPageLocaleDetailData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "api.LandingPageTranslatedLangsData": {
+            "type": "object",
+            "properties": {
+                "langs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.LandingPageTranslatedLangsHTTPResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "$ref": "#/definitions/api.LandingPageTranslatedLangsData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
         "api.PublishOperatorReq": {
             "type": "object",
             "required": [
@@ -847,6 +1463,56 @@ const docTemplate = `{
             ],
             "properties": {
                 "operator": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.PutLandingTranslationData": {
+            "type": "object",
+            "properties": {
+                "landingPageId": {
+                    "type": "integer"
+                },
+                "lang": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.PutLandingTranslationHTTPResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "$ref": "#/definitions/api.PutLandingTranslationData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "api.PutLandingTranslationReq": {
+            "type": "object",
+            "required": [
+                "description",
+                "terms",
+                "title"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "operator": {
+                    "type": "string",
+                    "example": "admin"
+                },
+                "terms": {
+                    "type": "string"
+                },
+                "title": {
                     "type": "string"
                 }
             }
@@ -877,15 +1543,11 @@ const docTemplate = `{
         "api.SimulateTopUpReq": {
             "type": "object",
             "required": [
-                "amount",
-                "userId"
+                "amount"
             ],
             "properties": {
                 "amount": {
                     "type": "number"
-                },
-                "userId": {
-                    "type": "integer"
                 }
             }
         },

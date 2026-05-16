@@ -67,3 +67,14 @@ const (
 	RejectReasonKYCNotPassed = "KYC_NOT_PASSED"
 	RejectReasonSegment      = "SEGMENT_MISMATCH"
 )
+
+const DefaultCurrency = "USDT"
+
+const (
+	AccountTxnTypeRecharge        = "RECHARGE"
+	AccountTxnTypeCampaignReward  = "CAMPAIGN_REWARD"
+	AccountTxnStatusSuccess       = "SUCCESS"
+	AccountTxnStatusFailed        = "FAILED"
+	AccountTxnRelatedTypeCampaign = "CAMPAIGN"
+	AccountTxnRelatedTypeRecharge = "RECHARGE"
+)

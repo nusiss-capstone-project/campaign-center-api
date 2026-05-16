@@ -50,7 +50,7 @@ type campaignAdminService struct {
 }
 
 var (
-	campaignAdminServiceOnce   sync.Once
+	campaignAdminServiceOnce sync.Once
 	campaignAdminServiceInst CampaignAdminService
 )
 

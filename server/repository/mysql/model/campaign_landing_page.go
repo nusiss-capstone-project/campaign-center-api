@@ -5,7 +5,7 @@ import "time"
 // CampaignLandingPage maps to table campaign_landing_pages.
 type CampaignLandingPage struct {
 	ID             int64     `gorm:"column:id;primaryKey;autoIncrement"`
-	Language       string    `gorm:"column:language;size:16"`
+	DefaultLang    string    `gorm:"column:default_lang;size:16"`
 	BannerImageURL string    `gorm:"column:banner_image_url;size:512"`
 	Title          string    `gorm:"column:title;size:255"`
 	Description    string    `gorm:"column:description;type:text"`

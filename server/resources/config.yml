@@ -12,6 +12,11 @@ redis:
   enabled: false
   host: 127.0.0.1
   port: "6379"
+# OpenAI: prefer env OPENAI_API_KEY for secrets; openai.api_key in file is optional.
+openai:
+  api_key: ""
+  base_url: ""
+  model: "gpt-4o-mini"
 
 system:
   allowed_origins: 

@@ -14,17 +14,19 @@ import (
 
 // UserCampaignService user-facing campaign flows.
 type UserCampaignService interface {
-	GetLandingPageUI(campaignID, userID int64, language string) (*HTTPReply, error)
+	GetLandingPageUI(campaignID, userID int64, lang string) (*HTTPReply, error)
 	JoinCampaign(campaignID, userID int64) (*HTTPReply, error)
 	SimulateTopUp(campaignID, userID int64, amount float64) (*HTTPReply, error)
 }
 
 type userCampaignService struct {
-	campaigns    mysql.CampaignRepository
-	landingPages mysql.LandingPageRepository
-	participants mysql.ParticipantRepository
-	users        mysql.UserRepository
-	rewardTx     mysql.RewardTransactionRepository
+	campaigns           mysql.CampaignRepository
+	landingPages        mysql.LandingPageRepository
+	landingTranslations LandingPageTranslationService
+	participants        mysql.ParticipantRepository
+	users               mysql.UserRepository
+	accounts            AccountService
+	rewards             CampaignRewardNotifier
 }
 
 var (
@@ -36,16 +38,20 @@ var (
 func NewUserCampaignService(
 	campaigns mysql.CampaignRepository,
 	landingPages mysql.LandingPageRepository,
+	landingTranslations LandingPageTranslationService,
 	participants mysql.ParticipantRepository,
 	users mysql.UserRepository,
-	rewardTx mysql.RewardTransactionRepository,
+	accounts AccountService,
+	rewards CampaignRewardNotifier,
 ) UserCampaignService {
 	return &userCampaignService{
-		campaigns:    campaigns,
-		landingPages: landingPages,
-		participants: participants,
-		users:        users,
-		rewardTx:     rewardTx,
+		campaigns:           campaigns,
+		landingPages:        landingPages,
+		landingTranslations: landingTranslations,
+		participants:        participants,
+		users:               users,
+		accounts:            accounts,
+		rewards:             rewards,
 	}
 }
 
@@ -55,15 +61,17 @@ func GetUserCampaignService() UserCampaignService {
 		userCampaignServiceInst = NewUserCampaignService(
 			mysql.GetCampaignRepository(),
 			mysql.GetLandingPageRepository(),
+			GetLandingPageTranslationService(),
 			mysql.GetParticipantRepository(),
 			mysql.GetUserRepository(),
-			mysql.GetRewardTransactionRepository(),
+			GetAccountService(),
+			GetCampaignRewardNotifier(),
 		)
 	})
 	return userCampaignServiceInst
 }
 
-func (s *userCampaignService) GetLandingPageUI(campaignID, userID int64, language string) (*HTTPReply, error) {
+func (s *userCampaignService) GetLandingPageUI(campaignID, userID int64, lang string) (*HTTPReply, error) {
 	campaign, err := s.campaigns.GetByID(campaignID)
 	if err != nil {
 		if mysql.IsNotFound(err) {
@@ -81,52 +89,22 @@ func (s *userCampaignService) GetLandingPageUI(campaignID, userID int64, languag
 		}
 		return nil, err
 	}
-	if language != "" && lp.Language != language {
-		return &HTTPReply{HTTPStatus: http.StatusNotFound, Code: -1, Message: "landing page language mismatch"}, nil
-	}
 	rules, err := model.ParseRewardRulesJSON(campaign.RewardRules)
 	if err != nil {
 		return &HTTPReply{HTTPStatus: http.StatusInternalServerError, Code: -1, Message: err.Error()}, nil
 	}
-	title := replaceLandingTemplates(lp.Title, rules.TopupThreshold, rules.RewardAmount)
-
-	var joined bool
-	taskStatus := model.TaskStatusNotStarted
-	rewardStatus := model.RewardStatusNotGranted
-	if userID > 0 {
-		if p, err := s.participants.GetByCampaignAndUser(campaignID, userID); err == nil {
-			joined = true
-			taskStatus = p.TaskStatus
-			rewardStatus = p.RewardStatus
-		} else if !mysql.IsNotFound(err) {
-			return nil, err
-		}
+	texts, err := s.landingTranslations.ResolveLandingPageTexts(lp, lang)
+	if err != nil {
+		return nil, err
 	}
-
-	payload := map[string]any{
-		"campaignId":            campaignID,
-		"campaignName":          campaign.Name,
-		"campaignType":          campaign.Type,
-		"status":                campaign.Status,
-		"registrationStartTime": campaign.RegistrationStartTime.Format(time.RFC3339),
-		"registrationEndTime":   campaign.RegistrationEndTime.Format(time.RFC3339),
-		"campaignStartTime":     campaign.CampaignStartTime.Format(time.RFC3339),
-		"campaignEndTime":       campaign.CampaignEndTime.Format(time.RFC3339),
-		"landingPage": map[string]any{
-			"language":       lp.Language,
-			"bannerImageUrl": lp.BannerImageURL,
-			"title":          title,
-			"description":    lp.Description,
-			"terms":          lp.Terms,
-		},
-		"rewardRule": rules,
-		"userStatus": map[string]any{
-			"joined":       joined,
-			"taskStatus":   taskStatus,
-			"rewardStatus": rewardStatus,
-		},
+	title := replaceLandingTemplates(texts.Title, rules.TopupThreshold, rules.RewardAmount)
+	payload, err := s.buildLandingPageUIPayload(
+		campaign, campaignID, userID, lp, texts.Lang, title, texts.Description, texts.Terms, rules,
+	)
+	if err != nil {
+		return nil, err
 	}
-	return &HTTPReply{HTTPStatus: http.StatusOK, Code: data.CodeSuccess, Message: "success", Data: payload}, nil
+	return landingPageUIReply(payload), nil
 }
 
 func (s *userCampaignService) JoinCampaign(campaignID, userID int64) (*HTTPReply, error) {
@@ -255,10 +233,17 @@ func (s *userCampaignService) SimulateTopUp(campaignID, userID int64, amount flo
 	now := time.Now()
 	applyTopUpProgressToParticipant(participant, amount, now)
 
-	if user.RiskLevel == model.RiskLevelHigh {
-		return s.simulateTopUpManualReview(participant, campaignID, userID, amount)
+	recharge, err := s.accounts.Recharge(userID, amount, model.DefaultCurrency)
+	if err != nil {
+		if IsInvalidAccountInput(err) {
+			return &HTTPReply{HTTPStatus: http.StatusBadRequest, Code: -1, Message: err.Error()}, nil
+		}
+		return nil, err
 	}
-	return s.simulateTopUpGrantApproved(participant, rules, campaignID, userID, amount, now)
+	return s.simulateTopUpAfterRecharge(
+		participant, rules, campaignID, userID, amount, user,
+		recharge.TransactionNo, recharge.BalanceAfter,
+	)
 }
 
 // simulateTopUpPrecheck loads campaign and participant and returns an HTTPReply for early business exits.
@@ -329,10 +314,80 @@ func applyTopUpProgressToParticipant(participant *model.CampaignParticipant, amo
 	participant.UpdatedAt = now
 }
 
-func (s *userCampaignService) simulateTopUpManualReview(
+func (s *userCampaignService) buildLandingPageUIPayload(
+	campaign *model.Campaign,
+	campaignID, userID int64,
+	lp *model.CampaignLandingPage,
+	resolvedLang, title, descBase, termsBase string,
+	rules model.RewardRulesPayload,
+) (map[string]any, error) {
+	var joined bool
+	taskStatus := model.TaskStatusNotStarted
+	rewardStatus := model.RewardStatusNotGranted
+	if userID > 0 {
+		if p, err := s.participants.GetByCampaignAndUser(campaignID, userID); err == nil {
+			joined = true
+			taskStatus = p.TaskStatus
+			rewardStatus = p.RewardStatus
+		} else if !mysql.IsNotFound(err) {
+			return nil, err
+		}
+	}
+	return map[string]any{
+		"campaignId":            campaignID,
+		"campaignName":          campaign.Name,
+		"campaignType":          campaign.Type,
+		"status":                campaign.Status,
+		"registrationStartTime": campaign.RegistrationStartTime.Format(time.RFC3339),
+		"registrationEndTime":   campaign.RegistrationEndTime.Format(time.RFC3339),
+		"campaignStartTime":     campaign.CampaignStartTime.Format(time.RFC3339),
+		"campaignEndTime":       campaign.CampaignEndTime.Format(time.RFC3339),
+		"landingPage": map[string]any{
+			"lang": resolvedLang, "defaultLang": lp.DefaultLang,
+			"bannerImageUrl": lp.BannerImageURL,
+			"title":          title, "description": descBase, "terms": termsBase,
+		},
+		"rewardRule": map[string]any{
+			"topupThreshold":  rules.TopupThreshold,
+			"rewardAmount":    rules.RewardAmount,
+			"rewardType":      rules.RewardType,
+			"maxClaimPerUser": rules.MaxClaimPerUser,
+		},
+		"userStatus": map[string]any{
+			"joined": joined, "taskStatus": taskStatus, "rewardStatus": rewardStatus,
+		},
+	}, nil
+}
+
+func landingPageUIReply(payload map[string]any) *HTTPReply {
+	return &HTTPReply{HTTPStatus: http.StatusOK, Code: data.CodeSuccess, Message: "success", Data: payload}
+}
+
+func (s *userCampaignService) simulateTopUpAfterRecharge(
+	participant *model.CampaignParticipant,
+	rules model.RewardRulesPayload,
+	campaignID, userID int64,
+	amount float64,
+	user *model.User,
+	rechargeTxnNo string,
+	balanceAfter float64,
+) (*HTTPReply, error) {
+	if user.RiskLevel == model.RiskLevelHigh {
+		return s.simulateTopUpManualReviewWithAccount(
+			participant, campaignID, userID, amount, rechargeTxnNo, balanceAfter,
+		)
+	}
+	return s.simulateTopUpEnqueueReward(
+		participant, rules, campaignID, userID, amount, rechargeTxnNo, balanceAfter,
+	)
+}
+
+func (s *userCampaignService) simulateTopUpManualReviewWithAccount(
 	participant *model.CampaignParticipant,
 	campaignID, userID int64,
 	amount float64,
+	rechargeTxnNo string,
+	balanceAfter float64,
 ) (*HTTPReply, error) {
 	participant.RiskStatus = model.RiskStatusManualReview
 	participant.RewardStatus = model.RewardStatusPendingReview
@@ -340,62 +395,51 @@ func (s *userCampaignService) simulateTopUpManualReview(
 	if err := s.participants.Save(participant); err != nil {
 		return nil, err
 	}
-	return &HTTPReply{
-		HTTPStatus: http.StatusOK,
-		Code:       data.CodeSuccess,
-		Message:    "manual review required",
-		Data: map[string]any{
-			"campaignId":   campaignID,
-			"userId":       userID,
-			"topupAmount":  amount,
-			"taskStatus":   model.TaskStatusCompleted,
-			"riskStatus":   model.RiskStatusManualReview,
-			"rewardStatus": model.RewardStatusPendingReview,
-			"rewardAmount": 0,
-		},
-	}, nil
+	return topUpReply(campaignID, userID, amount, rechargeTxnNo, balanceAfter, map[string]any{
+		"taskStatus": model.TaskStatusCompleted, "riskStatus": model.RiskStatusManualReview,
+		"rewardStatus": model.RewardStatusPendingReview, "rewardAmount": 0,
+	}, "manual review required")
 }
 
-func (s *userCampaignService) simulateTopUpGrantApproved(
+func (s *userCampaignService) simulateTopUpEnqueueReward(
 	participant *model.CampaignParticipant,
 	rules model.RewardRulesPayload,
 	campaignID, userID int64,
 	amount float64,
-	now time.Time,
+	rechargeTxnNo string,
+	balanceAfter float64,
 ) (*HTTPReply, error) {
 	participant.RiskStatus = model.RiskStatusApproved
-	participant.RewardStatus = model.RewardStatusGranted
 	participant.RewardAmount = rules.RewardAmount
-	rewardedAt := now
-	participant.RewardedAt = &rewardedAt
-
-	rewardRow := model.RewardTransaction{
-		CampaignID:    campaignID,
-		UserID:        userID,
-		ParticipantID: participant.ID,
-		RewardType:    rules.RewardType,
-		RewardAmount:  rules.RewardAmount,
-		Status:        model.RewardTxnStatusCompleted,
-		CreatedAt:     now,
-	}
-	if err := s.rewardTx.CommitGrantWithParticipant(participant, &rewardRow); err != nil {
+	if err := s.participants.Save(participant); err != nil {
 		return nil, err
 	}
+	s.rewards.NotifyTopUpReward(TopUpRewardEvent{
+		CampaignID: campaignID, UserID: userID, TopupAmount: amount,
+		ParticipantID: participant.ID, ManualReview: false,
+		RewardAmount: rules.RewardAmount, RewardType: rules.RewardType,
+	})
+	return topUpReply(campaignID, userID, amount, rechargeTxnNo, balanceAfter, map[string]any{
+		"taskStatus": model.TaskStatusCompleted, "riskStatus": model.RiskStatusApproved,
+		"rewardStatus": model.RewardStatusGranted, "rewardAmount": rules.RewardAmount,
+	}, "success")
+}
 
+func topUpReply(
+	campaignID, userID int64, amount float64,
+	rechargeTxnNo string, balanceAfter float64,
+	extra map[string]any,
+	message string,
+) (*HTTPReply, error) {
+	payload := map[string]any{
+		"campaignId": campaignID, "userId": userID, "topupAmount": amount,
+		"rechargeTransactionNo": rechargeTxnNo, "balanceAfter": balanceAfter,
+	}
+	for k, v := range extra {
+		payload[k] = v
+	}
 	return &HTTPReply{
-		HTTPStatus: http.StatusOK,
-		Code:       data.CodeSuccess,
-		Message:    "success",
-		Data: map[string]any{
-			"campaignId":          campaignID,
-			"userId":              userID,
-			"topupAmount":         amount,
-			"taskStatus":          model.TaskStatusCompleted,
-			"riskStatus":          model.RiskStatusApproved,
-			"rewardStatus":        model.RewardStatusGranted,
-			"rewardAmount":        rules.RewardAmount,
-			"rewardTransactionId": rewardRow.ID,
-		},
+		HTTPStatus: http.StatusOK, Code: data.CodeSuccess, Message: message, Data: payload,
 	}, nil
 }
 
