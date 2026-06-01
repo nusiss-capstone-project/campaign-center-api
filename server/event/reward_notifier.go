@@ -1,4 +1,4 @@
-package service
+package event
 
 import (
 	"time"
@@ -37,4 +37,14 @@ func (n *channelCampaignRewardNotifier) NotifyTopUpReward(event TopUpRewardEvent
 			"reward_type", event.RewardType,
 		)
 	}
+}
+
+// NewSyncCampaignRewardNotifier runs reward handling synchronously (tests).
+func NewSyncCampaignRewardNotifier(handler func(TopUpRewardEvent) error) CampaignRewardNotifier {
+	return &syncCampaignRewardNotifier{handler: handler}
+}
+
+// NewChannelCampaignRewardNotifier enqueues events on a buffered channel.
+func NewChannelCampaignRewardNotifier(ch chan TopUpRewardEvent) CampaignRewardNotifier {
+	return &channelCampaignRewardNotifier{ch: ch}
 }

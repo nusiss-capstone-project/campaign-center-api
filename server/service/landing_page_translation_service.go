@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lianjin/campaign-center-api/server/http/data"
 	"github.com/lianjin/campaign-center-api/server/log"
 	"github.com/lianjin/campaign-center-api/server/proxy"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql"
@@ -99,7 +100,7 @@ func (s *landingPageTranslationService) GenerateTranslation(
 	}
 	title, desc, terms := mergedSourceTexts(page, p)
 	if strings.TrimSpace(title+desc+terms) == "" {
-		return nil, errTranslationSourceEmpty
+		return nil, data.ErrTranslationSourceEmpty
 	}
 	out, err := s.tr.Translate(ctx, proxy.LandingPageTranslateInput{
 		SourceLang: p.SourceLang, TargetLang: p.TargetLang,

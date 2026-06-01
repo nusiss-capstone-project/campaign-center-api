@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lianjin/campaign-center-api/server/http/data"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
 	"github.com/lianjin/campaign-center-api/server/service"
@@ -60,7 +61,7 @@ func TestCampaignAdminService_UpdateDraftCampaign_notDraft(t *testing.T) {
 		},
 	})
 	require.Error(t, err)
-	require.True(t, service.IsCampaignNotDraft(err))
+	require.True(t, data.IsCampaignNotDraft(err))
 }
 
 func TestCampaignAdminService_UpdateDraftCampaign_success(t *testing.T) {
@@ -168,7 +169,7 @@ func TestCampaignAdminService_ArchiveCampaign_publishedDuringActivity(t *testing
 	svc := service.NewCampaignAdminService(m)
 	_, err := svc.ArchiveCampaign(3, "op")
 	require.Error(t, err)
-	require.True(t, service.IsCampaignNotArchivable(err))
+	require.True(t, data.IsCampaignNotArchivable(err))
 }
 
 func TestCampaignAdminService_ArchiveCampaign_alreadyArchived(t *testing.T) {
@@ -178,7 +179,7 @@ func TestCampaignAdminService_ArchiveCampaign_alreadyArchived(t *testing.T) {
 	svc := service.NewCampaignAdminService(m)
 	_, err := svc.ArchiveCampaign(4, "op")
 	require.Error(t, err)
-	require.True(t, service.IsCampaignAlreadyArchived(err))
+	require.True(t, data.IsCampaignAlreadyArchived(err))
 }
 
 func TestCampaignAdminService_GetByID_notFound(t *testing.T) {

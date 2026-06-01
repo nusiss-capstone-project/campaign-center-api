@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lianjin/campaign-center-api/server/http/data"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
 )
@@ -100,7 +101,7 @@ func (s *campaignAdminService) UpdateDraftCampaign(id int64, p UpdateCampaignPar
 		return err
 	}
 	if existing.Status != model.CampaignStatusDraft {
-		return errCampaignNotDraft
+		return data.ErrCampaignNotDraft
 	}
 	rulesJSON, err := model.MarshalRewardRulesPayload(p.RewardRules)
 	if err != nil {
@@ -139,7 +140,7 @@ func (s *campaignAdminService) ArchiveCampaign(id int64, operator string) (*mode
 	}
 	switch c.Status {
 	case model.CampaignStatusArchive:
-		return nil, errCampaignAlreadyArchived
+		return nil, data.ErrCampaignAlreadyArchived
 	case model.CampaignStatusDraft:
 		// allowed
 	case model.CampaignStatusPublished:
@@ -147,10 +148,10 @@ func (s *campaignAdminService) ArchiveCampaign(id int64, operator string) (*mode
 		// Active window [CampaignStartTime, CampaignEndTime] inclusive; archive only when outside it (not started yet or already ended).
 		inActivity := !now.Before(c.CampaignStartTime) && !now.After(c.CampaignEndTime)
 		if inActivity {
-			return nil, errCampaignNotArchivable
+			return nil, data.ErrCampaignNotArchivable
 		}
 	default:
-		return nil, errCampaignNotArchivable
+		return nil, data.ErrCampaignNotArchivable
 	}
 	return s.campaigns.Archive(id, operator)
 }

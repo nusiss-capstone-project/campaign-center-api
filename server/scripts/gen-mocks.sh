@@ -34,8 +34,24 @@ for name in CampaignRepository LandingPageRepository UserRepository ParticipantR
   gen_repo_mock "$name"
 done
 
-for name in AccountService CampaignRewardNotifier; do
+for name in AccountService; do
   gen_service_mock "$name"
+done
+
+gen_event_mock() {
+  local name="$1"
+  "${MOCKERY[@]}" \
+    --name="$name" \
+    --dir=./event \
+    --output=./mock \
+    --outpkg=mock \
+    --filename="${name}.mock.go" \
+    --structname="Mock${name}" \
+    --disable-version-string
+}
+
+for name in CampaignRewardNotifier; do
+  gen_event_mock "$name"
 done
 
 echo "Mocks written to server/mock/"
