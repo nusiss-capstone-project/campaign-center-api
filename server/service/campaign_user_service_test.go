@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lianjin/campaign-center-api/server/event"
 	"github.com/lianjin/campaign-center-api/server/http/data"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
@@ -18,7 +19,7 @@ import (
 
 type noopRewardNotifier struct{}
 
-func (noopRewardNotifier) NotifyTopUpReward(service.TopUpRewardEvent) {}
+func (noopRewardNotifier) NotifyTopUpReward(event.TopUpRewardEvent) {}
 
 type staticLandingPageTranslationRepo struct {
 	row *model.CampaignLandingPageTranslation
@@ -49,7 +50,7 @@ func newTestUserCampaignService(
 	pm *servicemock.MockParticipantRepository,
 	um *servicemock.MockUserRepository,
 	am service.AccountService,
-	rn service.CampaignRewardNotifier,
+	rn event.CampaignRewardNotifier,
 ) service.UserCampaignService {
 	t.Helper()
 	if trans == nil {
@@ -351,7 +352,7 @@ func TestUserCampaignService_SimulateTopUp_granted(t *testing.T) {
 	})).Return(nil)
 	am := defaultRechargeMock(t)
 	rn := &servicemock.MockCampaignRewardNotifier{}
-	rn.On("NotifyTopUpReward", mock.MatchedBy(func(e service.TopUpRewardEvent) bool {
+	rn.On("NotifyTopUpReward", mock.MatchedBy(func(e event.TopUpRewardEvent) bool {
 		return e.ParticipantID == 55 && e.RewardAmount == 10
 	}))
 
@@ -386,7 +387,7 @@ func TestUserCampaignService_SimulateTopUp_percentageRewardCapped(t *testing.T) 
 	})).Return(nil)
 	am := defaultRechargeMock(t)
 	rn := &servicemock.MockCampaignRewardNotifier{}
-	rn.On("NotifyTopUpReward", mock.MatchedBy(func(e service.TopUpRewardEvent) bool {
+	rn.On("NotifyTopUpReward", mock.MatchedBy(func(e event.TopUpRewardEvent) bool {
 		return e.ParticipantID == 55 && e.RewardAmount == 15
 	}))
 
@@ -420,7 +421,7 @@ func TestUserCampaignService_SimulateTopUp_fixedRewardCapped(t *testing.T) {
 	})).Return(nil)
 	am := defaultRechargeMock(t)
 	rn := &servicemock.MockCampaignRewardNotifier{}
-	rn.On("NotifyTopUpReward", mock.MatchedBy(func(e service.TopUpRewardEvent) bool {
+	rn.On("NotifyTopUpReward", mock.MatchedBy(func(e event.TopUpRewardEvent) bool {
 		return e.ParticipantID == 55 && e.RewardAmount == 20
 	}))
 

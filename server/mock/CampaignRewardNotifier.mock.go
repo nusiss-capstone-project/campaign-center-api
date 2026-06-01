@@ -3,7 +3,7 @@
 package mock
 
 import (
-	service "github.com/lianjin/campaign-center-api/server/service"
+	event "github.com/lianjin/campaign-center-api/server/event"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -12,9 +12,9 @@ type MockCampaignRewardNotifier struct {
 	mock.Mock
 }
 
-// NotifyTopUpReward provides a mock function with given fields: event
-func (_m *MockCampaignRewardNotifier) NotifyTopUpReward(event service.TopUpRewardEvent) {
-	_m.Called(event)
+// NotifyTopUpReward provides a mock function with given fields: _a0
+func (_m *MockCampaignRewardNotifier) NotifyTopUpReward(_a0 event.TopUpRewardEvent) {
+	_m.Called(_a0)
 }
 
 // NewMockCampaignRewardNotifier creates a new instance of MockCampaignRewardNotifier. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

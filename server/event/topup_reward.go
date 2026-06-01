@@ -1,4 +1,4 @@
-package service
+package event
 
 // TopUpRewardEvent is dispatched after a successful campaign top-up recharge.
 type TopUpRewardEvent struct {

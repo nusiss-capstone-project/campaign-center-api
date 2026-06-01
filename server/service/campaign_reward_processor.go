@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lianjin/campaign-center-api/server/event"
 	"github.com/lianjin/campaign-center-api/server/log"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
@@ -17,14 +18,29 @@ type CampaignRewardProcessor struct {
 	performance  mysql.CampaignPerformanceRepository
 }
 
+// NewCampaignRewardProcessor builds a processor with explicit dependencies (for tests).
+func NewCampaignRewardProcessor(
+	participants mysql.ParticipantRepository,
+	rewardTx mysql.RewardTransactionRepository,
+	accounts AccountService,
+	performance mysql.CampaignPerformanceRepository,
+) *CampaignRewardProcessor {
+	return &CampaignRewardProcessor{
+		participants: participants,
+		rewardTx:     rewardTx,
+		accounts:     accounts,
+		performance:  performance,
+	}
+}
+
 var (
 	rewardProcessorOnce sync.Once
 	rewardProcessorInst *CampaignRewardProcessor
-	rewardNotifierInst  CampaignRewardNotifier
+	rewardNotifierInst  event.CampaignRewardNotifier
 )
 
 // GetCampaignRewardNotifier returns the singleton notifier (starts worker on first call).
-func GetCampaignRewardNotifier() CampaignRewardNotifier {
+func GetCampaignRewardNotifier() event.CampaignRewardNotifier {
 	rewardProcessorOnce.Do(func() {
 		rewardProcessorInst = &CampaignRewardProcessor{
 			participants: mysql.GetParticipantRepository(),
@@ -32,19 +48,19 @@ func GetCampaignRewardNotifier() CampaignRewardNotifier {
 			accounts:     GetAccountService(),
 			performance:  mysql.GetCampaignPerformanceRepository(),
 		}
-		ch := make(chan TopUpRewardEvent, 256)
-		rewardNotifierInst = &channelCampaignRewardNotifier{ch: ch}
+		ch := make(chan event.TopUpRewardEvent, 256)
+		rewardNotifierInst = event.NewChannelCampaignRewardNotifier(ch)
 		go rewardProcessorInst.runWorker(ch)
 	})
 	return rewardNotifierInst
 }
 
 // NewCampaignRewardNotifierForTest runs reward handling synchronously.
-func NewCampaignRewardNotifierForTest(p *CampaignRewardProcessor) CampaignRewardNotifier {
-	return &syncCampaignRewardNotifier{handler: p.HandleTopUpReward}
+func NewCampaignRewardNotifierForTest(p *CampaignRewardProcessor) event.CampaignRewardNotifier {
+	return event.NewSyncCampaignRewardNotifier(p.HandleTopUpReward)
 }
 
-func (p *CampaignRewardProcessor) runWorker(ch <-chan TopUpRewardEvent) {
+func (p *CampaignRewardProcessor) runWorker(ch <-chan event.TopUpRewardEvent) {
 	for event := range ch {
 		if err := p.HandleTopUpReward(event); err != nil {
 			log.Logger.Errorw("campaign_reward_event_failed",
@@ -62,11 +78,11 @@ func (p *CampaignRewardProcessor) runWorker(ch <-chan TopUpRewardEvent) {
 }
 
 // HandleTopUpReward processes one top-up reward event.
-func (p *CampaignRewardProcessor) HandleTopUpReward(event TopUpRewardEvent) error {
-	if event.ManualReview {
+func (p *CampaignRewardProcessor) HandleTopUpReward(ev event.TopUpRewardEvent) error {
+	if ev.ManualReview {
 		return nil
 	}
-	participant, err := p.participants.GetByCampaignAndUser(event.CampaignID, event.UserID)
+	participant, err := p.participants.GetByCampaignAndUser(ev.CampaignID, ev.UserID)
 	if err != nil {
 		return err
 	}
@@ -76,25 +92,25 @@ func (p *CampaignRewardProcessor) HandleTopUpReward(event TopUpRewardEvent) erro
 	now := time.Now()
 	participant.RiskStatus = model.RiskStatusApproved
 	participant.RewardStatus = model.RewardStatusGranted
-	participant.RewardAmount = event.RewardAmount
+	participant.RewardAmount = ev.RewardAmount
 	participant.RewardedAt = &now
 	participant.UpdatedAt = now
 
 	rewardRow := model.RewardTransaction{
-		CampaignID: event.CampaignID, UserID: event.UserID,
-		ParticipantID: participant.ID, RewardType: event.RewardType,
-		RewardAmount: event.RewardAmount, Status: model.RewardTxnStatusCompleted,
+		CampaignID: ev.CampaignID, UserID: ev.UserID,
+		ParticipantID: participant.ID, RewardType: ev.RewardType,
+		RewardAmount: ev.RewardAmount, Status: model.RewardTxnStatusCompleted,
 		CreatedAt: now,
 	}
 	if err := p.rewardTx.CommitGrantWithParticipant(participant, &rewardRow); err != nil {
 		return err
 	}
 	if _, err := p.accounts.CreditCampaignReward(
-		event.UserID, event.CampaignID, event.RewardAmount, model.DefaultCurrency,
+		ev.UserID, ev.CampaignID, ev.RewardAmount, model.DefaultCurrency,
 	); err != nil {
 		return err
 	}
 	return p.performance.IncrementRewardIssued(
-		event.CampaignID, now, event.RewardAmount, model.DefaultCurrency,
+		ev.CampaignID, now, ev.RewardAmount, model.DefaultCurrency,
 	)
 }

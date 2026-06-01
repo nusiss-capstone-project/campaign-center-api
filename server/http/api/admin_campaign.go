@@ -193,7 +193,7 @@ func AdminUpdateCampaign(c *gin.Context) {
 		LandingPageID:         req.LandingPageID,
 	})
 	if err != nil {
-		if service.IsCampaignNotDraft(err) {
+		if data.IsCampaignNotDraft(err) {
 			data.JSON(c, http.StatusConflict, -1, err.Error(), nil)
 			return
 		}
@@ -380,7 +380,7 @@ func AdminArchiveCampaign(c *gin.Context) {
 			data.JSON(c, http.StatusNotFound, -1, "campaign not found", nil)
 			return
 		}
-		if service.IsCampaignAlreadyArchived(err) || service.IsCampaignNotArchivable(err) {
+		if data.IsCampaignAlreadyArchived(err) || data.IsCampaignNotArchivable(err) {
 			data.JSON(c, http.StatusConflict, -1, err.Error(), nil)
 			return
 		}

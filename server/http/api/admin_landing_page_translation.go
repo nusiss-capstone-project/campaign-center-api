@@ -1,11 +1,13 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/lianjin/campaign-center-api/server/http/data"
+	"github.com/lianjin/campaign-center-api/server/proxy"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql"
 	"github.com/lianjin/campaign-center-api/server/service"
 )
@@ -90,11 +92,11 @@ func AdminGenerateLandingTranslation(c *gin.Context) {
 		Terms:         req.Terms,
 	})
 	if err != nil {
-		if service.IsOpenAINotConfigured(err) {
+		if errors.Is(err, proxy.ErrOpenAINotConfigured) {
 			data.JSON(c, http.StatusServiceUnavailable, -1, err.Error(), nil)
 			return
 		}
-		if service.IsTranslationSourceEmpty(err) {
+		if data.IsTranslationSourceEmpty(err) {
 			data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
 			return
 		}
