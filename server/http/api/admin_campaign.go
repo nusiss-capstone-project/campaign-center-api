@@ -93,22 +93,22 @@ func AdminCreateCampaign(c *gin.Context) {
 	}
 	regStart, err := parseRFC3339(req.RegistrationStartTime)
 	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, "invalid registrationStartTime", nil)
+		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidRegistrationStartTime, nil)
 		return
 	}
 	regEnd, err := parseRFC3339(req.RegistrationEndTime)
 	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, "invalid registrationEndTime", nil)
+		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidRegistrationEndTime, nil)
 		return
 	}
 	cs, err := parseRFC3339(req.CampaignStartTime)
 	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, "invalid campaignStartTime", nil)
+		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidCampaignStartTime, nil)
 		return
 	}
 	ce, err := parseRFC3339(req.CampaignEndTime)
 	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, "invalid campaignEndTime", nil)
+		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidCampaignEndTime, nil)
 		return
 	}
 	svc := service.GetCampaignAdminService()
@@ -152,7 +152,7 @@ func AdminUpdateCampaign(c *gin.Context) {
 	idStr := c.Param("campaignId")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, "invalid campaignId", nil)
+		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidCampaignID, nil)
 		return
 	}
 	var req UpdateCampaignReq
@@ -162,22 +162,22 @@ func AdminUpdateCampaign(c *gin.Context) {
 	}
 	regStart, err := parseRFC3339(req.RegistrationStartTime)
 	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, "invalid registrationStartTime", nil)
+		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidRegistrationStartTime, nil)
 		return
 	}
 	regEnd, err := parseRFC3339(req.RegistrationEndTime)
 	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, "invalid registrationEndTime", nil)
+		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidRegistrationEndTime, nil)
 		return
 	}
 	cs, err := parseRFC3339(req.CampaignStartTime)
 	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, "invalid campaignStartTime", nil)
+		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidCampaignStartTime, nil)
 		return
 	}
 	ce, err := parseRFC3339(req.CampaignEndTime)
 	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, "invalid campaignEndTime", nil)
+		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidCampaignEndTime, nil)
 		return
 	}
 	svc := service.GetCampaignAdminService()
@@ -198,7 +198,7 @@ func AdminUpdateCampaign(c *gin.Context) {
 			return
 		}
 		if mysql.IsNotFound(err) {
-			data.JSON(c, http.StatusNotFound, -1, "campaign not found", nil)
+			data.JSON(c, http.StatusNotFound, -1, service.MsgCampaignNotFound, nil)
 			return
 		}
 		handleRepoErr(c, err)
@@ -268,14 +268,14 @@ func AdminGetCampaign(c *gin.Context) {
 	idStr := c.Param("campaignId")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, "invalid campaignId", nil)
+		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidCampaignID, nil)
 		return
 	}
 	svc := service.GetCampaignAdminService()
 	campaign, err := svc.GetCampaign(id)
 	if err != nil {
 		if mysql.IsNotFound(err) {
-			data.JSON(c, http.StatusNotFound, -1, "campaign not found", nil)
+			data.JSON(c, http.StatusNotFound, -1, service.MsgCampaignNotFound, nil)
 			return
 		}
 		handleRepoErr(c, err)
@@ -327,7 +327,7 @@ func AdminPublishCampaign(c *gin.Context) {
 	idStr := c.Param("campaignId")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, "invalid campaignId", nil)
+		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidCampaignID, nil)
 		return
 	}
 	var req PublishOperatorReq
@@ -339,7 +339,7 @@ func AdminPublishCampaign(c *gin.Context) {
 	updated, err := svc.PublishCampaign(id, req.Operator)
 	if err != nil {
 		if mysql.IsNotFound(err) {
-			data.JSON(c, http.StatusNotFound, -1, "campaign not found", nil)
+			data.JSON(c, http.StatusNotFound, -1, service.MsgCampaignNotFound, nil)
 			return
 		}
 		handleRepoErr(c, err)
@@ -365,7 +365,7 @@ func AdminArchiveCampaign(c *gin.Context) {
 	idStr := c.Param("campaignId")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, "invalid campaignId", nil)
+		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidCampaignID, nil)
 		return
 	}
 	var req PublishOperatorReq
@@ -377,7 +377,7 @@ func AdminArchiveCampaign(c *gin.Context) {
 	updated, err := svc.ArchiveCampaign(id, req.Operator)
 	if err != nil {
 		if mysql.IsNotFound(err) {
-			data.JSON(c, http.StatusNotFound, -1, "campaign not found", nil)
+			data.JSON(c, http.StatusNotFound, -1, service.MsgCampaignNotFound, nil)
 			return
 		}
 		if data.IsCampaignAlreadyArchived(err) || data.IsCampaignNotArchivable(err) {
