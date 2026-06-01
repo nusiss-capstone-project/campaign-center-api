@@ -18,16 +18,25 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25.9'
+          go-version: '1.25.10'
           cache: true
+
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@v1.13.0
 
       - name: Build and test modules
         run: |
+          set -e
           for module in common client server; do
-            echo "Building and testing module: $module"
+            echo ""
+            echo "=============================="
+            echo " Module: $module"
+            echo "=============================="
             cd "$module"
             go build ./...
-            go test ./...
+            gotestsum --format github-actions --format-icons text \
+              --post-run-command "bash ${GITHUB_WORKSPACE}/scripts/gotest-summary.sh" \
+              -- -json ./...
             cd ..
           done
 
@@ -42,7 +51,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25.9'
+          go-version: '1.25.10'
           cache: true
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9
