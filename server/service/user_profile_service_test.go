@@ -6,7 +6,7 @@ import (
 
 	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
 	"github.com/lianjin/campaign-center-api/server/service"
-	servicemock "github.com/lianjin/campaign-center-api/server/service/mock"
+	servicemock "github.com/lianjin/campaign-center-api/server/mock"
 	"github.com/stretchr/testify/require"
 )
 

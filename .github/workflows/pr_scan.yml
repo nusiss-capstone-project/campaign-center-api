@@ -57,6 +57,8 @@ jobs:
             -Dsonar.projectKey=lianjin_campaign-center-api
             -Dsonar.sources=server/service
             -Dsonar.go.coverage.reportPaths=server/coverage.out
+            -Dsonar.exclusions=**/mock/**
+            -Dsonar.coverage.exclusions=**/mock/**
 
   snyk:
     name: Snyk Vulnerability Scan

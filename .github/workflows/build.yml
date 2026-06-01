@@ -28,10 +28,15 @@ jobs:
         run: |
           set -e
           for module in common client server; do
-            echo "Building and testing module: $module"
+            echo ""
+            echo "=============================="
+            echo " Module: $module"
+            echo "=============================="
             cd "$module"
             go build ./...
-            gotestsum --format testname -- -json ./...
+            gotestsum --format github-actions --format-icons text \
+              --post-run-command "bash ${GITHUB_WORKSPACE}/scripts/gotest-summary.sh" \
+              -- -json ./...
             cd ..
           done
 
