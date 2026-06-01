@@ -7,7 +7,7 @@ const (
 	MsgSuccess = "success"
 
 	// Admin campaign request validation.
-	MsgInvalidCampaignID              = "invalid campaignId"
+	MsgInvalidCampaignID            = "invalid campaignId"
 	MsgInvalidRegistrationStartTime = "invalid registrationStartTime"
 	MsgInvalidRegistrationEndTime   = "invalid registrationEndTime"
 	MsgInvalidCampaignStartTime     = "invalid campaignStartTime"
@@ -27,11 +27,11 @@ const (
 	MsgLandingPageNotFound      = "landing page not found"
 
 	// Top-up and rewards.
-	MsgRewardAlreadyGranted      = "Reward already granted"
-	MsgRewardAlreadyProcessing   = "Reward already processing"
-	MsgTopupAmountNotQualified   = "Top-up amount does not meet campaign requirement"
-	MsgManualReviewRequired      = "manual review required"
-	MsgRewardProcessing          = "reward processing"
-	MsgInvalidRewardModeFmt      = "invalid rewardMode: %s"
-	MsgRewardAmountNonNegative   = "reward amount must be non-negative"
+	MsgRewardAlreadyGranted    = "Reward already granted"
+	MsgRewardAlreadyProcessing = "Reward already processing"
+	MsgTopupAmountNotQualified = "Top-up amount does not meet campaign requirement"
+	MsgManualReviewRequired    = "manual review required"
+	MsgRewardProcessing        = "reward processing"
+	MsgInvalidRewardModeFmt    = "invalid rewardMode: %s"
+	MsgRewardAmountNonNegative = "reward amount must be non-negative"
 )

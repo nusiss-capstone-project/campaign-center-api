@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -611,7 +612,7 @@ func calculateTopUpRewardAmount(topupAmount float64, rules model.RewardRulesPayl
 		rewardAmount = rules.MaxRewardAmount
 	}
 	if rewardAmount < 0 {
-		return 0, fmt.Errorf("%s", MsgRewardAmountNonNegative)
+		return 0, errors.New(MsgRewardAmountNonNegative)
 	}
 	return rewardAmount, nil
 }
