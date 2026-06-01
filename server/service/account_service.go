@@ -1,10 +1,13 @@
 package service
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"sync"
 	"time"
 
+	"github.com/lianjin/campaign-center-api/server/http/data"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
 )
@@ -111,14 +114,14 @@ func (s *accountService) Recharge(userID int64, amount float64, currency string)
 
 func (s *accountService) validateRechargeInput(userID int64, amount float64) error {
 	if userID <= 0 {
-		return fmt.Errorf("%w: userID must be positive", errInvalidAccountInput)
+		return fmt.Errorf("%w: userID must be positive", data.ErrInvalidAccountInput)
 	}
 	if amount <= 0 {
-		return fmt.Errorf("%w: amount must be positive", errInvalidAccountInput)
+		return fmt.Errorf("%w: amount must be positive", data.ErrInvalidAccountInput)
 	}
 	if _, err := s.users.GetByID(userID); err != nil {
 		if mysql.IsNotFound(err) {
-			return fmt.Errorf("%w: user not found", errInvalidAccountInput)
+			return fmt.Errorf("%w: user not found", data.ErrInvalidAccountInput)
 		}
 		return err
 	}
@@ -164,7 +167,7 @@ func (s *accountService) credit(
 		currency = model.DefaultCurrency
 	}
 	txn := &model.AccountTransaction{
-		TransactionNo: newTransactionNo(),
+		TransactionNo: newAccountTransactionNo(),
 		UserID:        userID,
 		Currency:      currency,
 		Amount:        amount,
@@ -180,4 +183,12 @@ func (s *accountService) credit(
 		return nil, err
 	}
 	return &RechargeResult{TransactionNo: txn.TransactionNo, BalanceAfter: balanceAfter}, nil
+}
+
+func newAccountTransactionNo() string {
+	var suffix [8]byte
+	if _, err := rand.Read(suffix[:]); err != nil {
+		return fmt.Sprintf("TXN%d", time.Now().UnixNano())
+	}
+	return fmt.Sprintf("TXN%d%s", time.Now().UnixNano(), hex.EncodeToString(suffix[:]))
 }

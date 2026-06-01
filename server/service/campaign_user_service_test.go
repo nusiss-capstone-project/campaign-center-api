@@ -2,10 +2,12 @@ package service_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
 
+	"github.com/lianjin/campaign-center-api/server/event"
 	"github.com/lianjin/campaign-center-api/server/http/data"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
@@ -18,7 +20,7 @@ import (
 
 type noopRewardNotifier struct{}
 
-func (noopRewardNotifier) NotifyTopUpReward(service.TopUpRewardEvent) {}
+func (noopRewardNotifier) NotifyTopUpReward(event.TopUpRewardEvent) {}
 
 type staticLandingPageTranslationRepo struct {
 	row *model.CampaignLandingPageTranslation
@@ -49,7 +51,7 @@ func newTestUserCampaignService(
 	pm *servicemock.MockParticipantRepository,
 	um *servicemock.MockUserRepository,
 	am service.AccountService,
-	rn service.CampaignRewardNotifier,
+	rn event.CampaignRewardNotifier,
 ) service.UserCampaignService {
 	t.Helper()
 	if trans == nil {
@@ -110,7 +112,7 @@ func TestUserCampaignService_GetLandingPageUI_campaignNotFound(t *testing.T) {
 	reply, err := svc.GetLandingPageUI(1, 0, "")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNotFound, reply.HTTPStatus)
-	require.Equal(t, "campaign not found", reply.Message)
+	require.Equal(t, service.MsgCampaignNotFound, reply.Message)
 }
 
 func TestUserCampaignService_GetLandingPageUI_landingNotConfigured(t *testing.T) {
@@ -124,7 +126,7 @@ func TestUserCampaignService_GetLandingPageUI_landingNotConfigured(t *testing.T)
 	reply, err := svc.GetLandingPageUI(1, 0, "")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNotFound, reply.HTTPStatus)
-	require.Contains(t, reply.Message, "not configured")
+	require.Equal(t, service.MsgLandingPageNotConfigured, reply.Message)
 }
 
 func TestUserCampaignService_GetLandingPageUI_fallbackWhenMissingTranslation(t *testing.T) {
@@ -330,7 +332,7 @@ func TestUserCampaignService_SimulateTopUp_manualReview(t *testing.T) {
 	)
 	reply, err := svc.SimulateTopUp(1, 100, 120)
 	require.NoError(t, err)
-	require.Equal(t, "manual review required", reply.Message)
+	require.Equal(t, service.MsgManualReviewRequired, reply.Message)
 }
 
 func TestUserCampaignService_SimulateTopUp_granted(t *testing.T) {
@@ -351,7 +353,7 @@ func TestUserCampaignService_SimulateTopUp_granted(t *testing.T) {
 	})).Return(nil)
 	am := defaultRechargeMock(t)
 	rn := &servicemock.MockCampaignRewardNotifier{}
-	rn.On("NotifyTopUpReward", mock.MatchedBy(func(e service.TopUpRewardEvent) bool {
+	rn.On("NotifyTopUpReward", mock.MatchedBy(func(e event.TopUpRewardEvent) bool {
 		return e.ParticipantID == 55 && e.RewardAmount == 10
 	}))
 
@@ -364,7 +366,7 @@ func TestUserCampaignService_SimulateTopUp_granted(t *testing.T) {
 	d := reply.Data.(map[string]any)
 	require.Equal(t, "TXN_TEST", d["rechargeTransactionNo"])
 	require.Equal(t, model.RewardStatusPending, d["rewardStatus"])
-	require.Equal(t, "reward processing", reply.Message)
+	require.Equal(t, service.MsgRewardProcessing, reply.Message)
 	rn.AssertExpectations(t)
 }
 
@@ -386,7 +388,7 @@ func TestUserCampaignService_SimulateTopUp_percentageRewardCapped(t *testing.T) 
 	})).Return(nil)
 	am := defaultRechargeMock(t)
 	rn := &servicemock.MockCampaignRewardNotifier{}
-	rn.On("NotifyTopUpReward", mock.MatchedBy(func(e service.TopUpRewardEvent) bool {
+	rn.On("NotifyTopUpReward", mock.MatchedBy(func(e event.TopUpRewardEvent) bool {
 		return e.ParticipantID == 55 && e.RewardAmount == 15
 	}))
 
@@ -420,7 +422,7 @@ func TestUserCampaignService_SimulateTopUp_fixedRewardCapped(t *testing.T) {
 	})).Return(nil)
 	am := defaultRechargeMock(t)
 	rn := &servicemock.MockCampaignRewardNotifier{}
-	rn.On("NotifyTopUpReward", mock.MatchedBy(func(e service.TopUpRewardEvent) bool {
+	rn.On("NotifyTopUpReward", mock.MatchedBy(func(e event.TopUpRewardEvent) bool {
 		return e.ParticipantID == 55 && e.RewardAmount == 20
 	}))
 
@@ -453,7 +455,7 @@ func TestUserCampaignService_SimulateTopUp_pendingRewardNotReenqueued(t *testing
 	reply, err := svc.SimulateTopUp(1, 100, 120)
 	require.NoError(t, err)
 	require.Equal(t, data.CodeDuplicateReward, reply.Code)
-	require.Equal(t, "Reward already processing", reply.Message)
+	require.Equal(t, service.MsgRewardAlreadyProcessing, reply.Message)
 }
 
 func TestUserCampaignService_SimulateTopUp_invalidRewardModeBeforeRecharge(t *testing.T) {
@@ -477,7 +479,7 @@ func TestUserCampaignService_SimulateTopUp_invalidRewardModeBeforeRecharge(t *te
 	reply, err := svc.SimulateTopUp(1, 100, 120)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, reply.HTTPStatus)
-	require.Equal(t, "invalid rewardMode: UNKNOWN", reply.Message)
+	require.Equal(t, fmt.Sprintf(service.MsgInvalidRewardModeFmt, "UNKNOWN"), reply.Message)
 }
 
 func TestUserCampaignService_ListAvailableCampaigns_groupsOngoingAndUpcoming(t *testing.T) {
@@ -584,5 +586,5 @@ func TestUserCampaignService_GetLandingPageUI_hidesIneligibleCampaign(t *testing
 	reply, err := svc.GetLandingPageUI(1, 100, "en-US")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNotFound, reply.HTTPStatus)
-	require.Equal(t, "campaign not found", reply.Message)
+	require.Equal(t, service.MsgCampaignNotFound, reply.Message)
 }

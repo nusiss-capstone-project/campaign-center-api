@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lianjin/campaign-center-api/server/http/data"
 	"github.com/lianjin/campaign-center-api/server/log"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
@@ -95,7 +96,7 @@ func (s *landingPageAdminService) UpdateDraftLandingPage(id int64, p CreateLandi
 		return err
 	}
 	if existing.Status != model.LandingPageStatusDraft {
-		return errLandingPageNotDraft
+		return data.ErrLandingPageNotDraft
 	}
 	now := time.Now()
 	existing.DefaultLang = p.DefaultLang

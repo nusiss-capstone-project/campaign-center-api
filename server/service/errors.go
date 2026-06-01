@@ -1,54 +1,37 @@
 package service
 
-import (
-	"errors"
+// API response messages for the {code,message,data} envelope.
+// Shared by admin HTTP handlers and user campaign service.
 
-	"github.com/lianjin/campaign-center-api/server/proxy"
+const (
+	MsgSuccess = "success"
+
+	// Admin campaign request validation.
+	MsgInvalidCampaignID              = "invalid campaignId"
+	MsgInvalidRegistrationStartTime = "invalid registrationStartTime"
+	MsgInvalidRegistrationEndTime   = "invalid registrationEndTime"
+	MsgInvalidCampaignStartTime     = "invalid campaignStartTime"
+	MsgInvalidCampaignEndTime       = "invalid campaignEndTime"
+
+	// Campaign lookup and availability.
+	MsgCampaignNotFound     = "campaign not found"
+	MsgCampaignNotAvailable = "campaign not available"
+
+	// User eligibility and account.
+	MsgUserNotEligible       = "User is not eligible for this campaign"
+	MsgUserNotFound          = "user not found"
+	MsgUserNotJoinedCampaign = "user has not joined this campaign"
+
+	// Landing page.
+	MsgLandingPageNotConfigured = "landing page not configured"
+	MsgLandingPageNotFound      = "landing page not found"
+
+	// Top-up and rewards.
+	MsgRewardAlreadyGranted      = "Reward already granted"
+	MsgRewardAlreadyProcessing   = "Reward already processing"
+	MsgTopupAmountNotQualified   = "Top-up amount does not meet campaign requirement"
+	MsgManualReviewRequired      = "manual review required"
+	MsgRewardProcessing          = "reward processing"
+	MsgInvalidRewardModeFmt      = "invalid rewardMode: %s"
+	MsgRewardAmountNonNegative   = "reward amount must be non-negative"
 )
-
-var errCampaignNotDraft = errors.New("only draft campaigns can be updated")
-
-var errCampaignNotArchivable = errors.New("only draft or published campaigns outside the active period can be archived")
-
-var errCampaignAlreadyArchived = errors.New("campaign is already archived")
-
-var errLandingPageNotDraft = errors.New("only draft landing pages can be updated")
-
-var errTranslationSourceEmpty = errors.New("translation source text is empty")
-
-var errInvalidAccountInput = errors.New("invalid account input")
-
-// IsCampaignNotDraft reports whether err is the draft-only update constraint.
-func IsCampaignNotDraft(err error) bool {
-	return errors.Is(err, errCampaignNotDraft)
-}
-
-// IsCampaignNotArchivable reports archive eligibility errors (wrong status or not yet ended).
-func IsCampaignNotArchivable(err error) bool {
-	return errors.Is(err, errCampaignNotArchivable)
-}
-
-// IsCampaignAlreadyArchived reports when status is already archiveed.
-func IsCampaignAlreadyArchived(err error) bool {
-	return errors.Is(err, errCampaignAlreadyArchived)
-}
-
-// IsLandingPageNotDraft reports whether err is the draft-only update constraint.
-func IsLandingPageNotDraft(err error) bool {
-	return errors.Is(err, errLandingPageNotDraft)
-}
-
-// IsOpenAINotConfigured reports missing OpenAI credentials.
-func IsOpenAINotConfigured(err error) bool {
-	return errors.Is(err, proxy.ErrOpenAINotConfigured)
-}
-
-// IsTranslationSourceEmpty reports empty merged source for LLM.
-func IsTranslationSourceEmpty(err error) bool {
-	return errors.Is(err, errTranslationSourceEmpty)
-}
-
-// IsInvalidAccountInput reports account operation validation failures.
-func IsInvalidAccountInput(err error) bool {
-	return errors.Is(err, errInvalidAccountInput)
-}

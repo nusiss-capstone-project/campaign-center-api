@@ -105,7 +105,7 @@ func AdminUpdateLandingPage(c *gin.Context) {
 		Terms:          req.Terms,
 	})
 	if err != nil {
-		if service.IsLandingPageNotDraft(err) {
+		if data.IsLandingPageNotDraft(err) {
 			data.JSON(c, http.StatusConflict, -1, err.Error(), nil)
 			return
 		}

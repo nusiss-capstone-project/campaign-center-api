@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lianjin/campaign-center-api/server/event"
 	"github.com/lianjin/campaign-center-api/server/http/data"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
@@ -15,10 +16,10 @@ import (
 
 // UserCampaignService user-facing campaign flows.
 type UserCampaignService interface {
-	ListAvailableCampaigns(userID int64) (*HTTPReply, error)
-	GetLandingPageUI(campaignID, userID int64, lang string) (*HTTPReply, error)
-	JoinCampaign(campaignID, userID int64) (*HTTPReply, error)
-	SimulateTopUp(campaignID, userID int64, amount float64) (*HTTPReply, error)
+	ListAvailableCampaigns(userID int64) (*data.HTTPReply, error)
+	GetLandingPageUI(campaignID, userID int64, lang string) (*data.HTTPReply, error)
+	JoinCampaign(campaignID, userID int64) (*data.HTTPReply, error)
+	SimulateTopUp(campaignID, userID int64, amount float64) (*data.HTTPReply, error)
 }
 
 type userCampaignService struct {
@@ -28,7 +29,7 @@ type userCampaignService struct {
 	participants        mysql.ParticipantRepository
 	users               mysql.UserRepository
 	accounts            AccountService
-	rewards             CampaignRewardNotifier
+	rewards             event.CampaignRewardNotifier
 }
 
 var (
@@ -44,7 +45,7 @@ func NewUserCampaignService(
 	participants mysql.ParticipantRepository,
 	users mysql.UserRepository,
 	accounts AccountService,
-	rewards CampaignRewardNotifier,
+	rewards event.CampaignRewardNotifier,
 ) UserCampaignService {
 	return &userCampaignService{
 		campaigns:           campaigns,
@@ -73,7 +74,7 @@ func GetUserCampaignService() UserCampaignService {
 	return userCampaignServiceInst
 }
 
-func (s *userCampaignService) ListAvailableCampaigns(userID int64) (*HTTPReply, error) {
+func (s *userCampaignService) ListAvailableCampaigns(userID int64) (*data.HTTPReply, error) {
 	now := time.Now()
 	campaigns, err := s.campaigns.ListPublishedActiveOrUpcoming(now)
 	if err != nil {
@@ -92,7 +93,7 @@ func (s *userCampaignService) ListAvailableCampaigns(userID int64) (*HTTPReply, 
 	return campaignListReply(ongoing, upcoming), nil
 }
 
-func (s *userCampaignService) userForCampaignList(userID int64) (*model.User, *HTTPReply, error) {
+func (s *userCampaignService) userForCampaignList(userID int64) (*model.User, *data.HTTPReply, error) {
 	user, err := s.users.GetByID(userID)
 	if err == nil {
 		return user, nil, nil
@@ -149,11 +150,11 @@ func campaignIsOngoing(campaign model.Campaign, now time.Time) bool {
 	return !now.Before(campaign.CampaignStartTime) && !now.After(campaign.CampaignEndTime)
 }
 
-func campaignListReply(ongoing, upcoming []map[string]any) *HTTPReply {
-	return &HTTPReply{
+func campaignListReply(ongoing, upcoming []map[string]any) *data.HTTPReply {
+	return &data.HTTPReply{
 		HTTPStatus: http.StatusOK,
 		Code:       data.CodeSuccess,
-		Message:    "success",
+		Message:    MsgSuccess,
 		Data: map[string]any{
 			"ongoing":  ongoing,
 			"upcoming": upcoming,
@@ -161,7 +162,7 @@ func campaignListReply(ongoing, upcoming []map[string]any) *HTTPReply {
 	}
 }
 
-func (s *userCampaignService) GetLandingPageUI(campaignID, userID int64, lang string) (*HTTPReply, error) {
+func (s *userCampaignService) GetLandingPageUI(campaignID, userID int64, lang string) (*data.HTTPReply, error) {
 	campaign, early, err := s.getCampaignForLanding(campaignID)
 	if early != nil || err != nil {
 		return early, err
@@ -175,20 +176,20 @@ func (s *userCampaignService) GetLandingPageUI(campaignID, userID int64, lang st
 	}
 	rules, err := model.ParseRewardRulesJSON(campaign.RewardRules)
 	if err != nil {
-		return &HTTPReply{HTTPStatus: http.StatusInternalServerError, Code: -1, Message: err.Error()}, nil
+		return &data.HTTPReply{HTTPStatus: http.StatusInternalServerError, Code: -1, Message: err.Error()}, nil
 	}
 	return s.buildLandingPageUIReply(campaign, campaignID, userID, lp, lang, rules)
 }
 
-func campaignNotFoundReply() *HTTPReply {
-	return &HTTPReply{HTTPStatus: http.StatusNotFound, Code: -1, Message: "campaign not found"}
+func campaignNotFoundReply() *data.HTTPReply {
+	return &data.HTTPReply{HTTPStatus: http.StatusNotFound, Code: -1, Message: MsgCampaignNotFound}
 }
 
-func landingNotFoundReply(message string) *HTTPReply {
-	return &HTTPReply{HTTPStatus: http.StatusNotFound, Code: -1, Message: message}
+func landingNotFoundReply(message string) *data.HTTPReply {
+	return &data.HTTPReply{HTTPStatus: http.StatusNotFound, Code: -1, Message: message}
 }
 
-func (s *userCampaignService) getCampaignForLanding(campaignID int64) (*model.Campaign, *HTTPReply, error) {
+func (s *userCampaignService) getCampaignForLanding(campaignID int64) (*model.Campaign, *data.HTTPReply, error) {
 	campaign, err := s.campaigns.GetByID(campaignID)
 	if err == nil {
 		return campaign, nil, nil
@@ -199,7 +200,7 @@ func (s *userCampaignService) getCampaignForLanding(campaignID int64) (*model.Ca
 	return nil, nil, err
 }
 
-func (s *userCampaignService) assertUserCanViewLanding(campaign *model.Campaign, userID int64) (*HTTPReply, error) {
+func (s *userCampaignService) assertUserCanViewLanding(campaign *model.Campaign, userID int64) (*data.HTTPReply, error) {
 	if userID <= 0 {
 		return nil, nil
 	}
@@ -216,16 +217,16 @@ func (s *userCampaignService) assertUserCanViewLanding(campaign *model.Campaign,
 	return nil, nil
 }
 
-func (s *userCampaignService) getLandingPageRecord(campaign *model.Campaign) (*model.CampaignLandingPage, *HTTPReply, error) {
+func (s *userCampaignService) getLandingPageRecord(campaign *model.Campaign) (*model.CampaignLandingPage, *data.HTTPReply, error) {
 	if campaign.LandingPageID == 0 {
-		return nil, landingNotFoundReply("landing page not configured"), nil
+		return nil, landingNotFoundReply(MsgLandingPageNotConfigured), nil
 	}
 	lp, err := s.landingPages.GetByID(campaign.LandingPageID)
 	if err == nil {
 		return lp, nil, nil
 	}
 	if mysql.IsNotFound(err) {
-		return nil, landingNotFoundReply("landing page not found"), nil
+		return nil, landingNotFoundReply(MsgLandingPageNotFound), nil
 	}
 	return nil, nil, err
 }
@@ -236,7 +237,7 @@ func (s *userCampaignService) buildLandingPageUIReply(
 	lp *model.CampaignLandingPage,
 	lang string,
 	rules model.RewardRulesPayload,
-) (*HTTPReply, error) {
+) (*data.HTTPReply, error) {
 	texts, err := s.landingTranslations.ResolveLandingPageTexts(lp, lang)
 	if err != nil {
 		return nil, err
@@ -255,28 +256,28 @@ func (s *userCampaignService) buildLandingPageUIReply(
 	return landingPageUIReply(payload), nil
 }
 
-func (s *userCampaignService) JoinCampaign(campaignID, userID int64) (*HTTPReply, error) {
+func (s *userCampaignService) JoinCampaign(campaignID, userID int64) (*data.HTTPReply, error) {
 	campaign, err := s.campaigns.GetByID(campaignID)
 	if err != nil {
 		if mysql.IsNotFound(err) {
-			return &HTTPReply{HTTPStatus: http.StatusNotFound, Code: -1, Message: "campaign not found"}, nil
+			return &data.HTTPReply{HTTPStatus: http.StatusNotFound, Code: -1, Message: MsgCampaignNotFound}, nil
 		}
 		return nil, err
 	}
 	if campaign.Status != model.CampaignStatusPublished {
-		return &HTTPReply{
+		return &data.HTTPReply{
 			HTTPStatus: http.StatusOK,
 			Code:       data.CodeNotEligible,
-			Message:    "campaign not available",
+			Message:    MsgCampaignNotAvailable,
 			Data:       map[string]any{"reason": "CAMPAIGN_NOT_PUBLISHED"},
 		}, nil
 	}
 	now := time.Now()
 	if now.Before(campaign.RegistrationStartTime) || now.After(campaign.RegistrationEndTime) {
-		return &HTTPReply{
+		return &data.HTTPReply{
 			HTTPStatus: http.StatusOK,
 			Code:       data.CodeNotEligible,
-			Message:    "User is not eligible for this campaign",
+			Message:    MsgUserNotEligible,
 			Data:       map[string]any{"reason": "OUTSIDE_REGISTRATION"},
 		}, nil
 	}
@@ -284,29 +285,29 @@ func (s *userCampaignService) JoinCampaign(campaignID, userID int64) (*HTTPReply
 	user, err := s.users.GetByID(userID)
 	if err != nil {
 		if mysql.IsNotFound(err) {
-			return &HTTPReply{
+			return &data.HTTPReply{
 				HTTPStatus: http.StatusOK,
 				Code:       data.CodeNotEligible,
-				Message:    "User is not eligible for this campaign",
+				Message:    MsgUserNotEligible,
 				Data:       map[string]any{"reason": "USER_NOT_FOUND"},
 			}, nil
 		}
 		return nil, err
 	}
 	if reason := campaignEligibilityRejectReason(user, *campaign); reason != "" {
-		return &HTTPReply{
+		return &data.HTTPReply{
 			HTTPStatus: http.StatusOK,
 			Code:       data.CodeNotEligible,
-			Message:    "User is not eligible for this campaign",
+			Message:    MsgUserNotEligible,
 			Data:       map[string]any{"reason": reason},
 		}, nil
 	}
 
 	if existing, err := s.participants.GetByCampaignAndUser(campaignID, userID); err == nil {
-		return &HTTPReply{
+		return &data.HTTPReply{
 			HTTPStatus: http.StatusOK,
 			Code:       data.CodeSuccess,
-			Message:    "success",
+			Message:    MsgSuccess,
 			Data: map[string]any{
 				"campaignId":   campaignID,
 				"userId":       userID,
@@ -331,10 +332,10 @@ func (s *userCampaignService) JoinCampaign(campaignID, userID int64) (*HTTPReply
 	if err := s.participants.Create(&p); err != nil {
 		return nil, err
 	}
-	return &HTTPReply{
+	return &data.HTTPReply{
 		HTTPStatus: http.StatusOK,
 		Code:       data.CodeSuccess,
-		Message:    "success",
+		Message:    MsgSuccess,
 		Data: map[string]any{
 			"campaignId":   campaignID,
 			"userId":       userID,
@@ -345,7 +346,7 @@ func (s *userCampaignService) JoinCampaign(campaignID, userID int64) (*HTTPReply
 	}, nil
 }
 
-func (s *userCampaignService) SimulateTopUp(campaignID, userID int64, amount float64) (*HTTPReply, error) {
+func (s *userCampaignService) SimulateTopUp(campaignID, userID int64, amount float64) (*data.HTTPReply, error) {
 	rules, participant, early, err := s.simulateTopUpPrecheck(campaignID, userID, amount)
 	if err != nil {
 		return nil, err
@@ -357,13 +358,13 @@ func (s *userCampaignService) SimulateTopUp(campaignID, userID int64, amount flo
 	user, err := s.users.GetByID(userID)
 	if err != nil {
 		if mysql.IsNotFound(err) {
-			return &HTTPReply{HTTPStatus: http.StatusBadRequest, Code: -1, Message: "user not found"}, nil
+			return &data.HTTPReply{HTTPStatus: http.StatusBadRequest, Code: -1, Message: MsgUserNotFound}, nil
 		}
 		return nil, err
 	}
 	rewardAmount, err := calculateTopUpRewardAmount(amount, rules)
 	if err != nil {
-		return &HTTPReply{HTTPStatus: http.StatusBadRequest, Code: -1, Message: err.Error()}, nil
+		return &data.HTTPReply{HTTPStatus: http.StatusBadRequest, Code: -1, Message: err.Error()}, nil
 	}
 
 	now := time.Now()
@@ -371,8 +372,8 @@ func (s *userCampaignService) SimulateTopUp(campaignID, userID int64, amount flo
 
 	recharge, err := s.accounts.Recharge(userID, amount, model.DefaultCurrency)
 	if err != nil {
-		if IsInvalidAccountInput(err) {
-			return &HTTPReply{HTTPStatus: http.StatusBadRequest, Code: -1, Message: err.Error()}, nil
+		if data.IsInvalidAccountInput(err) {
+			return &data.HTTPReply{HTTPStatus: http.StatusBadRequest, Code: -1, Message: err.Error()}, nil
 		}
 		return nil, err
 	}
@@ -387,21 +388,21 @@ func (s *userCampaignService) SimulateTopUp(campaignID, userID int64, amount flo
 func (s *userCampaignService) simulateTopUpPrecheck(campaignID, userID int64, amount float64) (
 	rules model.RewardRulesPayload,
 	participant *model.CampaignParticipant,
-	early *HTTPReply,
+	early *data.HTTPReply,
 	err error,
 ) {
 	campaign, err := s.campaigns.GetByID(campaignID)
 	if err != nil {
 		if mysql.IsNotFound(err) {
-			return model.RewardRulesPayload{}, nil, &HTTPReply{
-				HTTPStatus: http.StatusNotFound, Code: -1, Message: "campaign not found",
+			return model.RewardRulesPayload{}, nil, &data.HTTPReply{
+				HTTPStatus: http.StatusNotFound, Code: -1, Message: MsgCampaignNotFound,
 			}, nil
 		}
 		return model.RewardRulesPayload{}, nil, nil, err
 	}
 	rules, err = model.ParseRewardRulesJSON(campaign.RewardRules)
 	if err != nil {
-		return model.RewardRulesPayload{}, nil, &HTTPReply{
+		return model.RewardRulesPayload{}, nil, &data.HTTPReply{
 			HTTPStatus: http.StatusInternalServerError, Code: -1, Message: err.Error(),
 		}, nil
 	}
@@ -409,17 +410,17 @@ func (s *userCampaignService) simulateTopUpPrecheck(campaignID, userID int64, am
 	participant, err = s.participants.GetByCampaignAndUser(campaignID, userID)
 	if err != nil {
 		if mysql.IsNotFound(err) {
-			return model.RewardRulesPayload{}, nil, &HTTPReply{
-				HTTPStatus: http.StatusBadRequest, Code: -1, Message: "user has not joined this campaign",
+			return model.RewardRulesPayload{}, nil, &data.HTTPReply{
+				HTTPStatus: http.StatusBadRequest, Code: -1, Message: MsgUserNotJoinedCampaign,
 			}, nil
 		}
 		return model.RewardRulesPayload{}, nil, nil, err
 	}
 	if participant.RewardStatus == model.RewardStatusGranted {
-		return model.RewardRulesPayload{}, nil, &HTTPReply{
+		return model.RewardRulesPayload{}, nil, &data.HTTPReply{
 			HTTPStatus: http.StatusOK,
 			Code:       data.CodeDuplicateReward,
-			Message:    "Reward already granted",
+			Message:    MsgRewardAlreadyGranted,
 			Data: map[string]any{
 				"campaignId":   campaignID,
 				"userId":       userID,
@@ -429,10 +430,10 @@ func (s *userCampaignService) simulateTopUpPrecheck(campaignID, userID int64, am
 	}
 	if participant.RewardStatus == model.RewardStatusPending ||
 		participant.RewardStatus == model.RewardStatusPendingReview {
-		return model.RewardRulesPayload{}, nil, &HTTPReply{
+		return model.RewardRulesPayload{}, nil, &data.HTTPReply{
 			HTTPStatus: http.StatusOK,
 			Code:       data.CodeDuplicateReward,
-			Message:    "Reward already processing",
+			Message:    MsgRewardAlreadyProcessing,
 			Data: map[string]any{
 				"campaignId":   campaignID,
 				"userId":       userID,
@@ -441,10 +442,10 @@ func (s *userCampaignService) simulateTopUpPrecheck(campaignID, userID int64, am
 		}, nil
 	}
 	if amount < rules.TopupThreshold {
-		return model.RewardRulesPayload{}, nil, &HTTPReply{
+		return model.RewardRulesPayload{}, nil, &data.HTTPReply{
 			HTTPStatus: http.StatusOK,
 			Code:       data.CodeTopupNotQualified,
-			Message:    "Top-up amount does not meet campaign requirement",
+			Message:    MsgTopupAmountNotQualified,
 			Data: map[string]any{
 				"requiredAmount": rules.TopupThreshold,
 				"actualAmount":   amount,
@@ -510,8 +511,8 @@ func (s *userCampaignService) buildLandingPageUIPayload(in landingPageUIInput) (
 	}, nil
 }
 
-func landingPageUIReply(payload map[string]any) *HTTPReply {
-	return &HTTPReply{HTTPStatus: http.StatusOK, Code: data.CodeSuccess, Message: "success", Data: payload}
+func landingPageUIReply(payload map[string]any) *data.HTTPReply {
+	return &data.HTTPReply{HTTPStatus: http.StatusOK, Code: data.CodeSuccess, Message: MsgSuccess, Data: payload}
 }
 
 func campaignListItem(campaign model.Campaign) map[string]any {
@@ -553,14 +554,14 @@ type topUpCompletionInput struct {
 
 func (s *userCampaignService) simulateTopUpAfterRecharge(
 	in topUpCompletionInput, user *model.User,
-) (*HTTPReply, error) {
+) (*data.HTTPReply, error) {
 	if user.RiskLevel == model.RiskLevelHigh {
 		return s.simulateTopUpManualReviewWithAccount(in)
 	}
 	return s.simulateTopUpEnqueueReward(in)
 }
 
-func (s *userCampaignService) simulateTopUpManualReviewWithAccount(in topUpCompletionInput) (*HTTPReply, error) {
+func (s *userCampaignService) simulateTopUpManualReviewWithAccount(in topUpCompletionInput) (*data.HTTPReply, error) {
 	in.participant.RiskStatus = model.RiskStatusManualReview
 	in.participant.RewardStatus = model.RewardStatusPendingReview
 	in.participant.RewardAmount = 0
@@ -570,17 +571,17 @@ func (s *userCampaignService) simulateTopUpManualReviewWithAccount(in topUpCompl
 	return topUpReply(in.campaignID, in.userID, in.amount, in.rechargeTxnNo, in.balanceAfter, map[string]any{
 		"taskStatus": model.TaskStatusCompleted, "riskStatus": model.RiskStatusManualReview,
 		"rewardStatus": model.RewardStatusPendingReview, "rewardAmount": 0,
-	}, "manual review required")
+	}, MsgManualReviewRequired)
 }
 
-func (s *userCampaignService) simulateTopUpEnqueueReward(in topUpCompletionInput) (*HTTPReply, error) {
+func (s *userCampaignService) simulateTopUpEnqueueReward(in topUpCompletionInput) (*data.HTTPReply, error) {
 	in.participant.RiskStatus = model.RiskStatusApproved
 	in.participant.RewardStatus = model.RewardStatusPending
 	in.participant.RewardAmount = in.rewardAmount
 	if err := s.participants.Save(in.participant); err != nil {
 		return nil, err
 	}
-	s.rewards.NotifyTopUpReward(TopUpRewardEvent{
+	s.rewards.NotifyTopUpReward(event.TopUpRewardEvent{
 		CampaignID: in.campaignID, UserID: in.userID, TopupAmount: in.amount,
 		ParticipantID: in.participant.ID, ManualReview: false,
 		RewardAmount: in.rewardAmount, RewardType: in.rules.RewardType,
@@ -588,7 +589,7 @@ func (s *userCampaignService) simulateTopUpEnqueueReward(in topUpCompletionInput
 	return topUpReply(in.campaignID, in.userID, in.amount, in.rechargeTxnNo, in.balanceAfter, map[string]any{
 		"taskStatus": model.TaskStatusCompleted, "riskStatus": model.RiskStatusApproved,
 		"rewardStatus": model.RewardStatusPending, "rewardAmount": in.rewardAmount,
-	}, "reward processing")
+	}, MsgRewardProcessing)
 }
 
 func calculateTopUpRewardAmount(topupAmount float64, rules model.RewardRulesPayload) (float64, error) {
@@ -604,13 +605,13 @@ func calculateTopUpRewardAmount(topupAmount float64, rules model.RewardRulesPayl
 	case model.RewardModePercentage:
 		rewardAmount = topupAmount * rules.RewardPercentage / 100
 	default:
-		return 0, fmt.Errorf("invalid rewardMode: %s", rules.RewardMode)
+		return 0, fmt.Errorf(MsgInvalidRewardModeFmt, rules.RewardMode)
 	}
 	if rules.MaxRewardAmount > 0 && rewardAmount > rules.MaxRewardAmount {
 		rewardAmount = rules.MaxRewardAmount
 	}
 	if rewardAmount < 0 {
-		return 0, fmt.Errorf("reward amount must be non-negative")
+		return 0, fmt.Errorf("%s", MsgRewardAmountNonNegative)
 	}
 	return rewardAmount, nil
 }
@@ -620,7 +621,7 @@ func topUpReply(
 	rechargeTxnNo string, balanceAfter float64,
 	extra map[string]any,
 	message string,
-) (*HTTPReply, error) {
+) (*data.HTTPReply, error) {
 	payload := map[string]any{
 		"campaignId": campaignID, "userId": userID, "topupAmount": amount,
 		"rechargeTransactionNo": rechargeTxnNo, "balanceAfter": balanceAfter,
@@ -628,7 +629,7 @@ func topUpReply(
 	for k, v := range extra {
 		payload[k] = v
 	}
-	return &HTTPReply{
+	return &data.HTTPReply{
 		HTTPStatus: http.StatusOK, Code: data.CodeSuccess, Message: message, Data: payload,
 	}, nil
 }

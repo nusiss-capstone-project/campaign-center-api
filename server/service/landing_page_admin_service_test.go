@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/lianjin/campaign-center-api/server/http/data"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql"
 	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
 	"github.com/lianjin/campaign-center-api/server/service"
@@ -46,7 +47,7 @@ func TestLandingPageAdminService_UpdateDraft_notDraft(t *testing.T) {
 		DefaultLang: "en", BannerImageURL: "u", Title: "t", Description: "d", Terms: "x",
 	})
 	require.Error(t, err)
-	require.True(t, service.IsLandingPageNotDraft(err))
+	require.True(t, data.IsLandingPageNotDraft(err))
 }
 
 func TestLandingPageAdminService_UpdateDraft_success(t *testing.T) {
@@ -96,6 +97,26 @@ func TestLandingPageAdminService_Get_notFound(t *testing.T) {
 	svc := service.NewLandingPageAdminService(m, noopTrans())
 	_, err := svc.GetLandingPage(9, "")
 	require.ErrorIs(t, err, gorm.ErrRecordNotFound)
+}
+
+func TestLandingPageAdminService_GetLandingPage_usesTranslation(t *testing.T) {
+	m := servicemock.NewMockLandingPageRepository(t)
+	m.On("GetByID", int64(1)).Return(&model.CampaignLandingPage{
+		ID: 1, DefaultLang: "en", Title: "default title", Description: "d", Terms: "t",
+	}, nil)
+	trans := staticLandingPageTranslationRepo{row: &model.CampaignLandingPageTranslation{
+		LandingPageID: 1, Lang: "zh-CN",
+		Title: "中文标题", Description: "中文描述", Terms: "中文条款",
+	}}
+	svc := service.NewLandingPageAdminService(m, trans)
+
+	view, err := svc.GetLandingPage(1, "zh-CN")
+
+	require.NoError(t, err)
+	require.Equal(t, "zh-CN", view.Lang)
+	require.Equal(t, "中文标题", view.Title)
+	require.Equal(t, "中文描述", view.Description)
+	require.Equal(t, "中文条款", view.Terms)
 }
 
 func TestLandingPageAdminService_Create_error(t *testing.T) {
