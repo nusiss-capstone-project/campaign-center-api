@@ -21,4 +21,5 @@ openai:
 system:
   allowed_origins: 
   - https://campaign-center-admin-web.vercel.app
+  - https://finverse-web.vercel.app
   - http://localhost:3000
