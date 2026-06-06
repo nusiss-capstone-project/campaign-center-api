@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lianjin/campaign-center-api/server/config"
-	"github.com/lianjin/campaign-center-api/server/http/data"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/config"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

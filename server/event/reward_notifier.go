@@ -3,7 +3,7 @@ package event
 import (
 	"time"
 
-	"github.com/lianjin/campaign-center-api/server/log"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/log"
 )
 
 const rewardNotifyTimeout = 100 * time.Millisecond

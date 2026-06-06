@@ -4,10 +4,10 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lianjin/campaign-center-api/server/auth"
-	"github.com/lianjin/campaign-center-api/server/http/data"
-	"github.com/lianjin/campaign-center-api/server/repository/mysql"
-	"github.com/lianjin/campaign-center-api/server/service"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/auth"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/service"
 )
 
 // UserProfileData documents StandardResponse.data for the authenticated user profile.

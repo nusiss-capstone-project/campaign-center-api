@@ -1,6 +1,6 @@
 package mysql
 
-import "github.com/lianjin/campaign-center-api/server/repository/mysql/model"
+import "github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
 
 type noopLandingPageTranslationRepository struct{}
 

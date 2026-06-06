@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lianjin/campaign-center-api/common/campaignpb"
+	"github.com/nusiss-capstone-project/campaign-center-api/common/campaignpb"
 )
 
 type CampaignCenterService struct {

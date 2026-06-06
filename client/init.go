@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/lianjin/campaign-center-api/common/campaignpb"
+	"github.com/nusiss-capstone-project/campaign-center-api/common/campaignpb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

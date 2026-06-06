@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/lianjin/campaign-center-api/server/config"
-	"github.com/lianjin/campaign-center-api/server/http/router"
-	"github.com/lianjin/campaign-center-api/server/log"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/config"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/http/router"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/log"
 )
 
 func Init(exitSig chan os.Signal) {

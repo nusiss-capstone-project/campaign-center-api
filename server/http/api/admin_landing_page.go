@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lianjin/campaign-center-api/server/http/data"
-	"github.com/lianjin/campaign-center-api/server/repository/mysql"
-	"github.com/lianjin/campaign-center-api/server/service"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/service"
 )
 
 // LandingPageLocaleDetailData documents StandardResponse.data: title/description/terms from translation when present, else default row; banner/status/timestamps from landing page.

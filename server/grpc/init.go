@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/lianjin/campaign-center-api/common/campaignpb"
-	"github.com/lianjin/campaign-center-api/server/config"
-	"github.com/lianjin/campaign-center-api/server/log"
+	"github.com/nusiss-capstone-project/campaign-center-api/common/campaignpb"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/config"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/log"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	grpcpkg "google.golang.org/grpc"
 )

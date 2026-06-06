@@ -4,7 +4,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
 	gormmysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )

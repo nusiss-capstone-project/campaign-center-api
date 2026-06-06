@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lianjin/campaign-center-api/server/http/data"
-	"github.com/lianjin/campaign-center-api/server/proxy"
-	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
-	"github.com/lianjin/campaign-center-api/server/service"
-	servicemock "github.com/lianjin/campaign-center-api/server/mock"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
+	servicemock "github.com/nusiss-capstone-project/campaign-center-api/server/mock"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/proxy"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/service"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )

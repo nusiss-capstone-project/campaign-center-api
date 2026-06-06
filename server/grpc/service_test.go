@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/lianjin/campaign-center-api/common/campaignpb"
+	"github.com/nusiss-capstone-project/campaign-center-api/common/campaignpb"
 )
 
 func TestCampaignCenterServiceSayHello(t *testing.T) {

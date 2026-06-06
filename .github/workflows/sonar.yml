@@ -47,7 +47,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >-
-            -Dsonar.projectKey=lianjin_campaign-center-api
+            -Dsonar.projectKey=nusiss-capstone-project_campaign-center-api
             -Dsonar.sources=server/service
             -Dsonar.go.coverage.reportPaths=server/coverage.out
             -Dsonar.exclusions=**/mock/**

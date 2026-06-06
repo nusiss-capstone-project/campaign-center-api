@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lianjin/campaign-center-api/server/http/data"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
 )
 
 func authError(c *gin.Context) {

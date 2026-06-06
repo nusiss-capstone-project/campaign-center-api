@@ -5,8 +5,8 @@ package mock
 import (
 	time "time"
 
-	mysql "github.com/lianjin/campaign-center-api/server/repository/mysql"
-	model "github.com/lianjin/campaign-center-api/server/repository/mysql/model"
+	mysql "github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
+	model "github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
 	mock "github.com/stretchr/testify/mock"
 )
 

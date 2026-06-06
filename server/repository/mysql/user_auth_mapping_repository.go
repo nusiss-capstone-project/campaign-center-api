@@ -3,7 +3,7 @@ package mysql
 import (
 	"sync"
 
-	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
 )
 
 // UserAuthMappingRepository reads Clerk-to-internal-user mappings.

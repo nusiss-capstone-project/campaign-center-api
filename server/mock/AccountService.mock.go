@@ -3,7 +3,7 @@
 package mock
 
 import (
-	service "github.com/lianjin/campaign-center-api/server/service"
+	service "github.com/nusiss-capstone-project/campaign-center-api/server/service"
 	mock "github.com/stretchr/testify/mock"
 )
 

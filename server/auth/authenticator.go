@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lianjin/campaign-center-api/server/repository/mysql"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
 )
 
 var errInvalidToken = errors.New("invalid clerk token")

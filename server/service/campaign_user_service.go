@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lianjin/campaign-center-api/server/event"
-	"github.com/lianjin/campaign-center-api/server/http/data"
-	"github.com/lianjin/campaign-center-api/server/repository/mysql"
-	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/event"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
 )
 
 // UserCampaignService user-facing campaign flows.

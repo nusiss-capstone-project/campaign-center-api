@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/lianjin/campaign-center-api/server/config"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/config"
 )
 
 var Client *redis.Client

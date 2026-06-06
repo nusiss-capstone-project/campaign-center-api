@@ -1,4 +1,4 @@
-module github.com/lianjin/campaign-center-api/server
+module github.com/nusiss-capstone-project/campaign-center-api/server
 
 go 1.25.10
 
@@ -6,7 +6,7 @@ require (
 	github.com/gin-contrib/cors v1.7.7
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/lianjin/campaign-center-api/common v0.0.1
+	github.com/nusiss-capstone-project/campaign-center-api/common v0.0.2
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1

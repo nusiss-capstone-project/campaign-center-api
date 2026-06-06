@@ -3,7 +3,7 @@
 package mock
 
 import (
-	event "github.com/lianjin/campaign-center-api/server/event"
+	event "github.com/nusiss-capstone-project/campaign-center-api/server/event"
 	mock "github.com/stretchr/testify/mock"
 )
 

@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lianjin/campaign-center-api/server/repository/mysql"
-	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
 )
 
 // CampaignPerformanceAdminService admin campaign performance APIs.

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/lianjin/campaign-center-api/server/config"
-	"github.com/lianjin/campaign-center-api/server/log"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/config"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/log"
 	openai "github.com/sashabaranov/go-openai"
 )
 

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lianjin/campaign-center-api/server/http/data"
-	appLog "github.com/lianjin/campaign-center-api/server/log"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
+	appLog "github.com/nusiss-capstone-project/campaign-center-api/server/log"
 	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"

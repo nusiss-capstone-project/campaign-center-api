@@ -9,11 +9,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/lianjin/campaign-center-api/server/config"
-	serverhttp "github.com/lianjin/campaign-center-api/server/http"
-	"github.com/lianjin/campaign-center-api/server/log"
-	"github.com/lianjin/campaign-center-api/server/repository/mysql"
-	"github.com/lianjin/campaign-center-api/server/telemetry"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/config"
+	serverhttp "github.com/nusiss-capstone-project/campaign-center-api/server/http"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/log"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/telemetry"
 )
 
 var sigCh = make(chan os.Signal, 1)
