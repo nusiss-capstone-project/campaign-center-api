@@ -1,4 +1,4 @@
-module github.com/lianjin/campaign-center-api/common
+module github.com/nusiss-capstone-project/campaign-center-api/common
 
 go 1.25.10
 
