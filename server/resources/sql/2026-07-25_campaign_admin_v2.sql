@@ -13,9 +13,7 @@ ALTER TABLE `campaigns`
   CHANGE COLUMN `target_market` `market` VARCHAR(64) DEFAULT NULL,
   DROP COLUMN `target_user_segment`,
   ADD COLUMN `target_user_group_id` BIGINT NOT NULL DEFAULT 0 AFTER `campaign_end_time`,
-  ADD COLUMN `target_user_group_name` VARCHAR(255) NOT NULL DEFAULT '' AFTER `target_user_group_id`,
-  ADD COLUMN `budget_project_id` BIGINT NOT NULL DEFAULT 0 AFTER `target_user_group_name`,
-  ADD COLUMN `budget_project_name` VARCHAR(255) NOT NULL DEFAULT '' AFTER `budget_project_id`,
+  ADD COLUMN `budget_project_id` BIGINT NOT NULL DEFAULT 0 AFTER `target_user_group_id`,
   ADD COLUMN `time_zone` VARCHAR(64) NOT NULL DEFAULT '' AFTER `landing_page_id`,
   ADD KEY `idx_campaigns_status` (`status`);
 

@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"sync"
 
 	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
@@ -9,8 +10,8 @@ import (
 
 // CampaignDraftRepository persists campaign draft versions.
 type CampaignDraftRepository interface {
-	Create(d *model.CampaignDraft) error
-	Update(d *model.CampaignDraft) error
+	Create(ctx context.Context, d *model.CampaignDraft) error
+	Update(ctx context.Context, d *model.CampaignDraft) error
 	GetByActivityAndVersion(activityID int64, version int) (*model.CampaignDraft, error)
 	GetLatestByActivityID(activityID int64) (*model.CampaignDraft, error)
 	MaxVersion(activityID int64) (int, error)
@@ -38,20 +39,20 @@ func (r *campaignDraftRepository) db() (*gorm.DB, error) {
 	return DB, nil
 }
 
-func (r *campaignDraftRepository) Create(d *model.CampaignDraft) error {
+func (r *campaignDraftRepository) Create(ctx context.Context, d *model.CampaignDraft) error {
 	db, err := r.db()
 	if err != nil {
 		return err
 	}
-	return db.Create(d).Error
+	return db.WithContext(ctx).Create(d).Error
 }
 
-func (r *campaignDraftRepository) Update(d *model.CampaignDraft) error {
+func (r *campaignDraftRepository) Update(ctx context.Context, d *model.CampaignDraft) error {
 	db, err := r.db()
 	if err != nil {
 		return err
 	}
-	return db.Model(&model.CampaignDraft{}).Where("id = ?", d.ID).Updates(map[string]interface{}{
+	return db.WithContext(ctx).Model(&model.CampaignDraft{}).Where("id = ?", d.ID).Updates(map[string]interface{}{
 		"content":    d.Content,
 		"status":     d.Status,
 		"updated_at": d.UpdatedAt,

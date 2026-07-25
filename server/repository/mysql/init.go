@@ -21,6 +21,9 @@ func Init() (*gorm.DB, error) {
 		return nil, err
 	}
 	DB = database
+	if err := registerWriteLoggingCallbacks(DB); err != nil {
+		return DB, err
+	}
 	if err := DB.AutoMigrate(
 		&model.Campaign{},
 		&model.CampaignLandingPage{},

@@ -33,11 +33,11 @@ func NewRouter() *gin.Engine {
 	admin.Use(auth.RequireAdmin())
 	{
 		admin.POST("/campaigns", api.AdminCreateCampaign)
-		admin.PUT("/campaigns/:campaignId", api.AdminUpdateCampaign)
+		admin.POST("/campaigns/:campaignId/versions", api.AdminCreateCampaignVersion)
+		admin.POST("/campaigns/:campaignId/versions/:version", api.AdminEditCampaignVersion)
 		admin.GET("/campaigns", api.AdminListCampaigns)
 		admin.GET("/campaigns/:campaignId", api.AdminGetCampaign)
 		admin.POST("/campaigns/:campaignId/publish", api.AdminPublishCampaign)
-		admin.POST("/campaigns/:campaignId/archive", api.AdminArchiveCampaign)
 		admin.GET("/campaigns/:campaignId/performance/summary", api.AdminGetCampaignPerformanceSummary)
 		admin.GET("/campaigns/:campaignId/performance/daily", api.AdminListCampaignDailyPerformance)
 		admin.GET("/campaigns/:campaignId/participations", api.AdminListCampaignParticipations)

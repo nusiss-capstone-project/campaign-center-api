@@ -1,207 +1,365 @@
 package service_test
 
 import (
-	"errors"
+	"context"
+	"sort"
 	"testing"
 	"time"
 
-	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
-	servicemock "github.com/nusiss-capstone-project/campaign-center-api/server/mock"
-	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
-	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
-	"github.com/nusiss-capstone-project/campaign-center-api/server/service"
-	"github.com/stretchr/testify/mock"
+	"github.com/lianjin/campaign-center-api/server/http/data"
+	"github.com/lianjin/campaign-center-api/server/repository/mysql"
+	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
+	"github.com/lianjin/campaign-center-api/server/service"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
 
-func TestCampaignAdminService_CreateCampaign(t *testing.T) {
-	m := servicemock.NewMockCampaignRepository(t)
-	m.On("Create", mock.MatchedBy(func(c *model.Campaign) bool {
-		return c.Name == "c1" && c.Status == model.CampaignStatusDraft
-	})).Run(func(args mock.Arguments) {
-		c := args.Get(0).(*model.Campaign)
-		c.ID = 99
-	}).Return(nil)
+type memCampaignRepo struct {
+	byID   map[int64]*model.Campaign
+	nextID int64
+}
 
-	svc := service.NewCampaignAdminService(m)
-	id, status, err := svc.CreateCampaign(service.CreateCampaignParams{
-		Name:                  "c1",
-		Type:                  model.CampaignTypeTopupReward,
-		TargetMarket:          "US",
-		RegistrationStartTime: time.Now(),
-		RegistrationEndTime:   time.Now().Add(time.Hour),
-		CampaignStartTime:     time.Now(),
-		CampaignEndTime:       time.Now().Add(24 * time.Hour),
-		TargetUserSegment:     model.UserSegmentNewUser,
-		RewardRules: model.RewardRulesPayload{
-			TopupThreshold: 100, RewardAmount: 10, RewardType: model.RewardTypeBonusCredit, MaxClaimPerUser: 1,
-		},
-	})
+func newMemCampaignRepo() *memCampaignRepo {
+	return &memCampaignRepo{byID: map[int64]*model.Campaign{}, nextID: 1}
+}
+
+func (r *memCampaignRepo) Create(_ context.Context, c *model.Campaign) error {
+	c.ID = r.nextID
+	r.nextID++
+	cp := *c
+	r.byID[c.ID] = &cp
+	return nil
+}
+
+func (r *memCampaignRepo) Update(_ context.Context, c *model.Campaign) error {
+	if _, ok := r.byID[c.ID]; !ok {
+		return gorm.ErrRecordNotFound
+	}
+	cp := *c
+	r.byID[c.ID] = &cp
+	return nil
+}
+
+func (r *memCampaignRepo) GetByID(id int64) (*model.Campaign, error) {
+	c, ok := r.byID[id]
+	if !ok {
+		return nil, gorm.ErrRecordNotFound
+	}
+	cp := *c
+	return &cp, nil
+}
+
+func (r *memCampaignRepo) matching(q mysql.CampaignQuery) []model.Campaign {
+	out := make([]model.Campaign, 0, len(r.byID))
+	for _, c := range r.byID {
+		if q.CampaignID != nil && c.ID != *q.CampaignID {
+			continue
+		}
+		if q.Status != nil && c.Status != *q.Status {
+			continue
+		}
+		out = append(out, *c)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID > out[j].ID })
+	return out
+}
+
+func (r *memCampaignRepo) Count(q mysql.CampaignQuery) (int64, error) {
+	return int64(len(r.matching(q))), nil
+}
+
+func (r *memCampaignRepo) Find(q mysql.CampaignQuery, offset, limit int) ([]model.Campaign, error) {
+	rows := r.matching(q)
+	if offset >= len(rows) {
+		return nil, nil
+	}
+	rows = rows[offset:]
+	if limit > 0 && limit < len(rows) {
+		rows = rows[:limit]
+	}
+	return rows, nil
+}
+
+func (r *memCampaignRepo) UpdateStatus(ctx context.Context, id int64, status int16, operator string) (*model.Campaign, error) {
+	c, err := r.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	c.Status = status
+	c.UpdatedBy = operator
+	c.UpdatedAt = time.Now()
+	_ = r.Update(ctx, c)
+	return c, nil
+}
+
+type memDraftRepo struct {
+	rows   []model.CampaignDraft
+	nextID int64
+}
+
+func newMemDraftRepo() *memDraftRepo {
+	return &memDraftRepo{nextID: 1}
+}
+
+func (r *memDraftRepo) Create(_ context.Context, d *model.CampaignDraft) error {
+	d.ID = r.nextID
+	r.nextID++
+	r.rows = append(r.rows, *d)
+	return nil
+}
+
+func (r *memDraftRepo) Update(_ context.Context, d *model.CampaignDraft) error {
+	for i := range r.rows {
+		if r.rows[i].ID == d.ID {
+			r.rows[i] = *d
+			return nil
+		}
+	}
+	return gorm.ErrRecordNotFound
+}
+
+func (r *memDraftRepo) GetByActivityAndVersion(activityID int64, version int) (*model.CampaignDraft, error) {
+	for i := range r.rows {
+		if r.rows[i].ActivityID == activityID && r.rows[i].Version == version {
+			cp := r.rows[i]
+			return &cp, nil
+		}
+	}
+	return nil, gorm.ErrRecordNotFound
+}
+
+func (r *memDraftRepo) GetLatestByActivityID(activityID int64) (*model.CampaignDraft, error) {
+	var latest *model.CampaignDraft
+	for i := range r.rows {
+		if r.rows[i].ActivityID != activityID {
+			continue
+		}
+		if latest == nil || r.rows[i].Version > latest.Version {
+			cp := r.rows[i]
+			latest = &cp
+		}
+	}
+	if latest == nil {
+		return nil, gorm.ErrRecordNotFound
+	}
+	return latest, nil
+}
+
+func (r *memDraftRepo) MaxVersion(activityID int64) (int, error) {
+	max := 0
+	for i := range r.rows {
+		if r.rows[i].ActivityID == activityID && r.rows[i].Version > max {
+			max = r.rows[i].Version
+		}
+	}
+	return max, nil
+}
+
+type memRuleRepo struct {
+	byCampaign map[int64][]model.CampaignRewardRule
+}
+
+func newMemRuleRepo() *memRuleRepo {
+	return &memRuleRepo{byCampaign: map[int64][]model.CampaignRewardRule{}}
+}
+
+func (r *memRuleRepo) ListByCampaignID(campaignID int64) ([]model.CampaignRewardRule, error) {
+	return append([]model.CampaignRewardRule(nil), r.byCampaign[campaignID]...), nil
+}
+
+func (r *memRuleRepo) DeleteByCampaignID(_ context.Context, campaignID int64) error {
+	delete(r.byCampaign, campaignID)
+	return nil
+}
+
+func (r *memRuleRepo) ReplaceByCampaignID(_ context.Context, campaignID int64, rules []model.CampaignRewardRule) error {
+	cp := make([]model.CampaignRewardRule, len(rules))
+	copy(cp, rules)
+	r.byCampaign[campaignID] = cp
+	return nil
+}
+
+func newAdminSvc() (service.CampaignAdminService, *memCampaignRepo, *memDraftRepo, *memRuleRepo) {
+	campaigns := newMemCampaignRepo()
+	drafts := newMemDraftRepo()
+	rules := newMemRuleRepo()
+	return service.NewCampaignAdminService(campaigns, drafts, rules), campaigns, drafts, rules
+}
+
+func TestCampaignAdmin_CreateCampaign_nameOnly(t *testing.T) {
+	svc, _, _, _ := newAdminSvc()
+	id, status, err := svc.CreateCampaign(context.Background(), "  Summer Up  ")
 	require.NoError(t, err)
-	require.Equal(t, int64(99), id)
+	require.Equal(t, int64(1), id)
 	require.Equal(t, model.CampaignStatusDraft, status)
 }
 
-func TestCampaignAdminService_UpdateDraftCampaign_notDraft(t *testing.T) {
-	m := servicemock.NewMockCampaignRepository(t)
-	m.On("GetByID", int64(1)).Return(&model.Campaign{
-		ID:     1,
-		Status: model.CampaignStatusPublished,
-	}, nil)
-
-	svc := service.NewCampaignAdminService(m)
-	err := svc.UpdateDraftCampaign(1, service.UpdateCampaignParams{
-		Name: "x", TargetMarket: "US",
-		RegistrationStartTime: time.Now(), RegistrationEndTime: time.Now().Add(time.Hour),
-		CampaignStartTime: time.Now(), CampaignEndTime: time.Now().Add(24 * time.Hour),
-		TargetUserSegment: model.UserSegmentNewUser,
-		RewardRules: model.RewardRulesPayload{
-			TopupThreshold: 1, RewardAmount: 1, RewardType: "X", MaxClaimPerUser: 1,
-		},
-	})
+func TestCampaignAdmin_CreateCampaign_emptyName(t *testing.T) {
+	svc, _, _, _ := newAdminSvc()
+	_, _, err := svc.CreateCampaign(context.Background(), "   ")
 	require.Error(t, err)
-	require.True(t, data.IsCampaignNotDraft(err))
 }
 
-func TestCampaignAdminService_UpdateDraftCampaign_success(t *testing.T) {
-	m := servicemock.NewMockCampaignRepository(t)
-	existing := &model.Campaign{
-		ID: 1, Status: model.CampaignStatusDraft, Name: "old",
-	}
-	m.On("GetByID", int64(1)).Return(existing, nil)
-	m.On("Update", mock.MatchedBy(func(c *model.Campaign) bool {
-		return c.Name == "new"
-	})).Return(nil)
-
-	svc := service.NewCampaignAdminService(m)
-	err := svc.UpdateDraftCampaign(1, service.UpdateCampaignParams{
-		Name: "new", TargetMarket: "US",
-		RegistrationStartTime: time.Now(), RegistrationEndTime: time.Now().Add(time.Hour),
-		CampaignStartTime: time.Now(), CampaignEndTime: time.Now().Add(24 * time.Hour),
-		TargetUserSegment: model.UserSegmentNewUser,
-		RewardRules: model.RewardRulesPayload{
-			TopupThreshold: 1, RewardAmount: 1, RewardType: "X", MaxClaimPerUser: 1,
-		},
-	})
-	require.NoError(t, err)
-}
-
-func TestCampaignAdminService_ListAndGet(t *testing.T) {
-	m := servicemock.NewMockCampaignRepository(t)
-	filter := mysql.CampaignListFilter{Page: 1, PageSize: 10}
-	m.On("List", filter).Return([]model.Campaign{{ID: 1}}, int64(1), nil)
-	m.On("GetByID", int64(1)).Return(&model.Campaign{ID: 1, Name: "n"}, nil)
-
-	svc := service.NewCampaignAdminService(m)
-	items, total, err := svc.ListCampaigns(filter)
-	require.NoError(t, err)
-	require.Len(t, items, 1)
-	require.Equal(t, int64(1), total)
-
-	c, err := svc.GetCampaign(1)
-	require.NoError(t, err)
-	require.Equal(t, "n", c.Name)
-}
-
-func TestCampaignAdminService_PublishCampaign(t *testing.T) {
-	m := servicemock.NewMockCampaignRepository(t)
-	m.On("Publish", int64(1), "op").Return(&model.Campaign{ID: 1, Status: model.CampaignStatusPublished}, nil)
-
-	svc := service.NewCampaignAdminService(m)
-	c, err := svc.PublishCampaign(1, "op")
-	require.NoError(t, err)
-	require.Equal(t, model.CampaignStatusPublished, c.Status)
-}
-
-func TestCampaignAdminService_ArchiveCampaign_draft(t *testing.T) {
-	m := servicemock.NewMockCampaignRepository(t)
-	m.On("GetByID", int64(1)).Return(&model.Campaign{ID: 1, Status: model.CampaignStatusDraft}, nil)
-	m.On("Archive", int64(1), "op").Return(&model.Campaign{ID: 1, Status: model.CampaignStatusArchive}, nil)
-
-	svc := service.NewCampaignAdminService(m)
-	c, err := svc.ArchiveCampaign(1, "op")
-	require.NoError(t, err)
-	require.Equal(t, model.CampaignStatusArchive, c.Status)
-}
-
-func TestCampaignAdminService_ArchiveCampaign_publishedAfterEnd(t *testing.T) {
-	m := servicemock.NewMockCampaignRepository(t)
-	pastStart := time.Now().Add(-48 * time.Hour)
-	pastEnd := time.Now().Add(-time.Hour)
-	m.On("GetByID", int64(2)).Return(&model.Campaign{
-		ID: 2, Status: model.CampaignStatusPublished,
-		CampaignStartTime: pastStart, CampaignEndTime: pastEnd,
-	}, nil)
-	m.On("Archive", int64(2), "op").Return(&model.Campaign{ID: 2, Status: model.CampaignStatusArchive}, nil)
-
-	svc := service.NewCampaignAdminService(m)
-	c, err := svc.ArchiveCampaign(2, "op")
-	require.NoError(t, err)
-	require.Equal(t, model.CampaignStatusArchive, c.Status)
-}
-
-func TestCampaignAdminService_ArchiveCampaign_publishedNotYetStarted(t *testing.T) {
-	m := servicemock.NewMockCampaignRepository(t)
-	futureStart := time.Now().Add(time.Hour)
-	futureEnd := time.Now().Add(24 * time.Hour)
-	m.On("GetByID", int64(5)).Return(&model.Campaign{
-		ID: 5, Status: model.CampaignStatusPublished,
-		CampaignStartTime: futureStart, CampaignEndTime: futureEnd,
-	}, nil)
-	m.On("Archive", int64(5), "op").Return(&model.Campaign{ID: 5, Status: model.CampaignStatusArchive}, nil)
-
-	svc := service.NewCampaignAdminService(m)
-	c, err := svc.ArchiveCampaign(5, "op")
-	require.NoError(t, err)
-	require.Equal(t, model.CampaignStatusArchive, c.Status)
-}
-
-func TestCampaignAdminService_ArchiveCampaign_publishedDuringActivity(t *testing.T) {
-	m := servicemock.NewMockCampaignRepository(t)
-	past := time.Now().Add(-time.Hour)
-	future := time.Now().Add(time.Hour)
-	m.On("GetByID", int64(3)).Return(&model.Campaign{
-		ID: 3, Status: model.CampaignStatusPublished,
-		CampaignStartTime: past, CampaignEndTime: future,
-	}, nil)
-
-	svc := service.NewCampaignAdminService(m)
-	_, err := svc.ArchiveCampaign(3, "op")
-	require.Error(t, err)
-	require.True(t, data.IsCampaignNotArchivable(err))
-}
-
-func TestCampaignAdminService_ArchiveCampaign_alreadyArchived(t *testing.T) {
-	m := servicemock.NewMockCampaignRepository(t)
-	m.On("GetByID", int64(4)).Return(&model.Campaign{ID: 4, Status: model.CampaignStatusArchive}, nil)
-
-	svc := service.NewCampaignAdminService(m)
-	_, err := svc.ArchiveCampaign(4, "op")
-	require.Error(t, err)
-	require.True(t, data.IsCampaignAlreadyArchived(err))
-}
-
-func TestCampaignAdminService_GetByID_notFound(t *testing.T) {
-	m := servicemock.NewMockCampaignRepository(t)
-	m.On("GetByID", int64(404)).Return(nil, gorm.ErrRecordNotFound)
-
-	svc := service.NewCampaignAdminService(m)
-	_, err := svc.GetCampaign(404)
+func TestCampaignAdmin_CreateVersion_requiresCampaign(t *testing.T) {
+	svc, _, _, _ := newAdminSvc()
+	_, err := svc.CreateVersion(context.Background(), 99)
 	require.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }
 
-func TestCampaignAdminService_CreateCampaign_repoError(t *testing.T) {
-	m := servicemock.NewMockCampaignRepository(t)
-	m.On("Create", mock.Anything).Return(errors.New("db down"))
+func TestCampaignAdmin_CreateEditPublishFlow(t *testing.T) {
+	svc, _, drafts, rules := newAdminSvc()
+	id, _, err := svc.CreateCampaign(context.Background(), "Summer")
+	require.NoError(t, err)
 
-	svc := service.NewCampaignAdminService(m)
-	_, _, err := svc.CreateCampaign(service.CreateCampaignParams{
-		Name: "c", Type: "T", TargetMarket: "US",
-		RegistrationStartTime: time.Now(), RegistrationEndTime: time.Now().Add(time.Hour),
-		CampaignStartTime: time.Now(), CampaignEndTime: time.Now().Add(24 * time.Hour),
-		TargetUserSegment: "S",
-		RewardRules:       model.RewardRulesPayload{TopupThreshold: 1, RewardAmount: 1, RewardType: "R", MaxClaimPerUser: 1},
-	})
-	require.Error(t, err)
+	v1, err := svc.CreateVersion(context.Background(), id)
+	require.NoError(t, err)
+	require.Equal(t, 1, v1)
+
+	content := data.CampaignVO{
+		Name: "Summer", Market: "SG",
+		RegistrationStartTime: 1, RegistrationEndTime: 2,
+		CampaignStartTime: 3, CampaignEndTime: 4,
+		TimeZone:         "Asia/Singapore",
+		TargetUserGroups: data.TargetUserGroupVO{ID: 10, GroupName: "VIP"},
+		Budget:           data.BudgetVO{ProjectID: 20, ProjectName: "P1"},
+		RewardRules: data.CampaignRewardRuleVO{
+			TaskGroupID: 100, TaskGroupReward: 200,
+			TaskRewardItems: []data.TaskRewardItemVO{
+				{TaskID: 1, TaskName: "t1", RewardTemplateID: 11, RewardTemplateName: "r1"},
+			},
+		},
+		LandingPageID: 7,
+	}
+	require.NoError(t, svc.EditVersion(context.Background(), id, v1, content))
+
+	detail, err := svc.PublishCampaign(context.Background(), id, "admin")
+	require.NoError(t, err)
+	require.Equal(t, model.CampaignStatusPublished, detail.Status)
+	require.Equal(t, "SG", detail.Market)
+	require.Equal(t, int64(20), detail.Budget.ProjectID)
+	require.Equal(t, "P1", detail.Budget.ProjectName)
+	require.Equal(t, "VIP", detail.TargetUserGroups.GroupName)
+	require.Equal(t, int64(100), detail.RewardRules.TaskGroupID)
+	require.Equal(t, int64(200), detail.RewardRules.TaskGroupReward)
+	require.Len(t, detail.RewardRules.TaskRewardItems, 1)
+	require.Equal(t, "t1", detail.RewardRules.TaskRewardItems[0].TaskName)
+	require.Equal(t, "r1", detail.RewardRules.TaskRewardItems[0].RewardTemplateName)
+	require.Equal(t, 1, drafts.rows[0].Version)
+	require.Equal(t, model.CampaignDraftStatusPublished, drafts.rows[0].Status)
+	require.Len(t, rules.byCampaign[id], 2)
+}
+
+func TestCampaignAdmin_EditPublishedVersion_conflict(t *testing.T) {
+	svc, _, _, _ := newAdminSvc()
+	id, _, err := svc.CreateCampaign(context.Background(), "X")
+	require.NoError(t, err)
+	v1, err := svc.CreateVersion(context.Background(), id)
+	require.NoError(t, err)
+	content := data.CampaignVO{
+		Name: "X", Budget: data.BudgetVO{ProjectID: 1, ProjectName: "p"},
+		RewardRules: data.CampaignRewardRuleVO{
+			TaskGroupID: 1, TaskGroupReward: 2,
+			TaskRewardItems: []data.TaskRewardItemVO{{TaskID: 1, RewardTemplateID: 2}},
+		},
+	}
+	require.NoError(t, svc.EditVersion(context.Background(), id, v1, content))
+	_, err = svc.PublishCampaign(context.Background(), id, "op")
+	require.NoError(t, err)
+
+	err = svc.EditVersion(context.Background(), id, v1, content)
+	require.True(t, data.IsCampaignDraftNotEditable(err))
+}
+
+func TestCampaignAdmin_Publish_validation(t *testing.T) {
+	svc, _, _, _ := newAdminSvc()
+	id, _, err := svc.CreateCampaign(context.Background(), "X")
+	require.NoError(t, err)
+	v1, err := svc.CreateVersion(context.Background(), id)
+	require.NoError(t, err)
+	require.NoError(t, svc.EditVersion(context.Background(), id, v1, data.CampaignVO{Name: "X"}))
+
+	_, err = svc.PublishCampaign(context.Background(), id, "op")
+	require.True(t, data.IsCampaignPublishInvalid(err))
+}
+
+func TestCampaignAdmin_Publish_noDraft(t *testing.T) {
+	svc, _, _, _ := newAdminSvc()
+	id, _, err := svc.CreateCampaign(context.Background(), "X")
+	require.NoError(t, err)
+	_, err = svc.PublishCampaign(context.Background(), id, "op")
+	require.True(t, data.IsCampaignNoDraftToPublish(err))
+}
+
+func TestCampaignAdmin_Publish_alreadyPublishedLatest(t *testing.T) {
+	svc, _, _, _ := newAdminSvc()
+	id, _, err := svc.CreateCampaign(context.Background(), "X")
+	require.NoError(t, err)
+	v1, err := svc.CreateVersion(context.Background(), id)
+	require.NoError(t, err)
+	require.NoError(t, svc.EditVersion(context.Background(), id, v1, data.CampaignVO{
+		Name: "X", Budget: data.BudgetVO{ProjectID: 1, ProjectName: "p"},
+		RewardRules: data.CampaignRewardRuleVO{
+			TaskGroupID: 1, TaskGroupReward: 2,
+			TaskRewardItems: []data.TaskRewardItemVO{{TaskID: 1, RewardTemplateID: 2}},
+		},
+	}))
+	_, err = svc.PublishCampaign(context.Background(), id, "op")
+	require.NoError(t, err)
+	_, err = svc.PublishCampaign(context.Background(), id, "op")
+	require.True(t, data.IsCampaignNoDraftToPublish(err))
+}
+
+func TestCampaignAdmin_ListCampaigns_paging(t *testing.T) {
+	svc, _, _, _ := newAdminSvc()
+	for i := 0; i < 3; i++ {
+		_, _, err := svc.CreateCampaign(context.Background(), "C")
+		require.NoError(t, err)
+	}
+
+	items, total, err := svc.ListCampaigns(data.CampaignListReq{Page: 2, PageSize: 2})
+	require.NoError(t, err)
+	require.Equal(t, int64(3), total)
+	require.Len(t, items, 1)
+	require.Equal(t, int64(1), items[0].ID)
+}
+
+func TestCampaignAdmin_ListCampaigns_defaultPaging(t *testing.T) {
+	svc, _, _, _ := newAdminSvc()
+	_, _, err := svc.CreateCampaign(context.Background(), "C")
+	require.NoError(t, err)
+
+	items, total, err := svc.ListCampaigns(data.CampaignListReq{})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), total)
+	require.Len(t, items, 1)
+}
+
+func TestCampaignAdmin_ListCampaigns_statusFilter(t *testing.T) {
+	svc, _, _, _ := newAdminSvc()
+	_, _, err := svc.CreateCampaign(context.Background(), "C")
+	require.NoError(t, err)
+	published := model.CampaignStatusPublished
+
+	items, total, err := svc.ListCampaigns(data.CampaignListReq{Status: &published})
+	require.NoError(t, err)
+	require.Zero(t, total)
+	require.Empty(t, items)
+}
+
+func TestCampaignAdmin_CreateVersion_copiesPreviousContent(t *testing.T) {
+	svc, _, _, _ := newAdminSvc()
+	id, _, err := svc.CreateCampaign(context.Background(), "X")
+	require.NoError(t, err)
+	v1, err := svc.CreateVersion(context.Background(), id)
+	require.NoError(t, err)
+	require.NoError(t, svc.EditVersion(context.Background(), id, v1, data.CampaignVO{Name: "Copied", Market: "US"}))
+
+	v2, err := svc.CreateVersion(context.Background(), id)
+	require.NoError(t, err)
+	require.Equal(t, 2, v2)
+	detail, err := svc.GetCampaign(id)
+	require.NoError(t, err)
+	require.Equal(t, int64(2), detail.Version)
+	require.Equal(t, "Copied", detail.Name)
+	require.Equal(t, "US", detail.Market)
 }

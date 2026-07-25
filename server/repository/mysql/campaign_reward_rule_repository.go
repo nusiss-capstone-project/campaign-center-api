@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -11,8 +12,8 @@ import (
 // CampaignRewardRuleRepository persists flattened campaign reward rules.
 type CampaignRewardRuleRepository interface {
 	ListByCampaignID(campaignID int64) ([]model.CampaignRewardRule, error)
-	ReplaceByCampaignID(campaignID int64, rules []model.CampaignRewardRule) error
-	DeleteByCampaignID(campaignID int64) error
+	ReplaceByCampaignID(ctx context.Context, campaignID int64, rules []model.CampaignRewardRule) error
+	DeleteByCampaignID(ctx context.Context, campaignID int64) error
 }
 
 type campaignRewardRuleRepository struct{}
@@ -49,21 +50,21 @@ func (r *campaignRewardRuleRepository) ListByCampaignID(campaignID int64) ([]mod
 	return items, nil
 }
 
-func (r *campaignRewardRuleRepository) DeleteByCampaignID(campaignID int64) error {
+func (r *campaignRewardRuleRepository) DeleteByCampaignID(ctx context.Context, campaignID int64) error {
 	db, err := r.db()
 	if err != nil {
 		return err
 	}
-	return db.Where("campaign_id = ?", campaignID).Delete(&model.CampaignRewardRule{}).Error
+	return db.WithContext(ctx).Where("campaign_id = ?", campaignID).Delete(&model.CampaignRewardRule{}).Error
 }
 
-func (r *campaignRewardRuleRepository) ReplaceByCampaignID(campaignID int64, rules []model.CampaignRewardRule) error {
+func (r *campaignRewardRuleRepository) ReplaceByCampaignID(ctx context.Context, campaignID int64, rules []model.CampaignRewardRule) error {
 	db, err := r.db()
 	if err != nil {
 		return err
 	}
 	now := time.Now()
-	return db.Transaction(func(tx *gorm.DB) error {
+	return db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("campaign_id = ?", campaignID).Delete(&model.CampaignRewardRule{}).Error; err != nil {
 			return err
 		}

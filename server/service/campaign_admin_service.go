@@ -1,6 +1,10 @@
 package service
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -9,45 +13,20 @@ import (
 	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
 )
 
-// CampaignAdminService admin campaign operations.
+// CampaignAdminService admin campaign operations (v2 drafts/versions).
 type CampaignAdminService interface {
-	CreateCampaign(p CreateCampaignParams) (campaignID int64, status int16, err error)
-	UpdateDraftCampaign(id int64, p UpdateCampaignParams) error
-	ListCampaigns(filter mysql.CampaignListFilter) ([]model.Campaign, int64, error)
-	GetCampaign(id int64) (*model.Campaign, error)
-	PublishCampaign(id int64, operator string) (*model.Campaign, error)
-	ArchiveCampaign(id int64, operator string) (*model.Campaign, error)
-}
-
-// CreateCampaignParams input for creating a campaign.
-type CreateCampaignParams struct {
-	Name                  string
-	Type                  string
-	TargetMarket          string
-	RegistrationStartTime time.Time
-	RegistrationEndTime   time.Time
-	CampaignStartTime     time.Time
-	CampaignEndTime       time.Time
-	TargetUserSegment     string
-	RewardRules           model.RewardRulesPayload
-	LandingPageID         int64
-}
-
-// UpdateCampaignParams input for updating a draft campaign.
-type UpdateCampaignParams struct {
-	Name                  string
-	TargetMarket          string
-	RegistrationStartTime time.Time
-	RegistrationEndTime   time.Time
-	CampaignStartTime     time.Time
-	CampaignEndTime       time.Time
-	TargetUserSegment     string
-	RewardRules           model.RewardRulesPayload
-	LandingPageID         int64
+	CreateCampaign(ctx context.Context, name string) (campaignID int64, status int16, err error)
+	CreateVersion(ctx context.Context, campaignID int64) (version int, err error)
+	EditVersion(ctx context.Context, campaignID int64, version int, campaign data.CampaignVO) error
+	PublishCampaign(ctx context.Context, campaignID int64, operator string) (*data.CampaignVO, error)
+	ListCampaigns(req data.CampaignListReq) ([]data.CampaignListVO, int64, error)
+	GetCampaign(campaignID int64) (*data.CampaignVO, error)
 }
 
 type campaignAdminService struct {
 	campaigns mysql.CampaignRepository
+	drafts    mysql.CampaignDraftRepository
+	rules     mysql.CampaignRewardRuleRepository
 }
 
 var (
@@ -56,102 +35,210 @@ var (
 )
 
 // NewCampaignAdminService builds a campaign admin service with explicit repositories (for tests).
-func NewCampaignAdminService(campaigns mysql.CampaignRepository) CampaignAdminService {
-	return &campaignAdminService{campaigns: campaigns}
+func NewCampaignAdminService(
+	campaigns mysql.CampaignRepository,
+	drafts mysql.CampaignDraftRepository,
+	rules mysql.CampaignRewardRuleRepository,
+) CampaignAdminService {
+	return &campaignAdminService{campaigns: campaigns, drafts: drafts, rules: rules}
 }
 
 // GetCampaignAdminService returns the singleton campaign admin service.
 func GetCampaignAdminService() CampaignAdminService {
 	campaignAdminServiceOnce.Do(func() {
-		campaignAdminServiceInst = NewCampaignAdminService(mysql.GetCampaignRepository())
+		campaignAdminServiceInst = NewCampaignAdminService(
+			mysql.GetCampaignRepository(),
+			mysql.GetCampaignDraftRepository(),
+			mysql.GetCampaignRewardRuleRepository(),
+		)
 	})
 	return campaignAdminServiceInst
 }
 
-func (s *campaignAdminService) CreateCampaign(p CreateCampaignParams) (int64, int16, error) {
-	rulesJSON, err := model.MarshalRewardRulesPayload(p.RewardRules)
-	if err != nil {
-		return 0, 0, err
+func (s *campaignAdminService) CreateCampaign(ctx context.Context, name string) (int64, int16, error) {
+	name = trimCampaignName(name)
+	if name == "" {
+		return 0, 0, fmt.Errorf("%s", MsgCampaignNameRequired)
 	}
 	now := time.Now()
 	campaign := model.Campaign{
-		Name:                  p.Name,
-		Type:                  p.Type,
-		TargetMarket:          p.TargetMarket,
-		RegistrationStartTime: p.RegistrationStartTime,
-		RegistrationEndTime:   p.RegistrationEndTime,
-		CampaignStartTime:     p.CampaignStartTime,
-		CampaignEndTime:       p.CampaignEndTime,
-		TargetUserSegment:     p.TargetUserSegment,
-		RewardRules:           rulesJSON,
-		Status:                model.CampaignStatusDraft,
-		CreatedAt:             now,
-		UpdatedAt:             now,
-		LandingPageID:         p.LandingPageID,
+		Name:      name,
+		Status:    model.CampaignStatusDraft,
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
-	if err := s.campaigns.Create(&campaign); err != nil {
+	if err := s.campaigns.Create(ctx, &campaign); err != nil {
 		return 0, 0, err
 	}
 	return campaign.ID, campaign.Status, nil
 }
 
-func (s *campaignAdminService) UpdateDraftCampaign(id int64, p UpdateCampaignParams) error {
-	existing, err := s.campaigns.GetByID(id)
-	if err != nil {
-		return err
+func (s *campaignAdminService) CreateVersion(ctx context.Context, campaignID int64) (int, error) {
+	if _, err := s.campaigns.GetByID(campaignID); err != nil {
+		return 0, err
 	}
-	if existing.Status != model.CampaignStatusDraft {
-		return data.ErrCampaignNotDraft
-	}
-	rulesJSON, err := model.MarshalRewardRulesPayload(p.RewardRules)
+	maxVersion, err := s.drafts.MaxVersion(campaignID)
 	if err != nil {
-		return err
+		return 0, err
+	}
+	content, err := s.initialDraftContent(campaignID, maxVersion)
+	if err != nil {
+		return 0, err
 	}
 	now := time.Now()
-	existing.Name = p.Name
-	existing.TargetMarket = p.TargetMarket
-	existing.RegistrationStartTime = p.RegistrationStartTime
-	existing.RegistrationEndTime = p.RegistrationEndTime
-	existing.CampaignStartTime = p.CampaignStartTime
-	existing.CampaignEndTime = p.CampaignEndTime
-	existing.TargetUserSegment = p.TargetUserSegment
-	existing.RewardRules = rulesJSON
-	existing.LandingPageID = p.LandingPageID
-	existing.UpdatedAt = now
-	return s.campaigns.Update(existing)
+	draft := model.CampaignDraft{
+		ActivityID: campaignID,
+		Content:    content,
+		Version:    maxVersion + 1,
+		Status:     model.CampaignDraftStatusDraft,
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
+	if err := s.drafts.Create(ctx, &draft); err != nil {
+		return 0, err
+	}
+	return draft.Version, nil
 }
 
-func (s *campaignAdminService) ListCampaigns(filter mysql.CampaignListFilter) ([]model.Campaign, int64, error) {
-	return s.campaigns.List(filter)
+func (s *campaignAdminService) EditVersion(ctx context.Context, campaignID int64, version int, campaign data.CampaignVO) error {
+	draft, err := s.drafts.GetByActivityAndVersion(campaignID, version)
+	if err != nil {
+		return err
+	}
+	if draft.Status != model.CampaignDraftStatusDraft {
+		return data.ErrCampaignDraftNotEditable
+	}
+	raw, err := json.Marshal(campaignDraftVO(campaign))
+	if err != nil {
+		return err
+	}
+	draft.Content = string(raw)
+	draft.UpdatedAt = time.Now()
+	return s.drafts.Update(ctx, draft)
 }
 
-func (s *campaignAdminService) GetCampaign(id int64) (*model.Campaign, error) {
-	return s.campaigns.GetByID(id)
-}
-
-func (s *campaignAdminService) PublishCampaign(id int64, operator string) (*model.Campaign, error) {
-	return s.campaigns.Publish(id, operator)
-}
-
-func (s *campaignAdminService) ArchiveCampaign(id int64, operator string) (*model.Campaign, error) {
-	c, err := s.campaigns.GetByID(id)
+func (s *campaignAdminService) PublishCampaign(ctx context.Context, campaignID int64, operator string) (*data.CampaignVO, error) {
+	draft, err := s.drafts.GetLatestByActivityID(campaignID)
+	if err != nil {
+		if mysql.IsNotFound(err) {
+			return nil, data.ErrCampaignNoDraftToPublish
+		}
+		return nil, err
+	}
+	if draft.Status != model.CampaignDraftStatusDraft {
+		return nil, data.ErrCampaignNoDraftToPublish
+	}
+	content, err := parseDraftContent(draft.Content)
 	if err != nil {
 		return nil, err
 	}
-	switch c.Status {
-	case model.CampaignStatusArchive:
-		return nil, data.ErrCampaignAlreadyArchived
-	case model.CampaignStatusDraft:
-		// allowed
-	case model.CampaignStatusPublished:
-		now := time.Now()
-		// Active window [CampaignStartTime, CampaignEndTime] inclusive; archive only when outside it (not started yet or already ended).
-		inActivity := !now.Before(c.CampaignStartTime) && !now.After(c.CampaignEndTime)
-		if inActivity {
-			return nil, data.ErrCampaignNotArchivable
-		}
-	default:
-		return nil, data.ErrCampaignNotArchivable
+	if err := validatePublishContent(content); err != nil {
+		return nil, err
 	}
-	return s.campaigns.Archive(id, operator)
+	campaign, err := s.campaigns.GetByID(campaignID)
+	if err != nil {
+		return nil, err
+	}
+	applyContentToCampaign(campaign, content, operator)
+	if err := s.campaigns.Update(ctx, campaign); err != nil {
+		return nil, err
+	}
+	if err := s.rules.ReplaceByCampaignID(ctx, campaignID, flattenRewardRules(campaignID, content.RewardRules)); err != nil {
+		return nil, err
+	}
+	draft.Status = model.CampaignDraftStatusPublished
+	draft.UpdatedAt = time.Now()
+	if err := s.drafts.Update(ctx, draft); err != nil {
+		return nil, err
+	}
+	return s.GetCampaign(campaignID)
+}
+
+func (s *campaignAdminService) ListCampaigns(req data.CampaignListReq) ([]data.CampaignListVO, int64, error) {
+	query := mysql.CampaignQuery{Status: req.Status, CampaignID: req.CampaignID}
+	total, err := s.campaigns.Count(query)
+	if err != nil {
+		return nil, 0, err
+	}
+	offset, limit := pageToOffsetLimit(req.Page, req.PageSize)
+	items, err := s.campaigns.Find(query, offset, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	out := make([]data.CampaignListVO, 0, len(items))
+	for _, item := range items {
+		out = append(out, campaignToListVO(item))
+	}
+	return out, total, nil
+}
+
+func (s *campaignAdminService) GetCampaign(campaignID int64) (*data.CampaignVO, error) {
+	campaign, err := s.campaigns.GetByID(campaignID)
+	if err != nil {
+		return nil, err
+	}
+	detail := campaignToVO(campaign)
+	draft, err := s.drafts.GetLatestByActivityID(campaignID)
+	if err == nil {
+		detail.Version = int64(draft.Version)
+		content, err := parseDraftContent(draft.Content)
+		if err != nil {
+			return nil, err
+		}
+		applyDraftVO(detail, content)
+	} else if !mysql.IsNotFound(err) {
+		return nil, err
+	}
+	return detail, nil
+}
+
+func (s *campaignAdminService) initialDraftContent(campaignID int64, maxVersion int) (string, error) {
+	if maxVersion > 0 {
+		prev, err := s.drafts.GetByActivityAndVersion(campaignID, maxVersion)
+		if err != nil {
+			return "", err
+		}
+		if prev.Content != "" {
+			return prev.Content, nil
+		}
+	}
+	campaign, err := s.campaigns.GetByID(campaignID)
+	if err != nil {
+		return "", err
+	}
+	raw, err := json.Marshal(data.CampaignVO{Name: campaign.Name})
+	if err != nil {
+		return "", err
+	}
+	return string(raw), nil
+}
+
+func trimCampaignName(name string) string {
+	return strings.TrimSpace(name)
+}
+
+func parseDraftContent(raw string) (data.CampaignVO, error) {
+	var content data.CampaignVO
+	if raw == "" {
+		return content, nil
+	}
+	if err := json.Unmarshal([]byte(raw), &content); err != nil {
+		return content, err
+	}
+	return content, nil
+}
+
+func validatePublishContent(content data.CampaignVO) error {
+	if content.Budget.ProjectID <= 0 {
+		return fmt.Errorf("%w: budget projectId must be > 0", data.ErrCampaignPublishInvalid)
+	}
+	if content.RewardRules.TaskGroupID <= 0 || content.RewardRules.TaskGroupReward <= 0 {
+		return fmt.Errorf("%w: taskGroupId and taskGroupReward must be > 0", data.ErrCampaignPublishInvalid)
+	}
+	for _, item := range content.RewardRules.TaskRewardItems {
+		if item.TaskID <= 0 || item.RewardTemplateID <= 0 {
+			return fmt.Errorf("%w: taskId and rewardTemplateId must be > 0", data.ErrCampaignPublishInvalid)
+		}
+	}
+	return nil
 }

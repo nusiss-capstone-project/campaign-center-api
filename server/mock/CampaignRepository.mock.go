@@ -3,6 +3,7 @@
 package mock
 
 import (
+	context "context"
 	time "time"
 
 	mysql "github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
@@ -45,17 +46,17 @@ func (_m *MockCampaignRepository) Archive(id int64, operator string) (*model.Cam
 	return r0, r1
 }
 
-// Create provides a mock function with given fields: c
-func (_m *MockCampaignRepository) Create(c *model.Campaign) error {
-	ret := _m.Called(c)
+// Create provides a mock function with given fields: ctx, c
+func (_m *MockCampaignRepository) Create(ctx context.Context, c *model.Campaign) error {
+	ret := _m.Called(ctx, c)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*model.Campaign) error); ok {
-		r0 = rf(c)
+	if rf, ok := ret.Get(0).(func(context.Context, *model.Campaign) error); ok {
+		r0 = rf(ctx, c)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -93,41 +94,62 @@ func (_m *MockCampaignRepository) GetByID(id int64) (*model.Campaign, error) {
 	return r0, r1
 }
 
-// List provides a mock function with given fields: f
-func (_m *MockCampaignRepository) List(f mysql.CampaignListFilter) ([]model.Campaign, int64, error) {
-	ret := _m.Called(f)
+// Count provides a mock function with given fields: q
+func (_m *MockCampaignRepository) Count(q mysql.CampaignQuery) (int64, error) {
+	ret := _m.Called(q)
 
 	if len(ret) == 0 {
-		panic("no return value specified for List")
+		panic("no return value specified for Count")
+	}
+
+	var r0 int64
+	var r1 error
+	if rf, ok := ret.Get(0).(func(mysql.CampaignQuery) (int64, error)); ok {
+		return rf(q)
+	}
+	if rf, ok := ret.Get(0).(func(mysql.CampaignQuery) int64); ok {
+		r0 = rf(q)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+
+	if rf, ok := ret.Get(1).(func(mysql.CampaignQuery) error); ok {
+		r1 = rf(q)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// Find provides a mock function with given fields: q, offset, limit
+func (_m *MockCampaignRepository) Find(q mysql.CampaignQuery, offset int, limit int) ([]model.Campaign, error) {
+	ret := _m.Called(q, offset, limit)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Find")
 	}
 
 	var r0 []model.Campaign
-	var r1 int64
-	var r2 error
-	if rf, ok := ret.Get(0).(func(mysql.CampaignListFilter) ([]model.Campaign, int64, error)); ok {
-		return rf(f)
+	var r1 error
+	if rf, ok := ret.Get(0).(func(mysql.CampaignQuery, int, int) ([]model.Campaign, error)); ok {
+		return rf(q, offset, limit)
 	}
-	if rf, ok := ret.Get(0).(func(mysql.CampaignListFilter) []model.Campaign); ok {
-		r0 = rf(f)
+	if rf, ok := ret.Get(0).(func(mysql.CampaignQuery, int, int) []model.Campaign); ok {
+		r0 = rf(q, offset, limit)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]model.Campaign)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(mysql.CampaignListFilter) int64); ok {
-		r1 = rf(f)
+	if rf, ok := ret.Get(1).(func(mysql.CampaignQuery, int, int) error); ok {
+		r1 = rf(q, offset, limit)
 	} else {
-		r1 = ret.Get(1).(int64)
+		r1 = ret.Error(1)
 	}
 
-	if rf, ok := ret.Get(2).(func(mysql.CampaignListFilter) error); ok {
-		r2 = rf(f)
-	} else {
-		r2 = ret.Error(2)
-	}
-
-	return r0, r1, r2
+	return r0, r1
 }
 
 // ListPublishedActiveOrUpcoming provides a mock function with given fields: now
@@ -190,22 +212,52 @@ func (_m *MockCampaignRepository) Publish(id int64, operator string) (*model.Cam
 	return r0, r1
 }
 
-// Update provides a mock function with given fields: c
-func (_m *MockCampaignRepository) Update(c *model.Campaign) error {
-	ret := _m.Called(c)
+// Update provides a mock function with given fields: ctx, c
+func (_m *MockCampaignRepository) Update(ctx context.Context, c *model.Campaign) error {
+	ret := _m.Called(ctx, c)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*model.Campaign) error); ok {
-		r0 = rf(c)
+	if rf, ok := ret.Get(0).(func(context.Context, *model.Campaign) error); ok {
+		r0 = rf(ctx, c)
 	} else {
 		r0 = ret.Error(0)
 	}
 
 	return r0
+}
+
+// UpdateStatus provides a mock function with given fields: ctx, id, status, operator
+func (_m *MockCampaignRepository) UpdateStatus(ctx context.Context, id int64, status int16, operator string) (*model.Campaign, error) {
+	ret := _m.Called(ctx, id, status, operator)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateStatus")
+	}
+
+	var r0 *model.Campaign
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, int64, int16, string) (*model.Campaign, error)); ok {
+		return rf(ctx, id, status, operator)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, int64, int16, string) *model.Campaign); ok {
+		r0 = rf(ctx, id, status, operator)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.Campaign)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, int64, int16, string) error); ok {
+		r1 = rf(ctx, id, status, operator)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // NewMockCampaignRepository creates a new instance of MockCampaignRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

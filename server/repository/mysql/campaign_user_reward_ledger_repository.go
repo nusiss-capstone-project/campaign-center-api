@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"sync"
 
 	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
@@ -10,7 +11,7 @@ import (
 // CampaignUserRewardLedgerRepository persists user reward ledger rows.
 // Write paths will be added when user reward flow is reimplemented.
 type CampaignUserRewardLedgerRepository interface {
-	Create(row *model.CampaignUserRewardLedger) error
+	Create(ctx context.Context, row *model.CampaignUserRewardLedger) error
 	ListByCampaignAndUser(campaignID, userID int64) ([]model.CampaignUserRewardLedger, error)
 }
 
@@ -36,12 +37,12 @@ func (r *campaignUserRewardLedgerRepository) db() (*gorm.DB, error) {
 	return DB, nil
 }
 
-func (r *campaignUserRewardLedgerRepository) Create(row *model.CampaignUserRewardLedger) error {
+func (r *campaignUserRewardLedgerRepository) Create(ctx context.Context, row *model.CampaignUserRewardLedger) error {
 	db, err := r.db()
 	if err != nil {
 		return err
 	}
-	return db.Create(row).Error
+	return db.WithContext(ctx).Create(row).Error
 }
 
 func (r *campaignUserRewardLedgerRepository) ListByCampaignAndUser(campaignID, userID int64) ([]model.CampaignUserRewardLedger, error) {

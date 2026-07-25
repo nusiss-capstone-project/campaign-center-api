@@ -12,9 +12,7 @@ type Campaign struct {
 	CampaignStartTime     time.Time `gorm:"column:campaign_start_time"`
 	CampaignEndTime       time.Time `gorm:"column:campaign_end_time"`
 	TargetUserGroupID     int64     `gorm:"column:target_user_group_id;not null;default:0"`
-	TargetUserGroupName   string    `gorm:"column:target_user_group_name;size:255;not null;default:''"`
 	BudgetProjectID       int64     `gorm:"column:budget_project_id;not null;default:0"`
-	BudgetProjectName     string    `gorm:"column:budget_project_name;size:255;not null;default:''"`
 	Status                int16     `gorm:"column:status"`
 	CreatedAt             time.Time `gorm:"column:created_at"`
 	UpdatedAt             time.Time `gorm:"column:updated_at"`
