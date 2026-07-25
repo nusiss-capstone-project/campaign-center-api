@@ -52,55 +52,18 @@ const (
 	KYCStatusFailed  = "FAILED"
 )
 
+// Participation / task / reward status values used by admin reads and web mocks.
 const (
 	JoinStatusJoined = "JOINED"
-)
 
-const (
 	TaskStatusNotStarted   = "NOT_STARTED"
 	TaskStatusCompleted    = "COMPLETED"
 	TaskStatusNotQualified = "NOT_QUALIFIED"
-)
 
-const (
 	RewardStatusNotGranted    = "NOT_GRANTED"
 	RewardStatusPending       = "PENDING"
 	RewardStatusGranted       = "GRANTED"
 	RewardStatusPendingReview = "PENDING_REVIEW"
-)
-
-const (
-	RiskStatusApproved     = "APPROVED"
-	RiskStatusManualReview = "MANUAL_REVIEW"
-	RiskStatusRejected     = "REJECTED"
-)
-
-const (
-	RewardTypeBonusCredit      = "BONUS_CREDIT"
-	RewardTypeTokenBonus       = "TOKEN_BONUS"
-	RewardTypeTradingFeeRebate = "TRADING_FEE_REBATE"
-	RewardTypeVoucher          = "VOUCHER"
-	RewardTypeMysteryBox       = "MYSTERY_BOX"
-	RewardTypePoints           = "POINTS"
-)
-
-const (
-	RewardModeFixedAmount = "FIXED_AMOUNT"
-	RewardModePercentage  = "PERCENTAGE"
-)
-
-const (
-	RewardTxnStatusCompleted = "COMPLETED"
-	RewardTxnStatusPending   = "PENDING"
-)
-
-const (
-	RiskLevelHigh = "HIGH"
-)
-
-const (
-	RejectReasonKYCNotPassed = "KYC_NOT_PASSED"
-	RejectReasonSegment      = "SEGMENT_MISMATCH"
 )
 
 const DefaultCurrency = "USDT"

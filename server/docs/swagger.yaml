@@ -277,12 +277,161 @@ definitions:
       taskName:
         type: string
     type: object
+  data.WebCampaignLandingPageData:
+    properties:
+      campaignId:
+        example: 1001
+        type: integer
+      joined:
+        example: false
+        type: boolean
+      landingPage:
+        $ref: '#/definitions/data.WebLandingPageContent'
+      market:
+        example: SG
+        type: string
+      name:
+        example: Summer Deposit Bonus
+        type: string
+      participation:
+        $ref: '#/definitions/data.WebParticipationStatus'
+      timeZone:
+        example: Asia/Singapore
+        type: string
+      userId:
+        example: 42
+        type: integer
+    type: object
+  data.WebCampaignListData:
+    properties:
+      ongoing:
+        items:
+          $ref: '#/definitions/data.WebCampaignListItem'
+        type: array
+      upcoming:
+        items:
+          $ref: '#/definitions/data.WebCampaignListItem'
+        type: array
+    type: object
+  data.WebCampaignListItem:
+    properties:
+      campaignEndTime:
+        example: 1722470400
+        type: integer
+      campaignStartTime:
+        example: 1717200000
+        type: integer
+      id:
+        example: 1001
+        type: integer
+      joined:
+        example: false
+        type: boolean
+      landingPageId:
+        example: 2001
+        type: integer
+      market:
+        example: SG
+        type: string
+      name:
+        example: Summer Deposit Bonus
+        type: string
+      status:
+        example: 2
+        type: integer
+    type: object
+  data.WebDepositData:
+    properties:
+      amount:
+        example: 100
+        type: number
+      campaignId:
+        example: 1001
+        type: integer
+      currency:
+        example: USDT
+        type: string
+      ledgerId:
+        example: 9001
+        type: integer
+      message:
+        example: deposit accepted (mock)
+        type: string
+      rewardStatus:
+        example: pending_distribution
+        type: string
+      taskStatus:
+        example: COMPLETED
+        type: string
+      userId:
+        example: 42
+        type: integer
+    type: object
+  data.WebDepositReq:
+    properties:
+      amount:
+        example: 100
+        type: number
+      currency:
+        example: USDT
+        type: string
+    required:
+    - amount
+    type: object
+  data.WebJoinCampaignData:
+    properties:
+      campaignId:
+        example: 1001
+        type: integer
+      joined:
+        example: true
+        type: boolean
+      joinedAt:
+        example: 1717200000
+        type: integer
+      message:
+        example: joined (mock)
+        type: string
+      userId:
+        example: 42
+        type: integer
+    type: object
+  data.WebLandingPageContent:
+    properties:
+      bannerImageUrl:
+        example: https://cdn.example.com/banner.png
+        type: string
+      description:
+        example: Join the campaign and complete the deposit task.
+        type: string
+      lang:
+        example: en
+        type: string
+      terms:
+        example: One reward per user.
+        type: string
+      title:
+        example: Deposit and get a bonus
+        type: string
+    type: object
+  data.WebParticipationStatus:
+    properties:
+      joined:
+        example: false
+        type: boolean
+      rewardStatus:
+        example: NOT_GRANTED
+        type: string
+      taskStatus:
+        example: NOT_STARTED
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact:
     name: API Support
-  description: HTTP API for campaign center (admin campaign/landing-page + user account).
-    Operates under `/campaign-center-api/v1`;
+  description: HTTP API for campaign center (admin campaign/landing-page + user account/campaign
+    mocks). Operates under `/campaign-center-api/v1`;
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
@@ -982,6 +1131,132 @@ paths:
       summary: List account transactions (user)
       tags:
       - user-account
+  /web/campaigns:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.WebCampaignListData'
+              type: object
+        "401":
+          description: unauthorized
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: List available campaigns (user, mock)
+      tags:
+      - user-campaign
+  /web/campaigns/{campaignId}/deposit:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      - description: Deposit amount
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/data.WebDepositReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.WebDepositData'
+              type: object
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "401":
+          description: unauthorized
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Deposit for campaign task (user, mock)
+      tags:
+      - user-campaign
+  /web/campaigns/{campaignId}/join:
+    post:
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.WebJoinCampaignData'
+              type: object
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "401":
+          description: unauthorized
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Join campaign (user, mock)
+      tags:
+      - user-campaign
+  /web/campaigns/{campaignId}/landing-page:
+    get:
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      - description: Preferred language; default en
+        in: query
+        name: lang
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.WebCampaignLandingPageData'
+              type: object
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "401":
+          description: unauthorized
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Get campaign landing page (user, mock)
+      tags:
+      - user-campaign
   /web/user-profile:
     get:
       produces:

@@ -53,13 +53,17 @@ func NewRouter() *gin.Engine {
 		admin.POST("/landing-pages/:landingPageId/publish", api.AdminPublishLandingPage)
 	}
 
-	// User-facing APIs (campaign list/join/top-up reintroduced in Phase 4)
+	// User-facing APIs (campaign handlers are mock until user flow is reimplemented)
 	web := basicGroup.Group("/web")
 	web.Use(auth.RequireUser())
 	{
 		web.GET("/user-profile", api.UserGetProfile)
 		web.GET("/account/summary", api.UserGetAccountSummary)
 		web.GET("/account/transactions", api.UserListAccountTransactions)
+		web.GET("/campaigns", api.UserListCampaigns)
+		web.GET("/campaigns/:campaignId/landing-page", api.UserGetCampaignLanding)
+		web.POST("/campaigns/:campaignId/join", api.UserJoinCampaign)
+		web.POST("/campaigns/:campaignId/deposit", api.UserDepositCampaign)
 	}
 
 	return r

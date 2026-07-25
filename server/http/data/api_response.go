@@ -6,11 +6,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Standard API envelope per phase1 design.
+// Standard API envelope.
 const (
 	CodeSuccess           = 0
 	CodeNotEligible       = 4001
-	CodeTopupNotQualified = 4002
+	CodeDepositNotQualified = 4002
 	CodeDuplicateReward   = 4003
 )
 

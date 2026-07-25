@@ -1069,6 +1069,217 @@ const docTemplate = `{
                 }
             }
         },
+        "/web/campaigns": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-campaign"
+                ],
+                "summary": "List available campaigns (user, mock)",
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/data.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/data.WebCampaignListData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/web/campaigns/{campaignId}/deposit": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-campaign"
+                ],
+                "summary": "Deposit for campaign task (user, mock)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Campaign ID",
+                        "name": "campaignId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Deposit amount",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/data.WebDepositReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/data.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/data.WebDepositData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/web/campaigns/{campaignId}/join": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-campaign"
+                ],
+                "summary": "Join campaign (user, mock)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Campaign ID",
+                        "name": "campaignId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/data.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/data.WebJoinCampaignData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/web/campaigns/{campaignId}/landing-page": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-campaign"
+                ],
+                "summary": "Get campaign landing page (user, mock)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Campaign ID",
+                        "name": "campaignId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Preferred language; default en",
+                        "name": "lang",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/data.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/data.WebCampaignLandingPageData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/web/user-profile": {
             "get": {
                 "produces": [
@@ -1510,6 +1721,215 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "data.WebCampaignLandingPageData": {
+            "type": "object",
+            "properties": {
+                "campaignId": {
+                    "type": "integer",
+                    "example": 1001
+                },
+                "joined": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "landingPage": {
+                    "$ref": "#/definitions/data.WebLandingPageContent"
+                },
+                "market": {
+                    "type": "string",
+                    "example": "SG"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Summer Deposit Bonus"
+                },
+                "participation": {
+                    "$ref": "#/definitions/data.WebParticipationStatus"
+                },
+                "timeZone": {
+                    "type": "string",
+                    "example": "Asia/Singapore"
+                },
+                "userId": {
+                    "type": "integer",
+                    "example": 42
+                }
+            }
+        },
+        "data.WebCampaignListData": {
+            "type": "object",
+            "properties": {
+                "ongoing": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.WebCampaignListItem"
+                    }
+                },
+                "upcoming": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.WebCampaignListItem"
+                    }
+                }
+            }
+        },
+        "data.WebCampaignListItem": {
+            "type": "object",
+            "properties": {
+                "campaignEndTime": {
+                    "type": "integer",
+                    "example": 1722470400
+                },
+                "campaignStartTime": {
+                    "type": "integer",
+                    "example": 1717200000
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1001
+                },
+                "joined": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "landingPageId": {
+                    "type": "integer",
+                    "example": 2001
+                },
+                "market": {
+                    "type": "string",
+                    "example": "SG"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Summer Deposit Bonus"
+                },
+                "status": {
+                    "type": "integer",
+                    "example": 2
+                }
+            }
+        },
+        "data.WebDepositData": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number",
+                    "example": 100
+                },
+                "campaignId": {
+                    "type": "integer",
+                    "example": 1001
+                },
+                "currency": {
+                    "type": "string",
+                    "example": "USDT"
+                },
+                "ledgerId": {
+                    "type": "integer",
+                    "example": 9001
+                },
+                "message": {
+                    "type": "string",
+                    "example": "deposit accepted (mock)"
+                },
+                "rewardStatus": {
+                    "type": "string",
+                    "example": "pending_distribution"
+                },
+                "taskStatus": {
+                    "type": "string",
+                    "example": "COMPLETED"
+                },
+                "userId": {
+                    "type": "integer",
+                    "example": 42
+                }
+            }
+        },
+        "data.WebDepositReq": {
+            "type": "object",
+            "required": [
+                "amount"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number",
+                    "example": 100
+                },
+                "currency": {
+                    "type": "string",
+                    "example": "USDT"
+                }
+            }
+        },
+        "data.WebJoinCampaignData": {
+            "type": "object",
+            "properties": {
+                "campaignId": {
+                    "type": "integer",
+                    "example": 1001
+                },
+                "joined": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "joinedAt": {
+                    "type": "integer",
+                    "example": 1717200000
+                },
+                "message": {
+                    "type": "string",
+                    "example": "joined (mock)"
+                },
+                "userId": {
+                    "type": "integer",
+                    "example": 42
+                }
+            }
+        },
+        "data.WebLandingPageContent": {
+            "type": "object",
+            "properties": {
+                "bannerImageUrl": {
+                    "type": "string",
+                    "example": "https://cdn.example.com/banner.png"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Join the campaign and complete the deposit task."
+                },
+                "lang": {
+                    "type": "string",
+                    "example": "en"
+                },
+                "terms": {
+                    "type": "string",
+                    "example": "One reward per user."
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Deposit and get a bonus"
+                }
+            }
+        },
+        "data.WebParticipationStatus": {
+            "type": "object",
+            "properties": {
+                "joined": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "rewardStatus": {
+                    "type": "string",
+                    "example": "NOT_GRANTED"
+                },
+                "taskStatus": {
+                    "type": "string",
+                    "example": "NOT_STARTED"
+                }
+            }
         }
     }
 }`
@@ -1521,7 +1941,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/campaign-center-api/v1",
 	Schemes:          []string{"http", "https"},
 	Title:            "Campaign Center API",
-	Description:      "HTTP API for campaign center (admin campaign/landing-page + user account). Operates under `/campaign-center-api/v1`;",
+	Description:      "HTTP API for campaign center (admin campaign/landing-page + user account/campaign mocks). Operates under `/campaign-center-api/v1`;",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",
