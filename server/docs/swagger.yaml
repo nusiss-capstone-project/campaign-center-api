@@ -1,38 +1,5 @@
 basePath: /campaign-center-api/v1
 definitions:
-  api.CreateCampaignReq:
-    properties:
-      campaignEndTime:
-        type: string
-      campaignStartTime:
-        type: string
-      landingPageId:
-        type: integer
-      name:
-        type: string
-      registrationEndTime:
-        type: string
-      registrationStartTime:
-        type: string
-      rewardRules:
-        $ref: '#/definitions/api.RewardRulesReq'
-      targetMarket:
-        type: string
-      targetUserSegment:
-        type: string
-      type:
-        type: string
-    required:
-    - campaignEndTime
-    - campaignStartTime
-    - name
-    - registrationEndTime
-    - registrationStartTime
-    - rewardRules
-    - targetMarket
-    - targetUserSegment
-    - type
-    type: object
   api.GenerateLandingTranslationData:
     properties:
       description:
@@ -151,13 +118,6 @@ definitions:
         example: success
         type: string
     type: object
-  api.PublishOperatorReq:
-    properties:
-      operator:
-        type: string
-    required:
-    - operator
-    type: object
   api.PutLandingTranslationData:
     properties:
       landingPageId:
@@ -192,68 +152,6 @@ definitions:
     - terms
     - title
     type: object
-  api.RewardRulesReq:
-    properties:
-      maxClaimPerUser:
-        type: integer
-      maxRewardAmount:
-        type: number
-      minObtainDays:
-        type: integer
-      rewardAmount:
-        type: number
-      rewardCurrency:
-        type: string
-      rewardMode:
-        type: string
-      rewardPercentage:
-        type: number
-      rewardType:
-        type: string
-      topupThreshold:
-        type: number
-    required:
-    - maxClaimPerUser
-    - rewardType
-    - topupThreshold
-    type: object
-  api.SimulateTopUpReq:
-    properties:
-      amount:
-        type: number
-    required:
-    - amount
-    type: object
-  api.UpdateCampaignReq:
-    properties:
-      campaignEndTime:
-        type: string
-      campaignStartTime:
-        type: string
-      landingPageId:
-        type: integer
-      name:
-        type: string
-      registrationEndTime:
-        type: string
-      registrationStartTime:
-        type: string
-      rewardRules:
-        $ref: '#/definitions/api.RewardRulesReq'
-      targetMarket:
-        type: string
-      targetUserSegment:
-        type: string
-    required:
-    - campaignEndTime
-    - campaignStartTime
-    - name
-    - registrationEndTime
-    - registrationStartTime
-    - rewardRules
-    - targetMarket
-    - targetUserSegment
-    type: object
   api.UserProfileData:
     properties:
       email:
@@ -280,6 +178,77 @@ definitions:
         example: success
         type: string
     type: object
+  data.BudgetVO:
+    properties:
+      projectId:
+        type: integer
+      projectName:
+        type: string
+    type: object
+  data.CampaignRewardRuleVO:
+    properties:
+      campaignId:
+        type: integer
+      id:
+        type: integer
+      taskGroupId:
+        type: integer
+      taskGroupReward:
+        type: integer
+      taskRewardItems:
+        items:
+          $ref: '#/definitions/data.TaskRewardItemVO'
+        type: array
+    type: object
+  data.CampaignVO:
+    properties:
+      budgets:
+        $ref: '#/definitions/data.BudgetVO'
+      campaignEndTime:
+        type: integer
+      campaignStartTime:
+        type: integer
+      createdAt:
+        type: integer
+      id:
+        type: integer
+      landingPageId:
+        type: integer
+      market:
+        type: string
+      name:
+        type: string
+      registrationEndTime:
+        type: integer
+      registrationStartTime:
+        type: integer
+      rewardRules:
+        $ref: '#/definitions/data.CampaignRewardRuleVO'
+      status:
+        type: integer
+      targetUserGroups:
+        $ref: '#/definitions/data.TargetUserGroupVO'
+      timeZone:
+        type: string
+      updatedAt:
+        type: integer
+      version:
+        type: integer
+    type: object
+  data.CreateCampaignReq:
+    properties:
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  data.PublishOperatorReq:
+    properties:
+      operator:
+        type: string
+    required:
+    - operator
+    type: object
   data.StandardResponse:
     properties:
       code:
@@ -290,12 +259,30 @@ definitions:
         example: success
         type: string
     type: object
+  data.TargetUserGroupVO:
+    properties:
+      groupName:
+        type: string
+      id:
+        type: integer
+    type: object
+  data.TaskRewardItemVO:
+    properties:
+      rewardTemplateId:
+        type: integer
+      rewardTemplateName:
+        type: string
+      taskId:
+        type: integer
+      taskName:
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact:
     name: API Support
-  description: HTTP API for Phase 1 user top-up campaigns (admin + user-facing). Operates
-    under `/campaign-center-api/v1`;
+  description: HTTP API for campaign center (admin campaign/landing-page + user account).
+    Operates under `/campaign-center-api/v1`;
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
@@ -318,10 +305,10 @@ paths:
         in: query
         name: status
         type: integer
-      - description: Campaign type e.g. TOPUP_REWARD
+      - description: Campaign ID filter
         in: query
-        name: type
-        type: string
+        name: campaignId
+        type: integer
       produces:
       - application/json
       responses:
@@ -340,12 +327,12 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Campaign payload
+      - description: Campaign name
         in: body
         name: body
         required: true
         schema:
-          $ref: '#/definitions/api.CreateCampaignReq'
+          $ref: '#/definitions/data.CreateCampaignReq'
       produces:
       - application/json
       responses:
@@ -383,94 +370,7 @@ paths:
           description: not found
           schema:
             $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
       summary: Get campaign detail (admin)
-      tags:
-      - admin-campaign
-    put:
-      consumes:
-      - application/json
-      parameters:
-      - description: Campaign ID
-        in: path
-        name: campaignId
-        required: true
-        type: integer
-      - description: Campaign payload
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/api.UpdateCampaignReq'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: success
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "400":
-          description: bad request
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "404":
-          description: not found
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "409":
-          description: not draft
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: Update campaign (admin)
-      tags:
-      - admin-campaign
-  /admin/campaigns/{campaignId}/archive:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Campaign ID
-        in: path
-        name: campaignId
-        required: true
-        type: integer
-      - description: Operator
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/api.PublishOperatorReq'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: success
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "400":
-          description: bad request
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "404":
-          description: not found
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "409":
-          description: not eligible or already archived
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: Archive campaign (admin)
       tags:
       - admin-campaign
   /admin/campaigns/{campaignId}/participations:
@@ -596,7 +496,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/api.PublishOperatorReq'
+          $ref: '#/definitions/data.PublishOperatorReq'
       produces:
       - application/json
       responses:
@@ -604,15 +504,84 @@ paths:
           description: success
           schema:
             $ref: '#/definitions/data.StandardResponse'
+        "400":
+          description: validation error
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
         "404":
           description: not found
           schema:
             $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
+      summary: Publish campaign (admin)
+      tags:
+      - admin-campaign
+  /admin/campaigns/{campaignId}/versions:
+    post:
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
           schema:
             $ref: '#/definitions/data.StandardResponse'
-      summary: Publish campaign (admin)
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Create campaign version (admin)
+      tags:
+      - admin-campaign
+  /admin/campaigns/{campaignId}/versions/{version}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: integer
+      - description: Draft content; read-only fields are ignored
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/data.CampaignVO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "409":
+          description: not editable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Edit campaign draft version (admin)
       tags:
       - admin-campaign
   /admin/landing-pages:
@@ -796,7 +765,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/api.PublishOperatorReq'
+          $ref: '#/definitions/data.PublishOperatorReq'
       produces:
       - application/json
       responses:
@@ -1013,114 +982,6 @@ paths:
       summary: List account transactions (user)
       tags:
       - user-account
-  /web/campaigns:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: success
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: List available campaigns (user)
-      tags:
-      - user-campaign
-  /web/campaigns/{campaignId}/join:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Campaign ID
-        in: path
-        name: campaignId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: success or business error code in body
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "400":
-          description: bad request
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: Join campaign (user)
-      tags:
-      - user-campaign
-  /web/campaigns/{campaignId}/landing-page:
-    get:
-      parameters:
-      - description: Campaign ID
-        in: path
-        name: campaignId
-        required: true
-        type: integer
-      - description: Preferred language; falls back to default
-        in: query
-        name: lang
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: success
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "404":
-          description: not found
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: Get campaign landing page (user)
-      tags:
-      - user-campaign
-  /web/campaigns/{campaignId}/top-up:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Campaign ID
-        in: path
-        name: campaignId
-        required: true
-        type: integer
-      - description: Top-up amount
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/api.SimulateTopUpReq'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: success, manual review, or business error code
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "400":
-          description: bad request
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: Simulate top-up with account recharge (user)
-      tags:
-      - user-campaign
   /web/user-profile:
     get:
       produces:

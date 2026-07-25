@@ -34,7 +34,7 @@ func NewRouter() *gin.Engine {
 	{
 		admin.POST("/campaigns", api.AdminCreateCampaign)
 		admin.POST("/campaigns/:campaignId/versions", api.AdminCreateCampaignVersion)
-		admin.POST("/campaigns/:campaignId/versions/:version", api.AdminEditCampaignVersion)
+		admin.PUT("/campaigns/:campaignId/versions/:version", api.AdminEditCampaignVersion)
 		admin.GET("/campaigns", api.AdminListCampaigns)
 		admin.GET("/campaigns/:campaignId", api.AdminGetCampaign)
 		admin.POST("/campaigns/:campaignId/publish", api.AdminPublishCampaign)
@@ -53,17 +53,13 @@ func NewRouter() *gin.Engine {
 		admin.POST("/landing-pages/:landingPageId/publish", api.AdminPublishLandingPage)
 	}
 
-	// User-facing campaign APIs
+	// User-facing APIs (campaign list/join/top-up reintroduced in Phase 4)
 	web := basicGroup.Group("/web")
 	web.Use(auth.RequireUser())
 	{
 		web.GET("/user-profile", api.UserGetProfile)
 		web.GET("/account/summary", api.UserGetAccountSummary)
 		web.GET("/account/transactions", api.UserListAccountTransactions)
-		web.GET("/campaigns", api.UserListCampaigns)
-		web.GET("/campaigns/:campaignId/landing-page", api.UserGetCampaignLanding)
-		web.POST("/campaigns/:campaignId/join", api.UserJoinCampaign)
-		web.POST("/campaigns/:campaignId/top-up", api.UserSimulateTopUp)
 	}
 
 	return r

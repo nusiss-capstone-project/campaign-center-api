@@ -31,7 +31,6 @@ func Init() (*gorm.DB, error) {
 		&model.User{},
 		&model.UserAuthMapping{},
 		&model.CampaignParticipant{},
-		&model.RewardTransaction{},
 		&model.AuditLog{},
 		&model.UserAccount{},
 		&model.AccountTransaction{},

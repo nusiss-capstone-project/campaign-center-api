@@ -72,7 +72,7 @@ func AdminCreateCampaignVersion(c *gin.Context) {
 // @Failure 400 {object} data.StandardResponse "bad request"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Failure 409 {object} data.StandardResponse "not editable"
-// @Router /admin/campaigns/{campaignId}/versions/{version} [post]
+// @Router /admin/campaigns/{campaignId}/versions/{version} [put]
 func AdminEditCampaignVersion(c *gin.Context) {
 	campaignID, ok := parseCampaignIDParam(c)
 	if !ok {

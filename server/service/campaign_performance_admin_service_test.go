@@ -37,9 +37,6 @@ func (r stubPerformanceRepo) GetSummary(int64) (*mysql.CampaignPerformanceSummar
 func (r stubPerformanceRepo) ListDaily(int64, time.Time, time.Time) ([]model.CampaignPerformanceDaily, error) {
 	return r.daily, nil
 }
-func (stubPerformanceRepo) IncrementRewardIssued(int64, time.Time, float64, string) error {
-	return nil
-}
 
 func TestCampaignPerformanceAdmin_GetSummary_success(t *testing.T) {
 	cm := servicemock.NewMockCampaignRepository(t)

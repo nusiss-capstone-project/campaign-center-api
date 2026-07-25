@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"sync"
-	"time"
 
 	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
 	"gorm.io/gorm"
@@ -19,11 +18,7 @@ type ParticipationListFilter struct {
 
 // ParticipantRepository persists campaign participants.
 type ParticipantRepository interface {
-	GetByCampaignAndUser(campaignID, userID int64) (*model.CampaignParticipant, error)
-	Create(p *model.CampaignParticipant) error
-	Save(p *model.CampaignParticipant) error
 	ListByCampaign(filter ParticipationListFilter) ([]model.CampaignParticipant, int64, error)
-	ListByUserAndCampaignIDs(userID int64, campaignIDs []int64) ([]model.CampaignParticipant, error)
 }
 
 type participantRepository struct{}
@@ -46,35 +41,6 @@ func (r *participantRepository) db() (*gorm.DB, error) {
 		return nil, ErrDatabaseDisabled
 	}
 	return DB, nil
-}
-
-func (r *participantRepository) GetByCampaignAndUser(campaignID, userID int64) (*model.CampaignParticipant, error) {
-	db, err := r.db()
-	if err != nil {
-		return nil, err
-	}
-	var p model.CampaignParticipant
-	if err := db.Where("campaign_id = ? AND user_id = ?", campaignID, userID).First(&p).Error; err != nil {
-		return nil, err
-	}
-	return &p, nil
-}
-
-func (r *participantRepository) Create(p *model.CampaignParticipant) error {
-	db, err := r.db()
-	if err != nil {
-		return err
-	}
-	return db.Create(p).Error
-}
-
-func (r *participantRepository) Save(p *model.CampaignParticipant) error {
-	db, err := r.db()
-	if err != nil {
-		return err
-	}
-	p.UpdatedAt = time.Now()
-	return db.Save(p).Error
 }
 
 func (r *participantRepository) ListByCampaign(filter ParticipationListFilter) ([]model.CampaignParticipant, int64, error) {
@@ -106,21 +72,4 @@ func (r *participantRepository) ListByCampaign(filter ParticipationListFilter) (
 		return nil, 0, err
 	}
 	return rows, total, nil
-}
-
-func (r *participantRepository) ListByUserAndCampaignIDs(
-	userID int64, campaignIDs []int64,
-) ([]model.CampaignParticipant, error) {
-	if len(campaignIDs) == 0 {
-		return []model.CampaignParticipant{}, nil
-	}
-	db, err := r.db()
-	if err != nil {
-		return nil, err
-	}
-	var rows []model.CampaignParticipant
-	if err := db.Where("user_id = ? AND campaign_id IN ?", userID, campaignIDs).Find(&rows).Error; err != nil {
-		return nil, err
-	}
-	return rows, nil
 }
