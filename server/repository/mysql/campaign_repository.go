@@ -10,10 +10,10 @@ import (
 
 // CampaignListFilter filters admin campaign list.
 type CampaignListFilter struct {
-	Page     int
-	PageSize int
-	Status   *int16
-	Type     string
+	Page       int
+	PageSize   int
+	Status     *int16
+	CampaignID *int64
 }
 
 // CampaignRepository persists campaigns.
@@ -22,9 +22,7 @@ type CampaignRepository interface {
 	Update(c *model.Campaign) error
 	GetByID(id int64) (*model.Campaign, error)
 	List(f CampaignListFilter) ([]model.Campaign, int64, error)
-	ListPublishedActiveOrUpcoming(now time.Time) ([]model.Campaign, error)
-	Publish(id int64, operator string) (*model.Campaign, error)
-	Archive(id int64, operator string) (*model.Campaign, error)
+	UpdateStatus(id int64, status int16, operator string) (*model.Campaign, error)
 }
 
 type campaignRepository struct{}
@@ -64,14 +62,18 @@ func (r *campaignRepository) Update(c *model.Campaign) error {
 	}
 	return db.Model(&model.Campaign{}).Where("id = ?", c.ID).Updates(map[string]interface{}{
 		"name":                    c.Name,
-		"target_market":           c.TargetMarket,
+		"market":                  c.Market,
 		"registration_start_time": c.RegistrationStartTime,
 		"registration_end_time":   c.RegistrationEndTime,
 		"campaign_start_time":     c.CampaignStartTime,
 		"campaign_end_time":       c.CampaignEndTime,
-		"target_user_segment":     c.TargetUserSegment,
-		"reward_rules":            c.RewardRules,
+		"target_user_group_id":    c.TargetUserGroupID,
+		"target_user_group_name":  c.TargetUserGroupName,
+		"budget_project_id":       c.BudgetProjectID,
+		"budget_project_name":     c.BudgetProjectName,
 		"landing_page_id":         c.LandingPageID,
+		"time_zone":               c.TimeZone,
+		"status":                  c.Status,
 		"updated_at":              c.UpdatedAt,
 		"updated_by":              c.UpdatedBy,
 	}).Error
@@ -98,8 +100,8 @@ func (r *campaignRepository) List(f CampaignListFilter) ([]model.Campaign, int64
 	if f.Status != nil {
 		q = q.Where("status = ?", *f.Status)
 	}
-	if f.Type != "" {
-		q = q.Where("type = ?", f.Type)
+	if f.CampaignID != nil {
+		q = q.Where("id = ?", *f.CampaignID)
 	}
 	var total int64
 	if err := q.Count(&total).Error; err != nil {
@@ -121,31 +123,16 @@ func (r *campaignRepository) List(f CampaignListFilter) ([]model.Campaign, int64
 	return items, total, nil
 }
 
-func (r *campaignRepository) ListPublishedActiveOrUpcoming(now time.Time) ([]model.Campaign, error) {
+func (r *campaignRepository) UpdateStatus(id int64, status int16, operator string) (*model.Campaign, error) {
 	db, err := r.db()
 	if err != nil {
 		return nil, err
 	}
-	var items []model.Campaign
-	if err := db.Model(&model.Campaign{}).
-		Where("status = ? AND campaign_end_time >= ?", model.CampaignStatusPublished, now).
-		Order("campaign_start_time ASC").
-		Find(&items).Error; err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-func (r *campaignRepository) Publish(id int64, operator string) (*model.Campaign, error) {
-	db, err := r.db()
-	if err != nil {
-		return nil, err
-	}
-	var updated model.Campaign
 	now := time.Now()
+	var updated model.Campaign
 	err = db.Transaction(func(tx *gorm.DB) error {
 		res := tx.Model(&model.Campaign{}).Where("id = ?", id).Updates(map[string]interface{}{
-			"status":     model.CampaignStatusPublished,
+			"status":     status,
 			"updated_by": operator,
 			"updated_at": now,
 		})
@@ -155,56 +142,7 @@ func (r *campaignRepository) Publish(id int64, operator string) (*model.Campaign
 		if res.RowsAffected == 0 {
 			return gorm.ErrRecordNotFound
 		}
-		if err := tx.Where("id = ?", id).First(&updated).Error; err != nil {
-			return err
-		}
-		log := model.AuditLog{
-			EntityType:   "campaign",
-			EntityID:     id,
-			Action:       "PUBLISH",
-			OperatorName: operator,
-			DetailJSON:   `{"action":"publish"}`,
-			CreatedAt:    now,
-		}
-		return tx.Create(&log).Error
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &updated, nil
-}
-
-func (r *campaignRepository) Archive(id int64, operator string) (*model.Campaign, error) {
-	db, err := r.db()
-	if err != nil {
-		return nil, err
-	}
-	var updated model.Campaign
-	now := time.Now()
-	err = db.Transaction(func(tx *gorm.DB) error {
-		res := tx.Model(&model.Campaign{}).Where("id = ? and status <> ?", id, model.CampaignStatusArchive).Updates(map[string]interface{}{
-			"status":     model.CampaignStatusArchive,
-			"updated_by": operator,
-			"updated_at": now,
-		})
-		if res.Error != nil {
-			return res.Error
-		}
-		if res.RowsAffected == 0 {
-			return gorm.ErrRecordNotFound
-		}
-		if err := tx.Where("id = ?", id).First(&updated).Error; err != nil {
-			return err
-		}
-		log := model.AuditLog{
-			EntityType:   "campaign",
-			EntityID:     id,
-			Action:       "ARCHIVE",
-			OperatorName: operator,
-			DetailJSON:   `{"action":"archive"}`,
-			CreatedAt:    now,
-		}
-		return tx.Create(&log).Error
+		return tx.Where("id = ?", id).First(&updated).Error
 	})
 	if err != nil {
 		return nil, err

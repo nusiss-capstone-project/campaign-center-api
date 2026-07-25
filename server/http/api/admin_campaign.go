@@ -12,6 +12,50 @@ import (
 	"github.com/nusiss-capstone-project/campaign-center-api/server/service"
 )
 
+type CampaignRewardRuleVO struct {
+	ID              int64              `json:"id"`
+	CampaignID      int64              `json:"campaignId"`
+	TaskGroupId     int64              `json:"taskGroupId"`
+	TaskRewardItems []TaskRewardItemVO `json:"taskRewardItems"`
+	TaskGroupReward int64              `json:"taskGroupReward"`
+}
+
+type TaskRewardItemVO struct {
+	TaskId             int64  `json:"taskId"`
+	TaskName           string `json:"taskName"`
+	RewardTemplateId   int64  `json:"rewardTemplateId"`
+	RewardTemplateName string `json:"rewardTemplateName"`
+}
+
+type TargetUserGroupVO struct {
+	ID        int64  `json:"id"`
+	GroupName string `json:"groupName"`
+}
+
+type BudgetVO struct {
+	ProjectID   int64  `json:"projectId"`
+	ProjectName string `json:"projectName"`
+}
+
+type CampaignVO struct {
+	ID                    int64                `json:"id"`
+	Version               int64                `json:"version"`
+	Status                int16                `json:"status"`
+	Name                  string               `json:"name"`
+	Market                string               `json:"market"`
+	RegistrationStartTime int64                `json:"registrationStartTime"`
+	RegistrationEndTime   int64                `json:"registrationEndTime"`
+	CampaignStartTime     int64                `json:"campaignStartTime"`
+	CampaignEndTime       int64                `json:"campaignEndTime"`
+	TimeZone              string               `json:"timeZone"`
+	TargetUserGroups      TargetUserGroupVO    `json:"targetUserGroups"`
+	Budget                BudgetVO             `json:"budgets"`
+	RewardRules           CampaignRewardRuleVO `json:"rewardRules"`
+	LandingPageID         int64                `json:"landingPageId"`
+	UpdatedAt             int64                `json:"updatedAt"`
+	CreatedAt             int64                `json:"createdAt"`
+}
+
 // RewardRulesReq reward rule payload (JSON body fragment).
 type RewardRulesReq struct {
 	TopupThreshold   float64 `json:"topupThreshold" binding:"required"`
