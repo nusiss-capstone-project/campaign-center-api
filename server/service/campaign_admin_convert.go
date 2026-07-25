@@ -61,15 +61,11 @@ func flattenRewardRules(campaignID int64, rules data.CampaignRewardRuleVO) []mod
 
 func campaignToListVO(campaign model.Campaign) data.CampaignListVO {
 	return data.CampaignListVO{
-		ID:                campaign.ID,
-		Name:              campaign.Name,
-		Market:            campaign.Market,
-		Status:            campaign.Status,
-		CampaignStartTime: timeToUnix(campaign.CampaignStartTime),
-		CampaignEndTime:   timeToUnix(campaign.CampaignEndTime),
-		LandingPageID:     campaign.LandingPageID,
-		UpdatedAt:         timeToUnix(campaign.UpdatedAt),
-		CreatedAt:         timeToUnix(campaign.CreatedAt),
+		ID:        campaign.ID,
+		Name:      campaign.Name,
+		Status:    campaign.Status,
+		CreatedAt: timeToUnix(campaign.CreatedAt),
+		UpdatedAt: timeToUnix(campaign.UpdatedAt),
 	}
 }
 
@@ -79,10 +75,10 @@ func campaignToVO(campaign *model.Campaign) *data.CampaignVO {
 		Status:                campaign.Status,
 		Name:                  campaign.Name,
 		Market:                campaign.Market,
-		RegistrationStartTime: timeToUnix(campaign.RegistrationStartTime),
-		RegistrationEndTime:   timeToUnix(campaign.RegistrationEndTime),
-		CampaignStartTime:     timeToUnix(campaign.CampaignStartTime),
-		CampaignEndTime:       timeToUnix(campaign.CampaignEndTime),
+		RegistrationStartTime: timePtrToUnix(campaign.RegistrationStartTime),
+		RegistrationEndTime:   timePtrToUnix(campaign.RegistrationEndTime),
+		CampaignStartTime:     timePtrToUnix(campaign.CampaignStartTime),
+		CampaignEndTime:       timePtrToUnix(campaign.CampaignEndTime),
 		TimeZone:              campaign.TimeZone,
 		TargetUserGroups: data.TargetUserGroupVO{
 			ID: campaign.TargetUserGroupID,
@@ -106,15 +102,23 @@ func applyDraftVO(campaign *data.CampaignVO, draft data.CampaignVO) {
 	campaign.UpdatedAt = readOnly.UpdatedAt
 }
 
-func unixToTime(seconds int64) time.Time {
+func unixToTime(seconds int64) *time.Time {
 	if seconds <= 0 {
-		return time.Time{}
+		return nil
 	}
-	return time.Unix(seconds, 0).UTC()
+	t := time.Unix(seconds, 0).UTC()
+	return &t
 }
 
 func timeToUnix(value time.Time) int64 {
 	if value.IsZero() {
+		return 0
+	}
+	return value.Unix()
+}
+
+func timePtrToUnix(value *time.Time) int64 {
+	if value == nil || value.IsZero() {
 		return 0
 	}
 	return value.Unix()

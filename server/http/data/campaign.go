@@ -50,17 +50,13 @@ type CampaignVO struct {
 	CreatedAt             int64                `json:"createdAt"`
 }
 
-// CampaignListVO is the compact campaign list item.
+// CampaignListVO is the compact campaign list item (from campaigns table only).
 type CampaignListVO struct {
-	ID                int64  `json:"id"`
-	Name              string `json:"name"`
-	Market            string `json:"market"`
-	Status            int16  `json:"status"`
-	CampaignStartTime int64  `json:"campaignStartTime"`
-	CampaignEndTime   int64  `json:"campaignEndTime"`
-	LandingPageID     int64  `json:"landingPageId"`
-	UpdatedAt         int64  `json:"updatedAt"`
-	CreatedAt         int64  `json:"createdAt"`
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	Status    int16  `json:"status"`
+	CreatedAt int64  `json:"createdAt"`
+	UpdatedAt int64  `json:"updatedAt"`
 }
 
 // CampaignListReq is the admin campaign list query.
