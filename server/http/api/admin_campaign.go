@@ -69,7 +69,7 @@ func AdminCreateCampaignVersion(c *gin.Context) {
 // @Param campaignId path int true "Campaign ID"
 // @Param version path int true "Version"
 // @Param body body data.CampaignVO true "Draft content; read-only fields are ignored"
-// @Success 200 {object} data.StandardResponse{data=object{campaignId=int,version=int}} "success"
+// @Success 200 {object} data.StandardResponse{data=data.CampaignVO} "updated campaign draft"
 // @Failure 400 {object} data.StandardResponse "bad request"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Failure 409 {object} data.StandardResponse "not editable"
@@ -91,13 +91,13 @@ func AdminEditCampaignVersion(c *gin.Context) {
 		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
 		return
 	}
-	err = service.GetCampaignAdminService().EditVersion(c.Request.Context(), campaignID, version, req)
+	detail, err := service.GetCampaignAdminService().EditVersion(c.Request.Context(), campaignID, version, req)
 	if err != nil {
 		handleCampaignAdminErr(c, err)
 		return
 	}
 	log.WithContext(c.Request.Context()).Infow("admin_edit_campaign_version", "campaign_id", campaignID, "version", version)
-	data.OK(c, gin.H{"campaignId": campaignID, "version": version})
+	data.OK(c, detail)
 }
 
 // AdminListCampaigns lists campaigns with optional filters.

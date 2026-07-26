@@ -17,7 +17,7 @@ import (
 type CampaignAdminService interface {
 	CreateCampaign(ctx context.Context, name string) (campaignID int64, err error)
 	CreateVersion(ctx context.Context, campaignID int64) (version int, err error)
-	EditVersion(ctx context.Context, campaignID int64, version int, campaign data.CampaignVO) error
+	EditVersion(ctx context.Context, campaignID int64, version int, campaign data.CampaignVO) (*data.CampaignVO, error)
 	PublishCampaign(ctx context.Context, campaignID int64, operator string) (*data.CampaignVO, error)
 	ListCampaigns(req data.CampaignListReq) ([]data.CampaignListVO, int64, error)
 	GetCampaign(campaignID int64) (*data.CampaignVO, error)
@@ -130,21 +130,26 @@ func (s *campaignAdminService) CreateVersion(ctx context.Context, campaignID int
 	return draft.Version, nil
 }
 
-func (s *campaignAdminService) EditVersion(ctx context.Context, campaignID int64, version int, campaign data.CampaignVO) error {
+func (s *campaignAdminService) EditVersion(ctx context.Context, campaignID int64, version int, campaign data.CampaignVO) (*data.CampaignVO, error) {
 	draft, err := s.drafts.GetByActivityAndVersion(campaignID, version)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if draft.Status != model.CampaignDraftStatusDraft {
-		return data.ErrCampaignDraftNotEditable
+		return nil, data.ErrCampaignDraftNotEditable
 	}
 	raw, err := json.Marshal(campaignDraftVO(campaign))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	draft.Content = string(raw)
 	draft.UpdatedAt = time.Now()
-	return s.drafts.Update(ctx, draft)
+	if err := s.drafts.Update(ctx, draft); err != nil {
+		return nil, err
+	}
+	campaign.ID = campaignID
+	campaign.Version = int64(version)
+	return &campaign, nil
 }
 
 func (s *campaignAdminService) PublishCampaign(ctx context.Context, campaignID int64, operator string) (*data.CampaignVO, error) {

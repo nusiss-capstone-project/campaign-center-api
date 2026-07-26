@@ -721,7 +721,8 @@ paths:
       - application/json
       responses:
         "200":
-          description: success
+          description: success; returns existing draft version when latest is still
+            draft
           schema:
             allOf:
             - $ref: '#/definitions/data.StandardResponse'
@@ -770,18 +771,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: success
+          description: updated campaign draft
           schema:
             allOf:
             - $ref: '#/definitions/data.StandardResponse'
             - properties:
                 data:
-                  properties:
-                    campaignId:
-                      type: integer
-                    version:
-                      type: integer
-                  type: object
+                  $ref: '#/definitions/data.CampaignVO'
               type: object
         "400":
           description: bad request

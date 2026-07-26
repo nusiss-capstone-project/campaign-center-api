@@ -246,7 +246,13 @@ func TestCampaignAdmin_CreateEditPublishFlow(t *testing.T) {
 		},
 		LandingPageID: 7,
 	}
-	require.NoError(t, svc.EditVersion(context.Background(), id, 1, content))
+	edited, err := svc.EditVersion(context.Background(), id, 1, content)
+	require.NoError(t, err)
+	require.Equal(t, id, edited.ID)
+	require.Equal(t, int64(1), edited.Version)
+	require.Equal(t, "SG", edited.Market)
+	require.Equal(t, "VIP", edited.TargetUserGroups.GroupName)
+	require.Equal(t, "P1", edited.Budget.ProjectName)
 
 	detail, err := svc.PublishCampaign(context.Background(), id, "admin")
 	require.NoError(t, err)
@@ -276,11 +282,12 @@ func TestCampaignAdmin_EditPublishedVersion_conflict(t *testing.T) {
 			TaskRewardItems: []data.TaskRewardItemVO{{TaskID: 1, RewardTemplateID: 2}},
 		},
 	}
-	require.NoError(t, svc.EditVersion(context.Background(), id, 1, content))
+	_, err = svc.EditVersion(context.Background(), id, 1, content)
+	require.NoError(t, err)
 	_, err = svc.PublishCampaign(context.Background(), id, "op")
 	require.NoError(t, err)
 
-	err = svc.EditVersion(context.Background(), id, 1, content)
+	_, err = svc.EditVersion(context.Background(), id, 1, content)
 	require.True(t, data.IsCampaignDraftNotEditable(err))
 }
 
@@ -288,7 +295,8 @@ func TestCampaignAdmin_Publish_validation(t *testing.T) {
 	svc, _, _, _ := newAdminSvc()
 	id, err := svc.CreateCampaign(context.Background(), "X")
 	require.NoError(t, err)
-	require.NoError(t, svc.EditVersion(context.Background(), id, 1, data.CampaignVO{Name: "X"}))
+	_, err = svc.EditVersion(context.Background(), id, 1, data.CampaignVO{Name: "X"})
+	require.NoError(t, err)
 
 	_, err = svc.PublishCampaign(context.Background(), id, "op")
 	require.True(t, data.IsCampaignPublishInvalid(err))
@@ -298,13 +306,14 @@ func TestCampaignAdmin_Publish_alreadyPublishedLatest(t *testing.T) {
 	svc, _, _, _ := newAdminSvc()
 	id, err := svc.CreateCampaign(context.Background(), "X")
 	require.NoError(t, err)
-	require.NoError(t, svc.EditVersion(context.Background(), id, 1, data.CampaignVO{
+	_, err = svc.EditVersion(context.Background(), id, 1, data.CampaignVO{
 		Name: "X", Budget: data.BudgetVO{ProjectID: 1, ProjectName: "p"},
 		RewardRules: data.CampaignRewardRuleVO{
 			TaskGroupID: 1, TaskGroupReward: 2,
 			TaskRewardItems: []data.TaskRewardItemVO{{TaskID: 1, RewardTemplateID: 2}},
 		},
-	}))
+	})
+	require.NoError(t, err)
 	_, err = svc.PublishCampaign(context.Background(), id, "op")
 	require.NoError(t, err)
 	_, err = svc.PublishCampaign(context.Background(), id, "op")
@@ -354,13 +363,14 @@ func TestCampaignAdmin_ListCampaigns_maxVersion(t *testing.T) {
 	svc, _, _, _ := newAdminSvc()
 	id, err := svc.CreateCampaign(context.Background(), "C")
 	require.NoError(t, err)
-	require.NoError(t, svc.EditVersion(context.Background(), id, 1, data.CampaignVO{
+	_, err = svc.EditVersion(context.Background(), id, 1, data.CampaignVO{
 		Name: "C", Budget: data.BudgetVO{ProjectID: 1, ProjectName: "p"},
 		RewardRules: data.CampaignRewardRuleVO{
 			TaskGroupID: 1, TaskGroupReward: 2,
 			TaskRewardItems: []data.TaskRewardItemVO{{TaskID: 1, RewardTemplateID: 2}},
 		},
-	}))
+	})
+	require.NoError(t, err)
 	_, err = svc.PublishCampaign(context.Background(), id, "op")
 	require.NoError(t, err)
 	v2, err := svc.CreateVersion(context.Background(), id)
@@ -390,14 +400,15 @@ func TestCampaignAdmin_CreateVersion_copiesPreviousContent(t *testing.T) {
 	svc, _, _, _ := newAdminSvc()
 	id, err := svc.CreateCampaign(context.Background(), "X")
 	require.NoError(t, err)
-	require.NoError(t, svc.EditVersion(context.Background(), id, 1, data.CampaignVO{
+	_, err = svc.EditVersion(context.Background(), id, 1, data.CampaignVO{
 		Name: "Copied", Market: "US",
 		Budget: data.BudgetVO{ProjectID: 1, ProjectName: "p"},
 		RewardRules: data.CampaignRewardRuleVO{
 			TaskGroupID: 1, TaskGroupReward: 2,
 			TaskRewardItems: []data.TaskRewardItemVO{{TaskID: 1, RewardTemplateID: 2}},
 		},
-	}))
+	})
+	require.NoError(t, err)
 	_, err = svc.PublishCampaign(context.Background(), id, "op")
 	require.NoError(t, err)
 

@@ -450,7 +450,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "success",
+                        "description": "success; returns existing draft version when latest is still draft",
                         "schema": {
                             "allOf": [
                                 {
@@ -529,7 +529,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "success",
+                        "description": "updated campaign draft",
                         "schema": {
                             "allOf": [
                                 {
@@ -539,15 +539,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "object",
-                                            "properties": {
-                                                "campaignId": {
-                                                    "type": "integer"
-                                                },
-                                                "version": {
-                                                    "type": "integer"
-                                                }
-                                            }
+                                            "$ref": "#/definitions/data.CampaignVO"
                                         }
                                     }
                                 }
