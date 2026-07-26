@@ -8,6 +8,12 @@ import (
 	"gorm.io/gorm"
 )
 
+// CampaignDraftSummary is the latest draft version metadata for list views.
+type CampaignDraftSummary struct {
+	Version int
+	Status  string
+}
+
 // CampaignDraftRepository persists campaign draft versions.
 type CampaignDraftRepository interface {
 	Create(ctx context.Context, d *model.CampaignDraft) error
@@ -15,7 +21,7 @@ type CampaignDraftRepository interface {
 	GetByActivityAndVersion(activityID int64, version int) (*model.CampaignDraft, error)
 	GetLatestByActivityID(activityID int64) (*model.CampaignDraft, error)
 	MaxVersion(activityID int64) (int, error)
-	MaxVersionsByActivityIDs(activityIDs []int64) (map[int64]int, error)
+	LatestSummariesByActivityIDs(activityIDs []int64) (map[int64]CampaignDraftSummary, error)
 }
 
 type campaignDraftRepository struct{}
@@ -102,8 +108,8 @@ func (r *campaignDraftRepository) MaxVersion(activityID int64) (int, error) {
 	return *max, nil
 }
 
-func (r *campaignDraftRepository) MaxVersionsByActivityIDs(activityIDs []int64) (map[int64]int, error) {
-	out := make(map[int64]int, len(activityIDs))
+func (r *campaignDraftRepository) LatestSummariesByActivityIDs(activityIDs []int64) (map[int64]CampaignDraftSummary, error) {
+	out := make(map[int64]CampaignDraftSummary, len(activityIDs))
 	if len(activityIDs) == 0 {
 		return out, nil
 	}
@@ -112,19 +118,24 @@ func (r *campaignDraftRepository) MaxVersionsByActivityIDs(activityIDs []int64) 
 		return nil, err
 	}
 	type row struct {
-		ActivityID int64 `gorm:"column:activity_id"`
-		MaxVersion int   `gorm:"column:max_version"`
+		ActivityID int64  `gorm:"column:activity_id"`
+		Version    int    `gorm:"column:version"`
+		Status     string `gorm:"column:status"`
 	}
 	var rows []row
-	if err := db.Model(&model.CampaignDraft{}).
-		Select("activity_id, MAX(version) AS max_version").
+	// Pick the row that owns MAX(version) per activity_id.
+	sub := db.Model(&model.CampaignDraft{}).
+		Select("activity_id, MAX(version) AS version").
 		Where("activity_id IN ?", activityIDs).
-		Group("activity_id").
+		Group("activity_id")
+	if err := db.Table("(?) AS latest", sub).
+		Select("d.activity_id, d.version, d.status").
+		Joins("JOIN campaign_drafts AS d ON d.activity_id = latest.activity_id AND d.version = latest.version").
 		Scan(&rows).Error; err != nil {
 		return nil, err
 	}
 	for _, item := range rows {
-		out[item.ActivityID] = item.MaxVersion
+		out[item.ActivityID] = CampaignDraftSummary{Version: item.Version, Status: item.Status}
 	}
 	return out, nil
 }

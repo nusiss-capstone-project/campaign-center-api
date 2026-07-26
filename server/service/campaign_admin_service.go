@@ -100,9 +100,16 @@ func (s *campaignAdminService) CreateVersion(ctx context.Context, campaignID int
 	if _, err := s.campaigns.GetByID(campaignID); err != nil {
 		return 0, err
 	}
-	maxVersion, err := s.drafts.MaxVersion(campaignID)
-	if err != nil {
+	latest, err := s.drafts.GetLatestByActivityID(campaignID)
+	if err != nil && !mysql.IsNotFound(err) {
 		return 0, err
+	}
+	if err == nil && latest.Status == model.CampaignDraftStatusDraft {
+		return latest.Version, nil
+	}
+	maxVersion := 0
+	if latest != nil {
+		maxVersion = latest.Version
 	}
 	content, err := s.initialDraftContent(campaignID, maxVersion)
 	if err != nil {
@@ -192,13 +199,14 @@ func (s *campaignAdminService) ListCampaigns(req data.CampaignListReq) ([]data.C
 	for _, item := range items {
 		ids = append(ids, item.ID)
 	}
-	versions, err := s.drafts.MaxVersionsByActivityIDs(ids)
+	summaries, err := s.drafts.LatestSummariesByActivityIDs(ids)
 	if err != nil {
 		return nil, 0, err
 	}
 	out := make([]data.CampaignListVO, 0, len(items))
 	for _, item := range items {
-		out = append(out, campaignToListVO(item, versions[item.ID]))
+		summary := summaries[item.ID]
+		out = append(out, campaignToListVO(item, summary.Version, summary.Status))
 	}
 	return out, total, nil
 }

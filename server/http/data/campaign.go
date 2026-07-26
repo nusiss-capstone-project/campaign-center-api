@@ -50,7 +50,8 @@ type CampaignVO struct {
 	CreatedAt             int64                `json:"createdAt"`
 }
 
-// CampaignListVO is the compact campaign list item (from campaigns table only).
+// CampaignListVO is the compact campaign list item.
+// Status reflects the latest draft version status (mapped to campaign status codes).
 type CampaignListVO struct {
 	ID        int64  `json:"id"`
 	Name      string `json:"name"`

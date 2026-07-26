@@ -155,16 +155,17 @@ func (r *memDraftRepo) MaxVersion(activityID int64) (int, error) {
 	return max, nil
 }
 
-func (r *memDraftRepo) MaxVersionsByActivityIDs(activityIDs []int64) (map[int64]int, error) {
-	out := make(map[int64]int, len(activityIDs))
+func (r *memDraftRepo) LatestSummariesByActivityIDs(activityIDs []int64) (map[int64]mysql.CampaignDraftSummary, error) {
+	out := make(map[int64]mysql.CampaignDraftSummary, len(activityIDs))
 	for _, id := range activityIDs {
-		max, err := r.MaxVersion(id)
+		latest, err := r.GetLatestByActivityID(id)
 		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				continue
+			}
 			return nil, err
 		}
-		if max > 0 {
-			out[id] = max
-		}
+		out[id] = mysql.CampaignDraftSummary{Version: latest.Version, Status: latest.Status}
 	}
 	return out, nil
 }
@@ -353,6 +354,15 @@ func TestCampaignAdmin_ListCampaigns_maxVersion(t *testing.T) {
 	svc, _, _, _ := newAdminSvc()
 	id, err := svc.CreateCampaign(context.Background(), "C")
 	require.NoError(t, err)
+	require.NoError(t, svc.EditVersion(context.Background(), id, 1, data.CampaignVO{
+		Name: "C", Budget: data.BudgetVO{ProjectID: 1, ProjectName: "p"},
+		RewardRules: data.CampaignRewardRuleVO{
+			TaskGroupID: 1, TaskGroupReward: 2,
+			TaskRewardItems: []data.TaskRewardItemVO{{TaskID: 1, RewardTemplateID: 2}},
+		},
+	}))
+	_, err = svc.PublishCampaign(context.Background(), id, "op")
+	require.NoError(t, err)
 	v2, err := svc.CreateVersion(context.Background(), id)
 	require.NoError(t, err)
 	require.Equal(t, 2, v2)
@@ -361,13 +371,35 @@ func TestCampaignAdmin_ListCampaigns_maxVersion(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(1), total)
 	require.Equal(t, int64(2), items[0].Version)
+	// campaigns.status stays published, but latest draft is draft
+	require.Equal(t, model.CampaignStatusDraft, items[0].Status)
+}
+
+func TestCampaignAdmin_CreateVersion_returnsExistingDraft(t *testing.T) {
+	svc, _, drafts, _ := newAdminSvc()
+	id, err := svc.CreateCampaign(context.Background(), "X")
+	require.NoError(t, err)
+
+	v, err := svc.CreateVersion(context.Background(), id)
+	require.NoError(t, err)
+	require.Equal(t, 1, v)
+	require.Len(t, drafts.rows, 1)
 }
 
 func TestCampaignAdmin_CreateVersion_copiesPreviousContent(t *testing.T) {
 	svc, _, _, _ := newAdminSvc()
 	id, err := svc.CreateCampaign(context.Background(), "X")
 	require.NoError(t, err)
-	require.NoError(t, svc.EditVersion(context.Background(), id, 1, data.CampaignVO{Name: "Copied", Market: "US"}))
+	require.NoError(t, svc.EditVersion(context.Background(), id, 1, data.CampaignVO{
+		Name: "Copied", Market: "US",
+		Budget: data.BudgetVO{ProjectID: 1, ProjectName: "p"},
+		RewardRules: data.CampaignRewardRuleVO{
+			TaskGroupID: 1, TaskGroupReward: 2,
+			TaskRewardItems: []data.TaskRewardItemVO{{TaskID: 1, RewardTemplateID: 2}},
+		},
+	}))
+	_, err = svc.PublishCampaign(context.Background(), id, "op")
+	require.NoError(t, err)
 
 	v2, err := svc.CreateVersion(context.Background(), id)
 	require.NoError(t, err)

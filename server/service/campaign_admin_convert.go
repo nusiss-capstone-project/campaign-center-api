@@ -59,14 +59,27 @@ func flattenRewardRules(campaignID int64, rules data.CampaignRewardRuleVO) []mod
 	return out
 }
 
-func campaignToListVO(campaign model.Campaign, version int) data.CampaignListVO {
+func campaignToListVO(campaign model.Campaign, version int, draftStatus string) data.CampaignListVO {
+	status := campaign.Status
+	if draftStatus != "" {
+		status = draftStatusToCampaignStatus(draftStatus)
+	}
 	return data.CampaignListVO{
 		ID:        campaign.ID,
 		Name:      campaign.Name,
-		Status:    campaign.Status,
+		Status:    status,
 		Version:   int64(version),
 		CreatedAt: timeToUnix(campaign.CreatedAt),
 		UpdatedAt: timeToUnix(campaign.UpdatedAt),
+	}
+}
+
+func draftStatusToCampaignStatus(status string) int16 {
+	switch status {
+	case model.CampaignDraftStatusPublished:
+		return model.CampaignStatusPublished
+	default:
+		return model.CampaignStatusDraft
 	}
 }
 

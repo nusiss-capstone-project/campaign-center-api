@@ -38,11 +38,12 @@ func AdminCreateCampaign(c *gin.Context) {
 }
 
 // AdminCreateCampaignVersion creates a new draft version for a campaign.
+// If the latest version is still draft, returns that version without creating a new one.
 // @Summary Create campaign version (admin)
 // @Tags admin-campaign
 // @Produce json
 // @Param campaignId path int true "Campaign ID"
-// @Success 200 {object} data.StandardResponse{data=object{campaignId=int,version=int}} "success"
+// @Success 200 {object} data.StandardResponse{data=object{campaignId=int,version=int}} "success; returns existing draft version when latest is still draft"
 // @Failure 400 {object} data.StandardResponse "bad request"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Router /admin/campaigns/{campaignId}/versions [post]
