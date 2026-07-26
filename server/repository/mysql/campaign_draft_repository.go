@@ -15,6 +15,7 @@ type CampaignDraftRepository interface {
 	GetByActivityAndVersion(activityID int64, version int) (*model.CampaignDraft, error)
 	GetLatestByActivityID(activityID int64) (*model.CampaignDraft, error)
 	MaxVersion(activityID int64) (int, error)
+	MaxVersionsByActivityIDs(activityIDs []int64) (map[int64]int, error)
 }
 
 type campaignDraftRepository struct{}
@@ -40,19 +41,19 @@ func (r *campaignDraftRepository) db() (*gorm.DB, error) {
 }
 
 func (r *campaignDraftRepository) Create(ctx context.Context, d *model.CampaignDraft) error {
-	db, err := r.db()
+	db, err := session(ctx)
 	if err != nil {
 		return err
 	}
-	return db.WithContext(ctx).Create(d).Error
+	return db.Create(d).Error
 }
 
 func (r *campaignDraftRepository) Update(ctx context.Context, d *model.CampaignDraft) error {
-	db, err := r.db()
+	db, err := session(ctx)
 	if err != nil {
 		return err
 	}
-	return db.WithContext(ctx).Model(&model.CampaignDraft{}).Where("id = ?", d.ID).Updates(map[string]interface{}{
+	return db.Model(&model.CampaignDraft{}).Where("id = ?", d.ID).Updates(map[string]interface{}{
 		"content":    d.Content,
 		"status":     d.Status,
 		"updated_at": d.UpdatedAt,
@@ -99,4 +100,31 @@ func (r *campaignDraftRepository) MaxVersion(activityID int64) (int, error) {
 		return 0, nil
 	}
 	return *max, nil
+}
+
+func (r *campaignDraftRepository) MaxVersionsByActivityIDs(activityIDs []int64) (map[int64]int, error) {
+	out := make(map[int64]int, len(activityIDs))
+	if len(activityIDs) == 0 {
+		return out, nil
+	}
+	db, err := r.db()
+	if err != nil {
+		return nil, err
+	}
+	type row struct {
+		ActivityID int64 `gorm:"column:activity_id"`
+		MaxVersion int   `gorm:"column:max_version"`
+	}
+	var rows []row
+	if err := db.Model(&model.CampaignDraft{}).
+		Select("activity_id, MAX(version) AS max_version").
+		Where("activity_id IN ?", activityIDs).
+		Group("activity_id").
+		Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, item := range rows {
+		out[item.ActivityID] = item.MaxVersion
+	}
+	return out, nil
 }

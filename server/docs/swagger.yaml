@@ -185,6 +185,21 @@ definitions:
       projectName:
         type: string
     type: object
+  data.CampaignListVO:
+    properties:
+      createdAt:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+      status:
+        type: integer
+      updatedAt:
+        type: integer
+      version:
+        type: integer
+    type: object
   data.CampaignRewardRuleVO:
     properties:
       campaignId:
@@ -464,7 +479,19 @@ paths:
         "200":
           description: success
           schema:
-            $ref: '#/definitions/data.StandardResponse'
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  properties:
+                    items:
+                      items:
+                        $ref: '#/definitions/data.CampaignListVO'
+                      type: array
+                    total:
+                      type: integer
+                  type: object
+              type: object
         "503":
           description: database unavailable
           schema:
@@ -488,7 +515,15 @@ paths:
         "200":
           description: success
           schema:
-            $ref: '#/definitions/data.StandardResponse'
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  properties:
+                    campaignId:
+                      type: integer
+                  type: object
+              type: object
         "400":
           description: validation error
           schema:
@@ -514,7 +549,12 @@ paths:
         "200":
           description: success
           schema:
-            $ref: '#/definitions/data.StandardResponse'
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.CampaignVO'
+              type: object
         "404":
           description: not found
           schema:
@@ -652,7 +692,12 @@ paths:
         "200":
           description: success
           schema:
-            $ref: '#/definitions/data.StandardResponse'
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.CampaignVO'
+              type: object
         "400":
           description: validation error
           schema:
@@ -678,7 +723,17 @@ paths:
         "200":
           description: success
           schema:
-            $ref: '#/definitions/data.StandardResponse'
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  properties:
+                    campaignId:
+                      type: integer
+                    version:
+                      type: integer
+                  type: object
+              type: object
         "400":
           description: bad request
           schema:
@@ -717,7 +772,17 @@ paths:
         "200":
           description: success
           schema:
-            $ref: '#/definitions/data.StandardResponse'
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  properties:
+                    campaignId:
+                      type: integer
+                    version:
+                      type: integer
+                  type: object
+              type: object
         "400":
           description: bad request
           schema:

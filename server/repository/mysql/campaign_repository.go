@@ -48,19 +48,19 @@ func (r *campaignRepository) db() (*gorm.DB, error) {
 }
 
 func (r *campaignRepository) Create(ctx context.Context, c *model.Campaign) error {
-	db, err := r.db()
+	db, err := session(ctx)
 	if err != nil {
 		return err
 	}
-	return db.WithContext(ctx).Create(c).Error
+	return db.Create(c).Error
 }
 
 func (r *campaignRepository) Update(ctx context.Context, c *model.Campaign) error {
-	db, err := r.db()
+	db, err := session(ctx)
 	if err != nil {
 		return err
 	}
-	return db.WithContext(ctx).Model(&model.Campaign{}).Where("id = ?", c.ID).Updates(map[string]interface{}{
+	return db.Model(&model.Campaign{}).Where("id = ?", c.ID).Updates(map[string]interface{}{
 		"name":                    c.Name,
 		"market":                  c.Market,
 		"registration_start_time": c.RegistrationStartTime,
@@ -129,27 +129,24 @@ func campaignQueryScope(db *gorm.DB, q CampaignQuery) *gorm.DB {
 }
 
 func (r *campaignRepository) UpdateStatus(ctx context.Context, id int64, status int16, operator string) (*model.Campaign, error) {
-	db, err := r.db()
+	db, err := session(ctx)
 	if err != nil {
 		return nil, err
 	}
 	now := time.Now()
-	var updated model.Campaign
-	err = db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		res := tx.Model(&model.Campaign{}).Where("id = ?", id).Updates(map[string]interface{}{
-			"status":     status,
-			"updated_by": operator,
-			"updated_at": now,
-		})
-		if res.Error != nil {
-			return res.Error
-		}
-		if res.RowsAffected == 0 {
-			return gorm.ErrRecordNotFound
-		}
-		return tx.Where("id = ?", id).First(&updated).Error
+	res := db.Model(&model.Campaign{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"status":     status,
+		"updated_by": operator,
+		"updated_at": now,
 	})
-	if err != nil {
+	if res.Error != nil {
+		return nil, res.Error
+	}
+	if res.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+	var updated model.Campaign
+	if err := db.Where("id = ?", id).First(&updated).Error; err != nil {
 		return nil, err
 	}
 	return &updated, nil

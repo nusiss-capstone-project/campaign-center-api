@@ -55,6 +55,7 @@ type CampaignListVO struct {
 	ID        int64  `json:"id"`
 	Name      string `json:"name"`
 	Status    int16  `json:"status"`
+	Version   int64  `json:"version"`
 	CreatedAt int64  `json:"createdAt"`
 	UpdatedAt int64  `json:"updatedAt"`
 }

@@ -15,7 +15,7 @@ import (
 
 // CampaignAdminService admin campaign operations (v2 drafts/versions).
 type CampaignAdminService interface {
-	CreateCampaign(ctx context.Context, name string) (campaignID int64, status int16, err error)
+	CreateCampaign(ctx context.Context, name string) (campaignID int64, err error)
 	CreateVersion(ctx context.Context, campaignID int64) (version int, err error)
 	EditVersion(ctx context.Context, campaignID int64, version int, campaign data.CampaignVO) error
 	PublishCampaign(ctx context.Context, campaignID int64, operator string) (*data.CampaignVO, error)
@@ -55,10 +55,10 @@ func GetCampaignAdminService() CampaignAdminService {
 	return campaignAdminServiceInst
 }
 
-func (s *campaignAdminService) CreateCampaign(ctx context.Context, name string) (int64, int16, error) {
+func (s *campaignAdminService) CreateCampaign(ctx context.Context, name string) (int64, error) {
 	name = trimCampaignName(name)
 	if name == "" {
-		return 0, 0, fmt.Errorf("%s", MsgCampaignNameRequired)
+		return 0, fmt.Errorf("%s", MsgCampaignNameRequired)
 	}
 	now := time.Now()
 	campaign := model.Campaign{
@@ -67,10 +67,33 @@ func (s *campaignAdminService) CreateCampaign(ctx context.Context, name string) 
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	if err := s.campaigns.Create(ctx, &campaign); err != nil {
-		return 0, 0, err
+	content, err := json.Marshal(data.CampaignVO{Name: name})
+	if err != nil {
+		return 0, err
 	}
-	return campaign.ID, campaign.Status, nil
+	var campaignID int64
+	err = mysql.WithinTransaction(ctx, func(txCtx context.Context) error {
+		if err := s.campaigns.Create(txCtx, &campaign); err != nil {
+			return err
+		}
+		draft := model.CampaignDraft{
+			ActivityID: campaign.ID,
+			Content:    string(content),
+			Version:    1,
+			Status:     model.CampaignDraftStatusDraft,
+			CreatedAt:  now,
+			UpdatedAt:  now,
+		}
+		if err := s.drafts.Create(txCtx, &draft); err != nil {
+			return err
+		}
+		campaignID = campaign.ID
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	return campaignID, nil
 }
 
 func (s *campaignAdminService) CreateVersion(ctx context.Context, campaignID int64) (int, error) {
@@ -165,9 +188,17 @@ func (s *campaignAdminService) ListCampaigns(req data.CampaignListReq) ([]data.C
 	if err != nil {
 		return nil, 0, err
 	}
+	ids := make([]int64, 0, len(items))
+	for _, item := range items {
+		ids = append(ids, item.ID)
+	}
+	versions, err := s.drafts.MaxVersionsByActivityIDs(ids)
+	if err != nil {
+		return nil, 0, err
+	}
 	out := make([]data.CampaignListVO, 0, len(items))
 	for _, item := range items {
-		out = append(out, campaignToListVO(item))
+		out = append(out, campaignToListVO(item, versions[item.ID]))
 	}
 	return out, total, nil
 }

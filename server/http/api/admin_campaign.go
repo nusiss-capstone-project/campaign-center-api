@@ -17,7 +17,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param body body data.CreateCampaignReq true "Campaign name"
-// @Success 200 {object} data.StandardResponse "success"
+// @Success 200 {object} data.StandardResponse{data=object{campaignId=int}} "success"
 // @Failure 400 {object} data.StandardResponse "validation error"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /admin/campaigns [post]
@@ -28,13 +28,13 @@ func AdminCreateCampaign(c *gin.Context) {
 		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
 		return
 	}
-	id, status, err := service.GetCampaignAdminService().CreateCampaign(c.Request.Context(), req.Name)
+	id, err := service.GetCampaignAdminService().CreateCampaign(c.Request.Context(), req.Name)
 	if err != nil {
 		handleCampaignAdminErr(c, err)
 		return
 	}
-	log.WithContext(c.Request.Context()).Infow("admin_create_campaign", "campaign_id", id, "status", status)
-	data.OK(c, gin.H{"campaignId": id, "status": status})
+	log.WithContext(c.Request.Context()).Infow("admin_create_campaign", "campaign_id", id)
+	data.OK(c, gin.H{"campaignId": id})
 }
 
 // AdminCreateCampaignVersion creates a new draft version for a campaign.
@@ -42,7 +42,7 @@ func AdminCreateCampaign(c *gin.Context) {
 // @Tags admin-campaign
 // @Produce json
 // @Param campaignId path int true "Campaign ID"
-// @Success 200 {object} data.StandardResponse "success"
+// @Success 200 {object} data.StandardResponse{data=object{campaignId=int,version=int}} "success"
 // @Failure 400 {object} data.StandardResponse "bad request"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Router /admin/campaigns/{campaignId}/versions [post]
@@ -68,7 +68,7 @@ func AdminCreateCampaignVersion(c *gin.Context) {
 // @Param campaignId path int true "Campaign ID"
 // @Param version path int true "Version"
 // @Param body body data.CampaignVO true "Draft content; read-only fields are ignored"
-// @Success 200 {object} data.StandardResponse "success"
+// @Success 200 {object} data.StandardResponse{data=object{campaignId=int,version=int}} "success"
 // @Failure 400 {object} data.StandardResponse "bad request"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Failure 409 {object} data.StandardResponse "not editable"
@@ -107,7 +107,7 @@ func AdminEditCampaignVersion(c *gin.Context) {
 // @Param pageSize query int false "Page size (default 10)"
 // @Param status query int false "Campaign status filter"
 // @Param campaignId query int false "Campaign ID filter"
-// @Success 200 {object} data.StandardResponse "success"
+// @Success 200 {object} data.StandardResponse{data=object{total=int,items=[]data.CampaignListVO}} "success"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /admin/campaigns [get]
 func AdminListCampaigns(c *gin.Context) {
@@ -131,7 +131,7 @@ func AdminListCampaigns(c *gin.Context) {
 // @Tags admin-campaign
 // @Produce json
 // @Param campaignId path int true "Campaign ID"
-// @Success 200 {object} data.StandardResponse "success"
+// @Success 200 {object} data.StandardResponse{data=data.CampaignVO} "success"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Router /admin/campaigns/{campaignId} [get]
 func AdminGetCampaign(c *gin.Context) {
@@ -155,7 +155,7 @@ func AdminGetCampaign(c *gin.Context) {
 // @Produce json
 // @Param campaignId path int true "Campaign ID"
 // @Param body body data.PublishOperatorReq true "Operator"
-// @Success 200 {object} data.StandardResponse "success"
+// @Success 200 {object} data.StandardResponse{data=data.CampaignVO} "success"
 // @Failure 400 {object} data.StandardResponse "validation error"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Router /admin/campaigns/{campaignId}/publish [post]
