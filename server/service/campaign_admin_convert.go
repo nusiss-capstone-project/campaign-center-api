@@ -3,8 +3,8 @@ package service
 import (
 	"time"
 
-	"github.com/lianjin/campaign-center-api/server/http/data"
-	"github.com/lianjin/campaign-center-api/server/repository/mysql/model"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
 )
 
 // campaignDraftVO keeps only fields editable through a campaign version.
