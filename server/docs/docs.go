@@ -1075,96 +1075,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/web/account/summary": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "user-account"
-                ],
-                "summary": "Get account summary (user)",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Currency (default USDT)",
-                        "name": "currency",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "success",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "bad request",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    },
-                    "503": {
-                        "description": "database unavailable",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/web/account/transactions": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "user-account"
-                ],
-                "summary": "List account transactions (user)",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Transaction type RECHARGE or CAMPAIGN_REWARD",
-                        "name": "type",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Pagination cursor (transaction id)",
-                        "name": "cursor",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size (default 20, max 100)",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "success",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "bad request",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    },
-                    "503": {
-                        "description": "database unavailable",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/web/campaigns": {
             "get": {
                 "produces": [
@@ -1369,37 +1279,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/web/user-profile": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "user-profile"
-                ],
-                "summary": "Get user profile (user)",
-                "responses": {
-                    "200": {
-                        "description": "success",
-                        "schema": {
-                            "$ref": "#/definitions/api.UserProfileHTTPResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "user not found",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    },
-                    "503": {
-                        "description": "database unavailable",
                         "schema": {
                             "$ref": "#/definitions/data.StandardResponse"
                         }
@@ -1627,43 +1506,6 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
-                }
-            }
-        },
-        "api.UserProfileData": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string",
-                    "example": "a***e@example.com"
-                },
-                "kycChecked": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "registeredAt": {
-                    "type": "string",
-                    "example": "2026-05-16T10:00:00Z"
-                },
-                "username": {
-                    "type": "string",
-                    "example": "alice"
-                }
-            }
-        },
-        "api.UserProfileHTTPResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "$ref": "#/definitions/api.UserProfileData"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "success"
                 }
             }
         },
@@ -2060,7 +1902,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/campaign-center-api/v1",
 	Schemes:          []string{"http", "https"},
 	Title:            "Campaign Center API",
-	Description:      "HTTP API for campaign center (admin campaign/landing-page + user account/campaign mocks). Operates under `/campaign-center-api/v1`;",
+	Description:      "HTTP API for campaign center (admin campaign/landing-page + user campaign mocks). Operates under `/campaign-center-api/v1`;",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

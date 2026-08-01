@@ -30,7 +30,7 @@ func NewRouter() *gin.Engine {
 	basicGroup.GET("/ping", api.Ping)
 
 	admin := basicGroup.Group("/admin")
-	admin.Use(commonauth.RequireAdmin())
+	admin.Use(commonauth.RequireRole([]string{commonauth.RoleCampaignOps, commonauth.RoleAdmin}))
 	{
 		admin.POST("/campaigns", api.AdminCreateCampaign)
 		admin.POST("/campaigns/:campaignId/versions", api.AdminCreateCampaignVersion)
@@ -57,9 +57,6 @@ func NewRouter() *gin.Engine {
 	web := basicGroup.Group("/web")
 	web.Use(commonauth.RequireUser())
 	{
-		web.GET("/user-profile", api.UserGetProfile)
-		web.GET("/account/summary", api.UserGetAccountSummary)
-		web.GET("/account/transactions", api.UserListAccountTransactions)
 		web.GET("/campaigns", api.UserListCampaigns)
 		web.GET("/campaigns/:campaignId/landing-page", api.UserGetCampaignLanding)
 		web.POST("/campaigns/:campaignId/join", api.UserJoinCampaign)

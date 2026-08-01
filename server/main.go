@@ -20,7 +20,7 @@ var sigCh = make(chan os.Signal, 1)
 
 // @title Campaign Center API
 // @version 1.0
-// @description HTTP API for campaign center (admin campaign/landing-page + user account/campaign mocks). Operates under `/campaign-center-api/v1`;
+// @description HTTP API for campaign center (admin campaign/landing-page + user campaign mocks). Operates under `/campaign-center-api/v1`;
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name API Support

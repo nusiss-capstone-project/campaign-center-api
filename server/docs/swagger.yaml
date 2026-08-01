@@ -152,32 +152,6 @@ definitions:
     - terms
     - title
     type: object
-  api.UserProfileData:
-    properties:
-      email:
-        example: a***e@example.com
-        type: string
-      kycChecked:
-        example: true
-        type: boolean
-      registeredAt:
-        example: "2026-05-16T10:00:00Z"
-        type: string
-      username:
-        example: alice
-        type: string
-    type: object
-  api.UserProfileHTTPResponse:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/api.UserProfileData'
-      message:
-        example: success
-        type: string
-    type: object
   data.BudgetVO:
     properties:
       projectId:
@@ -445,7 +419,7 @@ host: localhost:8080
 info:
   contact:
     name: API Support
-  description: HTTP API for campaign center (admin campaign/landing-page + user account/campaign
+  description: HTTP API for campaign center (admin campaign/landing-page + user campaign
     mocks). Operates under `/campaign-center-api/v1`;
   license:
     name: Apache 2.0
@@ -1134,64 +1108,6 @@ paths:
       summary: Ping
       tags:
       - health
-  /web/account/summary:
-    get:
-      parameters:
-      - description: Currency (default USDT)
-        in: query
-        name: currency
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: success
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "400":
-          description: bad request
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: Get account summary (user)
-      tags:
-      - user-account
-  /web/account/transactions:
-    get:
-      parameters:
-      - description: Transaction type RECHARGE or CAMPAIGN_REWARD
-        in: query
-        name: type
-        type: string
-      - description: Pagination cursor (transaction id)
-        in: query
-        name: cursor
-        type: integer
-      - description: Page size (default 20, max 100)
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: success
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "400":
-          description: bad request
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: List account transactions (user)
-      tags:
-      - user-account
   /web/campaigns:
     get:
       produces:
@@ -1318,26 +1234,6 @@ paths:
       summary: Get campaign landing page (user, mock)
       tags:
       - user-campaign
-  /web/user-profile:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: success
-          schema:
-            $ref: '#/definitions/api.UserProfileHTTPResponse'
-        "404":
-          description: user not found
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: Get user profile (user)
-      tags:
-      - user-profile
 schemes:
 - http
 - https

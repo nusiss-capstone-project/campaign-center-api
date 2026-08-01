@@ -18,7 +18,7 @@ gen_repo_mock() {
     --disable-version-string
 }
 
-for name in CampaignRepository LandingPageRepository UserRepository ParticipantRepository; do
+for name in CampaignRepository LandingPageRepository ParticipantRepository; do
   gen_repo_mock "$name"
 done
 
