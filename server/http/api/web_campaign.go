@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/nusiss-capstone-project/campaign-center-api/server/auth"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/log"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/service"
+	commonauth "github.com/nusiss-capstone-project/identity-mservice/common/auth"
 )
 
 // UserListCampaigns returns a mock list of ongoing/upcoming campaigns.
@@ -21,7 +21,7 @@ import (
 // @Failure 401 {object} data.StandardResponse "unauthorized"
 // @Router /web/campaigns [get]
 func UserListCampaigns(c *gin.Context) {
-	userID, ok := auth.GetUserID(c.Request.Context())
+	userID, ok := commonauth.GetUserID(c.Request.Context())
 	if !ok {
 		authError(c)
 		return
@@ -61,7 +61,7 @@ func UserGetCampaignLanding(c *gin.Context) {
 	if !ok {
 		return
 	}
-	userID, ok := auth.GetUserID(c.Request.Context())
+	userID, ok := commonauth.GetUserID(c.Request.Context())
 	if !ok {
 		authError(c)
 		return
@@ -109,7 +109,7 @@ func UserJoinCampaign(c *gin.Context) {
 	if !ok {
 		return
 	}
-	userID, ok := auth.GetUserID(c.Request.Context())
+	userID, ok := commonauth.GetUserID(c.Request.Context())
 	if !ok {
 		authError(c)
 		return
@@ -142,7 +142,7 @@ func UserDepositCampaign(c *gin.Context) {
 	if !ok {
 		return
 	}
-	userID, ok := auth.GetUserID(c.Request.Context())
+	userID, ok := commonauth.GetUserID(c.Request.Context())
 	if !ok {
 		authError(c)
 		return

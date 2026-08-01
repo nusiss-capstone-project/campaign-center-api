@@ -29,7 +29,6 @@ func Init() (*gorm.DB, error) {
 		&model.CampaignLandingPage{},
 		&model.CampaignLandingPageTranslation{},
 		&model.User{},
-		&model.UserAuthMapping{},
 		&model.CampaignParticipant{},
 		&model.AuditLog{},
 		&model.UserAccount{},
