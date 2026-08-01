@@ -1,10 +1,29 @@
 package model
 
-// Campaign status (smallint): 1 draft, 2 published, 3 archive
+// Campaign status (smallint): 1 draft, 2 published
 const (
 	CampaignStatusDraft     int16 = 1
 	CampaignStatusPublished int16 = 2
-	CampaignStatusArchive   int16 = 3
+)
+
+// Campaign draft status (varchar on campaign_drafts).
+const (
+	CampaignDraftStatusDraft     = "draft"
+	CampaignDraftStatusPublished = "published"
+)
+
+// Campaign reward rule ref_client values.
+const (
+	RewardRefClientTask      = "task"
+	RewardRefClientTaskGroup = "task_group"
+)
+
+// Campaign user reward ledger statuses.
+const (
+	LedgerRewardStatusPendingDistribution = "pending_distribution"
+	LedgerRewardStatusDistributing        = "distributing"
+	LedgerRewardStatusDistributeSuccess   = "distribute_success"
+	LedgerRewardStatusDistributeFail      = "distribute_fail"
 )
 
 // Landing page status
@@ -15,10 +34,6 @@ const (
 )
 
 const (
-	CampaignTypeTopupReward = "TOPUP_REWARD"
-)
-
-const (
 	MarketGlobal = "GLOBAL"
 	MarketUS     = "US"
 	MarketEU     = "EU"
@@ -26,15 +41,9 @@ const (
 	MarketHK     = "HK"
 	MarketJP     = "JP"
 	MarketSG     = "SG"
-)
-
-const (
-	UserSegmentNewUser            = "NEW_USER"
-	UserSegmentVIPUser            = "VIP_USER"
-	UserSegmentInactiveUser       = "INACTIVE_USER"
-	UserSegmentHighNetWorth       = "HIGH_NET_WORTH"
-	UserSegmentFirstTimeDepositor = "FIRST_TIME_DEPOSITOR"
-	UserSegmentAllUsers           = "ALL_USERS"
+	MarketEEA    = "EEA"
+	MarketTR     = "TR"
+	MarketBR     = "BR"
 )
 
 const (
@@ -43,55 +52,18 @@ const (
 	KYCStatusFailed  = "FAILED"
 )
 
+// Participation / task / reward status values used by admin reads and web mocks.
 const (
 	JoinStatusJoined = "JOINED"
-)
 
-const (
 	TaskStatusNotStarted   = "NOT_STARTED"
 	TaskStatusCompleted    = "COMPLETED"
 	TaskStatusNotQualified = "NOT_QUALIFIED"
-)
 
-const (
 	RewardStatusNotGranted    = "NOT_GRANTED"
 	RewardStatusPending       = "PENDING"
 	RewardStatusGranted       = "GRANTED"
 	RewardStatusPendingReview = "PENDING_REVIEW"
-)
-
-const (
-	RiskStatusApproved     = "APPROVED"
-	RiskStatusManualReview = "MANUAL_REVIEW"
-	RiskStatusRejected     = "REJECTED"
-)
-
-const (
-	RewardTypeBonusCredit      = "BONUS_CREDIT"
-	RewardTypeTokenBonus       = "TOKEN_BONUS"
-	RewardTypeTradingFeeRebate = "TRADING_FEE_REBATE"
-	RewardTypeVoucher          = "VOUCHER"
-	RewardTypeMysteryBox       = "MYSTERY_BOX"
-	RewardTypePoints           = "POINTS"
-)
-
-const (
-	RewardModeFixedAmount = "FIXED_AMOUNT"
-	RewardModePercentage  = "PERCENTAGE"
-)
-
-const (
-	RewardTxnStatusCompleted = "COMPLETED"
-	RewardTxnStatusPending   = "PENDING"
-)
-
-const (
-	RiskLevelHigh = "HIGH"
-)
-
-const (
-	RejectReasonKYCNotPassed = "KYC_NOT_PASSED"
-	RejectReasonSegment      = "SEGMENT_MISMATCH"
 )
 
 const DefaultCurrency = "USDT"

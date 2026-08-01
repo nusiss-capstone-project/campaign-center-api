@@ -5,12 +5,12 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/nusiss-capstone-project/campaign-center-api/server/auth"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/config"
 	_ "github.com/nusiss-capstone-project/campaign-center-api/server/docs"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/http/api"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/log"
+	commonauth "github.com/nusiss-capstone-project/identity-mservice/common/auth"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
@@ -30,14 +30,14 @@ func NewRouter() *gin.Engine {
 	basicGroup.GET("/ping", api.Ping)
 
 	admin := basicGroup.Group("/admin")
-	admin.Use(auth.RequireAdmin())
+	admin.Use(commonauth.RequireAdmin())
 	{
 		admin.POST("/campaigns", api.AdminCreateCampaign)
-		admin.PUT("/campaigns/:campaignId", api.AdminUpdateCampaign)
+		admin.POST("/campaigns/:campaignId/versions", api.AdminCreateCampaignVersion)
+		admin.PUT("/campaigns/:campaignId/versions/:version", api.AdminEditCampaignVersion)
 		admin.GET("/campaigns", api.AdminListCampaigns)
 		admin.GET("/campaigns/:campaignId", api.AdminGetCampaign)
 		admin.POST("/campaigns/:campaignId/publish", api.AdminPublishCampaign)
-		admin.POST("/campaigns/:campaignId/archive", api.AdminArchiveCampaign)
 		admin.GET("/campaigns/:campaignId/performance/summary", api.AdminGetCampaignPerformanceSummary)
 		admin.GET("/campaigns/:campaignId/performance/daily", api.AdminListCampaignDailyPerformance)
 		admin.GET("/campaigns/:campaignId/participations", api.AdminListCampaignParticipations)
@@ -53,9 +53,9 @@ func NewRouter() *gin.Engine {
 		admin.POST("/landing-pages/:landingPageId/publish", api.AdminPublishLandingPage)
 	}
 
-	// User-facing campaign APIs
+	// User-facing APIs (campaign handlers are mock until user flow is reimplemented)
 	web := basicGroup.Group("/web")
-	web.Use(auth.RequireUser())
+	web.Use(commonauth.RequireUser())
 	{
 		web.GET("/user-profile", api.UserGetProfile)
 		web.GET("/account/summary", api.UserGetAccountSummary)
@@ -63,7 +63,7 @@ func NewRouter() *gin.Engine {
 		web.GET("/campaigns", api.UserListCampaigns)
 		web.GET("/campaigns/:campaignId/landing-page", api.UserGetCampaignLanding)
 		web.POST("/campaigns/:campaignId/join", api.UserJoinCampaign)
-		web.POST("/campaigns/:campaignId/top-up", api.UserSimulateTopUp)
+		web.POST("/campaigns/:campaignId/deposit", api.UserDepositCampaign)
 	}
 
 	return r
@@ -76,10 +76,11 @@ func corsMiddleware() gin.HandlerFunc {
 			"GET", "POST", "PUT", "DELETE", "OPTIONS",
 		},
 		AllowHeaders: []string{
-			"Origin", "Content-Type", "Accept", "Authorization", log.RequestIDHeader,
+			"Origin", "Content-Type", "Accept", "Authorization",
+			commonauth.HeaderInternalUserID, commonauth.HeaderUserRole, log.RequestIDHeader,
 		},
 		ExposeHeaders: []string{
-			"Content-Length", log.RequestIDHeader,
+			"Content-Length", commonauth.HeaderInternalUserID, commonauth.HeaderUserRole, log.RequestIDHeader,
 		},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,

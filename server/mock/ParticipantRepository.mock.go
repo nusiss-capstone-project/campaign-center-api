@@ -13,115 +13,41 @@ type MockParticipantRepository struct {
 	mock.Mock
 }
 
-// Create provides a mock function with given fields: p
-func (_m *MockParticipantRepository) Create(p *model.CampaignParticipant) error {
-	ret := _m.Called(p)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Create")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(*model.CampaignParticipant) error); ok {
-		r0 = rf(p)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// GetByCampaignAndUser provides a mock function with given fields: campaignID, userID
-func (_m *MockParticipantRepository) GetByCampaignAndUser(campaignID int64, userID int64) (*model.CampaignParticipant, error) {
-	ret := _m.Called(campaignID, userID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetByCampaignAndUser")
-	}
-
-	var r0 *model.CampaignParticipant
-	var r1 error
-	if rf, ok := ret.Get(0).(func(int64, int64) (*model.CampaignParticipant, error)); ok {
-		return rf(campaignID, userID)
-	}
-	if rf, ok := ret.Get(0).(func(int64, int64) *model.CampaignParticipant); ok {
-		r0 = rf(campaignID, userID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.CampaignParticipant)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(int64, int64) error); ok {
-		r1 = rf(campaignID, userID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // ListByCampaign provides a mock function with given fields: filter
 func (_m *MockParticipantRepository) ListByCampaign(filter mysql.ParticipationListFilter) ([]model.CampaignParticipant, int64, error) {
 	ret := _m.Called(filter)
 
-	var r0 []model.CampaignParticipant
-	if v := ret.Get(0); v != nil {
-		r0 = v.([]model.CampaignParticipant)
-	}
-	var r1 int64
-	if v := ret.Get(1); v != nil {
-		r1 = v.(int64)
-	}
-	return r0, r1, ret.Error(2)
-}
-
-// ListByUserAndCampaignIDs provides a mock function with given fields: userID, campaignIDs
-func (_m *MockParticipantRepository) ListByUserAndCampaignIDs(userID int64, campaignIDs []int64) ([]model.CampaignParticipant, error) {
-	ret := _m.Called(userID, campaignIDs)
-
 	if len(ret) == 0 {
-		panic("no return value specified for ListByUserAndCampaignIDs")
+		panic("no return value specified for ListByCampaign")
 	}
 
 	var r0 []model.CampaignParticipant
-	var r1 error
-	if rf, ok := ret.Get(0).(func(int64, []int64) ([]model.CampaignParticipant, error)); ok {
-		return rf(userID, campaignIDs)
+	var r1 int64
+	var r2 error
+	if rf, ok := ret.Get(0).(func(mysql.ParticipationListFilter) ([]model.CampaignParticipant, int64, error)); ok {
+		return rf(filter)
 	}
-	if rf, ok := ret.Get(0).(func(int64, []int64) []model.CampaignParticipant); ok {
-		r0 = rf(userID, campaignIDs)
+	if rf, ok := ret.Get(0).(func(mysql.ParticipationListFilter) []model.CampaignParticipant); ok {
+		r0 = rf(filter)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]model.CampaignParticipant)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(int64, []int64) error); ok {
-		r1 = rf(userID, campaignIDs)
+	if rf, ok := ret.Get(1).(func(mysql.ParticipationListFilter) int64); ok {
+		r1 = rf(filter)
 	} else {
-		r1 = ret.Error(1)
+		r1 = ret.Get(1).(int64)
 	}
 
-	return r0, r1
-}
-
-// Save provides a mock function with given fields: p
-func (_m *MockParticipantRepository) Save(p *model.CampaignParticipant) error {
-	ret := _m.Called(p)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Save")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(*model.CampaignParticipant) error); ok {
-		r0 = rf(p)
+	if rf, ok := ret.Get(2).(func(mysql.ParticipationListFilter) error); ok {
+		r2 = rf(filter)
 	} else {
-		r0 = ret.Error(0)
+		r2 = ret.Error(2)
 	}
 
-	return r0
+	return r0, r1, r2
 }
 
 // NewMockParticipantRepository creates a new instance of MockParticipantRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

@@ -3,208 +3,101 @@ package api
 import (
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/log"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
-	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/service"
 )
 
-// RewardRulesReq reward rule payload (JSON body fragment).
-type RewardRulesReq struct {
-	TopupThreshold   float64 `json:"topupThreshold" binding:"required"`
-	RewardType       string  `json:"rewardType" binding:"required"`
-	RewardAmount     float64 `json:"rewardAmount"`
-	RewardCurrency   string  `json:"rewardCurrency"`
-	RewardMode       string  `json:"rewardMode"`
-	RewardPercentage float64 `json:"rewardPercentage"`
-	MaxRewardAmount  float64 `json:"maxRewardAmount"`
-	MaxClaimPerUser  int     `json:"maxClaimPerUser" binding:"required"`
-	MinObtainDays    int     `json:"minObtainDays"`
-}
-
-// CreateCampaignReq POST /admin/campaigns body.
-type CreateCampaignReq struct {
-	Name                  string         `json:"name" binding:"required"`
-	Type                  string         `json:"type" binding:"required"`
-	TargetMarket          string         `json:"targetMarket" binding:"required"`
-	RegistrationStartTime string         `json:"registrationStartTime" binding:"required"`
-	RegistrationEndTime   string         `json:"registrationEndTime" binding:"required"`
-	CampaignStartTime     string         `json:"campaignStartTime" binding:"required"`
-	CampaignEndTime       string         `json:"campaignEndTime" binding:"required"`
-	TargetUserSegment     string         `json:"targetUserSegment" binding:"required"`
-	RewardRules           RewardRulesReq `json:"rewardRules" binding:"required"`
-	LandingPageID         int64          `json:"landingPageId"`
-}
-
-// UpdateCampaignReq PUT /admin/campaigns/:campaignId body.
-type UpdateCampaignReq struct {
-	Name                  string         `json:"name" binding:"required"`
-	TargetMarket          string         `json:"targetMarket" binding:"required"`
-	RegistrationStartTime string         `json:"registrationStartTime" binding:"required"`
-	RegistrationEndTime   string         `json:"registrationEndTime" binding:"required"`
-	CampaignStartTime     string         `json:"campaignStartTime" binding:"required"`
-	CampaignEndTime       string         `json:"campaignEndTime" binding:"required"`
-	TargetUserSegment     string         `json:"targetUserSegment" binding:"required"`
-	RewardRules           RewardRulesReq `json:"rewardRules" binding:"required"`
-	LandingPageID         int64          `json:"landingPageId"`
-}
-
-// PublishOperatorReq publish action body.
-type PublishOperatorReq struct {
-	Operator string `json:"operator" binding:"required"`
-}
-
-func parseRFC3339(s string) (time.Time, error) {
-	return time.Parse(time.RFC3339, s)
-}
-
-func rewardRulesPayload(req RewardRulesReq) model.RewardRulesPayload {
-	return model.RewardRulesPayload{
-		TopupThreshold:   req.TopupThreshold,
-		RewardType:       req.RewardType,
-		RewardAmount:     req.RewardAmount,
-		RewardCurrency:   req.RewardCurrency,
-		RewardMode:       req.RewardMode,
-		RewardPercentage: req.RewardPercentage,
-		MaxRewardAmount:  req.MaxRewardAmount,
-		MaxClaimPerUser:  req.MaxClaimPerUser,
-		MinObtainDays:    req.MinObtainDays,
-	}
-}
-
-// AdminCreateCampaign creates a draft campaign.
+// AdminCreateCampaign creates a campaign shell (name only).
 // @Summary Create campaign (admin)
 // @Tags admin-campaign
 // @Accept json
 // @Produce json
-// @Param body body CreateCampaignReq true "Campaign payload"
-// @Success 200 {object} data.StandardResponse "success"
+// @Param body body data.CreateCampaignReq true "Campaign name"
+// @Success 200 {object} data.StandardResponse{data=object{campaignId=int}} "success"
 // @Failure 400 {object} data.StandardResponse "validation error"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /admin/campaigns [post]
 func AdminCreateCampaign(c *gin.Context) {
-	var req CreateCampaignReq
+	var req data.CreateCampaignReq
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.WithContext(c.Request.Context()).Warnw("admin_create_campaign_bad_request", "error", err.Error())
 		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
 		return
 	}
-	regStart, err := parseRFC3339(req.RegistrationStartTime)
+	id, err := service.GetCampaignAdminService().CreateCampaign(c.Request.Context(), req.Name)
 	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidRegistrationStartTime, nil)
+		handleCampaignAdminErr(c, err)
 		return
 	}
-	regEnd, err := parseRFC3339(req.RegistrationEndTime)
-	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidRegistrationEndTime, nil)
-		return
-	}
-	cs, err := parseRFC3339(req.CampaignStartTime)
-	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidCampaignStartTime, nil)
-		return
-	}
-	ce, err := parseRFC3339(req.CampaignEndTime)
-	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidCampaignEndTime, nil)
-		return
-	}
-	svc := service.GetCampaignAdminService()
-	id, status, err := svc.CreateCampaign(service.CreateCampaignParams{
-		Name:                  req.Name,
-		Type:                  req.Type,
-		TargetMarket:          req.TargetMarket,
-		RegistrationStartTime: regStart,
-		RegistrationEndTime:   regEnd,
-		CampaignStartTime:     cs,
-		CampaignEndTime:       ce,
-		TargetUserSegment:     req.TargetUserSegment,
-		RewardRules:           rewardRulesPayload(req.RewardRules),
-		LandingPageID:         req.LandingPageID,
-	})
-	if err != nil {
-		if err == mysql.ErrDatabaseDisabled {
-			data.JSON(c, http.StatusServiceUnavailable, -1, err.Error(), nil)
-			return
-		}
-		data.JSON(c, http.StatusInternalServerError, -1, err.Error(), nil)
-		return
-	}
-	data.OK(c, gin.H{"campaignId": id, "status": status})
+	log.WithContext(c.Request.Context()).Infow("admin_create_campaign", "campaign_id", id)
+	data.OK(c, gin.H{"campaignId": id})
 }
 
-// AdminUpdateCampaign updates a draft campaign.
-// @Summary Update campaign (admin)
+// AdminCreateCampaignVersion creates a new draft version for a campaign.
+// If the latest version is still draft, returns that version without creating a new one.
+// @Summary Create campaign version (admin)
+// @Tags admin-campaign
+// @Produce json
+// @Param campaignId path int true "Campaign ID"
+// @Success 200 {object} data.StandardResponse{data=object{campaignId=int,version=int}} "success; returns existing draft version when latest is still draft"
+// @Failure 400 {object} data.StandardResponse "bad request"
+// @Failure 404 {object} data.StandardResponse "not found"
+// @Router /admin/campaigns/{campaignId}/versions [post]
+func AdminCreateCampaignVersion(c *gin.Context) {
+	campaignID, ok := parseCampaignIDParam(c)
+	if !ok {
+		return
+	}
+	version, err := service.GetCampaignAdminService().CreateVersion(c.Request.Context(), campaignID)
+	if err != nil {
+		handleCampaignAdminErr(c, err)
+		return
+	}
+	log.WithContext(c.Request.Context()).Infow("admin_create_campaign_version", "campaign_id", campaignID, "version", version)
+	data.OK(c, gin.H{"campaignId": campaignID, "version": version})
+}
+
+// AdminEditCampaignVersion saves draft content for a campaign version.
+// @Summary Edit campaign draft version (admin)
 // @Tags admin-campaign
 // @Accept json
 // @Produce json
 // @Param campaignId path int true "Campaign ID"
-// @Param body body UpdateCampaignReq true "Campaign payload"
-// @Success 200 {object} data.StandardResponse "success"
+// @Param version path int true "Version"
+// @Param body body data.CampaignVO true "Draft content; read-only fields are ignored"
+// @Success 200 {object} data.StandardResponse{data=data.CampaignVO} "updated campaign draft"
 // @Failure 400 {object} data.StandardResponse "bad request"
 // @Failure 404 {object} data.StandardResponse "not found"
-// @Failure 409 {object} data.StandardResponse "not draft"
-// @Failure 503 {object} data.StandardResponse "database unavailable"
-// @Router /admin/campaigns/{campaignId} [put]
-func AdminUpdateCampaign(c *gin.Context) {
-	idStr := c.Param("campaignId")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidCampaignID, nil)
+// @Failure 409 {object} data.StandardResponse "not editable"
+// @Router /admin/campaigns/{campaignId}/versions/{version} [put]
+func AdminEditCampaignVersion(c *gin.Context) {
+	campaignID, ok := parseCampaignIDParam(c)
+	if !ok {
 		return
 	}
-	var req UpdateCampaignReq
+	version, err := strconv.Atoi(c.Param("version"))
+	if err != nil || version < 1 {
+		log.WithContext(c.Request.Context()).Warnw("admin_edit_campaign_version_bad_request", "error", service.MsgInvalidVersion)
+		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidVersion, nil)
+		return
+	}
+	var req data.CampaignVO
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.WithContext(c.Request.Context()).Warnw("admin_edit_campaign_version_bad_request", "error", err.Error())
 		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
 		return
 	}
-	regStart, err := parseRFC3339(req.RegistrationStartTime)
+	detail, err := service.GetCampaignAdminService().EditVersion(c.Request.Context(), campaignID, version, req)
 	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidRegistrationStartTime, nil)
+		handleCampaignAdminErr(c, err)
 		return
 	}
-	regEnd, err := parseRFC3339(req.RegistrationEndTime)
-	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidRegistrationEndTime, nil)
-		return
-	}
-	cs, err := parseRFC3339(req.CampaignStartTime)
-	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidCampaignStartTime, nil)
-		return
-	}
-	ce, err := parseRFC3339(req.CampaignEndTime)
-	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidCampaignEndTime, nil)
-		return
-	}
-	svc := service.GetCampaignAdminService()
-	err = svc.UpdateDraftCampaign(id, service.UpdateCampaignParams{
-		Name:                  req.Name,
-		TargetMarket:          req.TargetMarket,
-		RegistrationStartTime: regStart,
-		RegistrationEndTime:   regEnd,
-		CampaignStartTime:     cs,
-		CampaignEndTime:       ce,
-		TargetUserSegment:     req.TargetUserSegment,
-		RewardRules:           rewardRulesPayload(req.RewardRules),
-		LandingPageID:         req.LandingPageID,
-	})
-	if err != nil {
-		if data.IsCampaignNotDraft(err) {
-			data.JSON(c, http.StatusConflict, -1, err.Error(), nil)
-			return
-		}
-		if mysql.IsNotFound(err) {
-			data.JSON(c, http.StatusNotFound, -1, service.MsgCampaignNotFound, nil)
-			return
-		}
-		handleRepoErr(c, err)
-		return
-	}
-	data.OK(c, gin.H{"campaignId": id})
+	log.WithContext(c.Request.Context()).Infow("admin_edit_campaign_version", "campaign_id", campaignID, "version", version)
+	data.OK(c, detail)
 }
 
 // AdminListCampaigns lists campaigns with optional filters.
@@ -214,45 +107,24 @@ func AdminUpdateCampaign(c *gin.Context) {
 // @Param page query int false "Page (default 1)"
 // @Param pageSize query int false "Page size (default 10)"
 // @Param status query int false "Campaign status filter"
-// @Param type query string false "Campaign type e.g. TOPUP_REWARD"
-// @Success 200 {object} data.StandardResponse "success"
+// @Param campaignId query int false "Campaign ID filter"
+// @Success 200 {object} data.StandardResponse{data=object{total=int,items=[]data.CampaignListVO}} "success"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /admin/campaigns [get]
 func AdminListCampaigns(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
-	var statusPtr *int16
-	if s := c.Query("status"); s != "" {
-		v, err := strconv.ParseInt(s, 10, 16)
-		if err == nil {
-			x := int16(v)
-			statusPtr = &x
-		}
-	}
-	campaignType := c.Query("type")
-	svc := service.GetCampaignAdminService()
-	items, total, err := svc.ListCampaigns(mysql.CampaignListFilter{
-		Page: page, PageSize: pageSize, Status: statusPtr, Type: campaignType,
-	})
-	if err != nil {
-		handleRepoErr(c, err)
+	var req data.CampaignListReq
+	if err := c.ShouldBindQuery(&req); err != nil {
+		log.WithContext(c.Request.Context()).Warnw("admin_list_campaigns_bad_request", "error", err.Error())
+		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
 		return
 	}
-	out := make([]gin.H, 0, len(items))
-	for _, it := range items {
-		out = append(out, gin.H{
-			"id":                it.ID,
-			"name":              it.Name,
-			"type":              it.Type,
-			"targetMarket":      it.TargetMarket,
-			"targetUserSegment": it.TargetUserSegment,
-			"status":            it.Status,
-			"campaignStartTime": it.CampaignStartTime.Format(time.RFC3339),
-			"campaignEndTime":   it.CampaignEndTime.Format(time.RFC3339),
-			"landingPageId":     it.LandingPageID,
-		})
+	items, total, err := service.GetCampaignAdminService().ListCampaigns(req)
+	if err != nil {
+		handleCampaignAdminErr(c, err)
+		return
 	}
-	data.OK(c, gin.H{"total": total, "items": out})
+	log.WithContext(c.Request.Context()).Infow("admin_list_campaigns", "total", total, "count", len(items), "page", req.Page, "page_size", req.PageSize)
+	data.OK(c, gin.H{"total": total, "items": items})
 }
 
 // AdminGetCampaign returns campaign detail for admin.
@@ -260,134 +132,91 @@ func AdminListCampaigns(c *gin.Context) {
 // @Tags admin-campaign
 // @Produce json
 // @Param campaignId path int true "Campaign ID"
-// @Success 200 {object} data.StandardResponse "success"
+// @Success 200 {object} data.StandardResponse{data=data.CampaignVO} "success"
 // @Failure 404 {object} data.StandardResponse "not found"
-// @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /admin/campaigns/{campaignId} [get]
 func AdminGetCampaign(c *gin.Context) {
-	idStr := c.Param("campaignId")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidCampaignID, nil)
+	campaignID, ok := parseCampaignIDParam(c)
+	if !ok {
 		return
 	}
-	svc := service.GetCampaignAdminService()
-	campaign, err := svc.GetCampaign(id)
+	detail, err := service.GetCampaignAdminService().GetCampaign(campaignID)
 	if err != nil {
-		if mysql.IsNotFound(err) {
-			data.JSON(c, http.StatusNotFound, -1, service.MsgCampaignNotFound, nil)
-			return
-		}
-		handleRepoErr(c, err)
+		handleCampaignAdminErr(c, err)
 		return
 	}
-	rules, err := model.ParseRewardRulesJSON(campaign.RewardRules)
-	if err != nil {
-		data.JSON(c, http.StatusInternalServerError, -1, err.Error(), nil)
-		return
-	}
-	data.OK(c, gin.H{
-		"id":                    campaign.ID,
-		"name":                  campaign.Name,
-		"type":                  campaign.Type,
-		"targetMarket":          campaign.TargetMarket,
-		"registrationStartTime": campaign.RegistrationStartTime.Format(time.RFC3339),
-		"registrationEndTime":   campaign.RegistrationEndTime.Format(time.RFC3339),
-		"campaignStartTime":     campaign.CampaignStartTime.Format(time.RFC3339),
-		"campaignEndTime":       campaign.CampaignEndTime.Format(time.RFC3339),
-		"targetUserSegment":     campaign.TargetUserSegment,
-		"rewardRules": gin.H{
-			"topupThreshold":   rules.TopupThreshold,
-			"rewardType":       rules.RewardType,
-			"rewardAmount":     rules.RewardAmount,
-			"rewardCurrency":   rules.RewardCurrency,
-			"rewardMode":       rules.RewardMode,
-			"rewardPercentage": rules.RewardPercentage,
-			"maxRewardAmount":  rules.MaxRewardAmount,
-			"maxClaimPerUser":  rules.MaxClaimPerUser,
-			"minObtainDays":    rules.MinObtainDays,
-		},
-		"status":        campaign.Status,
-		"landingPageId": campaign.LandingPageID,
-	})
+	log.WithContext(c.Request.Context()).Infow("admin_get_campaign", "campaign_id", campaignID, "status", detail.Status, "version", detail.Version)
+	data.OK(c, detail)
 }
 
-// AdminPublishCampaign publishes a campaign.
+// AdminPublishCampaign publishes the latest draft version onto campaigns.
 // @Summary Publish campaign (admin)
 // @Tags admin-campaign
 // @Accept json
 // @Produce json
 // @Param campaignId path int true "Campaign ID"
-// @Param body body PublishOperatorReq true "Operator"
-// @Success 200 {object} data.StandardResponse "success"
+// @Param body body data.PublishOperatorReq true "Operator"
+// @Success 200 {object} data.StandardResponse{data=data.CampaignVO} "success"
+// @Failure 400 {object} data.StandardResponse "validation error"
 // @Failure 404 {object} data.StandardResponse "not found"
-// @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /admin/campaigns/{campaignId}/publish [post]
 func AdminPublishCampaign(c *gin.Context) {
-	idStr := c.Param("campaignId")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidCampaignID, nil)
+	campaignID, ok := parseCampaignIDParam(c)
+	if !ok {
 		return
 	}
-	var req PublishOperatorReq
+	var req data.PublishOperatorReq
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.WithContext(c.Request.Context()).Warnw("admin_publish_campaign_bad_request", "error", err.Error())
 		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
 		return
 	}
-	svc := service.GetCampaignAdminService()
-	updated, err := svc.PublishCampaign(id, req.Operator)
+	detail, err := service.GetCampaignAdminService().PublishCampaign(c.Request.Context(), campaignID, req.Operator)
 	if err != nil {
-		if mysql.IsNotFound(err) {
-			data.JSON(c, http.StatusNotFound, -1, service.MsgCampaignNotFound, nil)
-			return
-		}
-		handleRepoErr(c, err)
+		handleCampaignAdminErr(c, err)
 		return
 	}
-	data.OK(c, gin.H{"campaignId": updated.ID, "status": updated.Status})
+	log.WithContext(c.Request.Context()).Infow("admin_publish_campaign", "campaign_id", campaignID, "operator", req.Operator, "status", detail.Status, "version", detail.Version)
+	data.OK(c, detail)
 }
 
-// AdminArchiveCampaign archives a draft campaign, or a published campaign when current time is outside the active window (before start or after end).
-// @Summary Archive campaign (admin)
-// @Tags admin-campaign
-// @Accept json
-// @Produce json
-// @Param campaignId path int true "Campaign ID"
-// @Param body body PublishOperatorReq true "Operator"
-// @Success 200 {object} data.StandardResponse "success"
-// @Failure 400 {object} data.StandardResponse "bad request"
-// @Failure 404 {object} data.StandardResponse "not found"
-// @Failure 409 {object} data.StandardResponse "not eligible or already archived"
-// @Failure 503 {object} data.StandardResponse "database unavailable"
-// @Router /admin/campaigns/{campaignId}/archive [post]
-func AdminArchiveCampaign(c *gin.Context) {
-	idStr := c.Param("campaignId")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
+func parseCampaignIDParam(c *gin.Context) (int64, bool) {
+	id, err := strconv.ParseInt(c.Param("campaignId"), 10, 64)
+	if err != nil || id < 1 {
+		log.WithContext(c.Request.Context()).Warnw("admin_campaign_bad_request", "error", service.MsgInvalidCampaignID)
 		data.JSON(c, http.StatusBadRequest, -1, service.MsgInvalidCampaignID, nil)
-		return
+		return 0, false
 	}
-	var req PublishOperatorReq
-	if err := c.ShouldBindJSON(&req); err != nil {
+	return id, true
+}
+
+func handleCampaignAdminErr(c *gin.Context, err error) {
+	logger := log.WithContext(c.Request.Context())
+	switch {
+	case mysql.IsNotFound(err):
+		logger.Warnw("admin_campaign_not_found", "error", err.Error())
+		data.JSON(c, http.StatusNotFound, -1, service.MsgCampaignNotFound, nil)
+	case data.IsCampaignDraftNotEditable(err):
+		logger.Warnw("admin_campaign_draft_not_editable", "error", err.Error())
+		data.JSON(c, http.StatusConflict, -1, service.MsgCampaignDraftNotEditable, nil)
+	case data.IsCampaignNoDraftToPublish(err):
+		logger.Warnw("admin_campaign_no_draft_to_publish", "error", err.Error())
+		data.JSON(c, http.StatusBadRequest, -1, service.MsgCampaignNoDraftToPublish, nil)
+	case data.IsCampaignPublishInvalid(err):
+		logger.Warnw("admin_campaign_publish_invalid", "error", err.Error())
 		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
-		return
-	}
-	svc := service.GetCampaignAdminService()
-	updated, err := svc.ArchiveCampaign(id, req.Operator)
-	if err != nil {
-		if mysql.IsNotFound(err) {
-			data.JSON(c, http.StatusNotFound, -1, service.MsgCampaignNotFound, nil)
+	case err == mysql.ErrDatabaseDisabled:
+		logger.Errorw("admin_campaign_db_disabled", "error", err.Error())
+		data.JSON(c, http.StatusServiceUnavailable, -1, err.Error(), nil)
+	default:
+		if err.Error() == service.MsgCampaignNameRequired {
+			logger.Warnw("admin_campaign_name_required", "error", err.Error())
+			data.JSON(c, http.StatusBadRequest, -1, service.MsgCampaignNameRequired, nil)
 			return
 		}
-		if data.IsCampaignAlreadyArchived(err) || data.IsCampaignNotArchivable(err) {
-			data.JSON(c, http.StatusConflict, -1, err.Error(), nil)
-			return
-		}
-		handleRepoErr(c, err)
-		return
+		logger.Errorw("admin_campaign_failed", "error", err.Error())
+		data.JSON(c, http.StatusInternalServerError, -1, err.Error(), nil)
 	}
-	data.OK(c, gin.H{"campaignId": updated.ID, "status": updated.Status})
 }
 
 func handleRepoErr(c *gin.Context, err error) {

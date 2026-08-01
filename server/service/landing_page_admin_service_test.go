@@ -18,6 +18,28 @@ func noopTrans() mysql.LandingPageTranslationRepository {
 	return mysql.NewNoopLandingPageTranslationRepository()
 }
 
+type staticLandingPageTranslationRepo struct {
+	row *model.CampaignLandingPageTranslation
+}
+
+func (r staticLandingPageTranslationRepo) GetByLandingPageAndLang(landingPageID int64, lang string) (*model.CampaignLandingPageTranslation, error) {
+	if r.row == nil || r.row.LandingPageID != landingPageID || r.row.Lang != lang {
+		return nil, gorm.ErrRecordNotFound
+	}
+	return r.row, nil
+}
+
+func (r staticLandingPageTranslationRepo) ListLangsByLandingPageID(landingPageID int64) ([]string, error) {
+	if r.row == nil || r.row.LandingPageID != landingPageID {
+		return nil, nil
+	}
+	return []string{r.row.Lang}, nil
+}
+
+func (r staticLandingPageTranslationRepo) Upsert(*model.CampaignLandingPageTranslation) error {
+	return nil
+}
+
 func TestLandingPageAdminService_CreateLandingPage(t *testing.T) {
 	m := servicemock.NewMockLandingPageRepository(t)
 	m.On("Create", mock.MatchedBy(func(p *model.CampaignLandingPage) bool {

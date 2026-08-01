@@ -4,10 +4,10 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/nusiss-capstone-project/campaign-center-api/server/auth"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/service"
+	commonauth "github.com/nusiss-capstone-project/identity-mservice/common/auth"
 )
 
 // UserGetAccountSummary returns account overview for a user.
@@ -20,7 +20,7 @@ import (
 // @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /web/account/summary [get]
 func UserGetAccountSummary(c *gin.Context) {
-	userID, ok := auth.GetUserID(c.Request.Context())
+	userID, ok := commonauth.GetUserID(c.Request.Context())
 	if !ok {
 		authError(c)
 		return
@@ -46,7 +46,7 @@ func UserGetAccountSummary(c *gin.Context) {
 // @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /web/account/transactions [get]
 func UserListAccountTransactions(c *gin.Context) {
-	userID, ok := auth.GetUserID(c.Request.Context())
+	userID, ok := commonauth.GetUserID(c.Request.Context())
 	if !ok {
 		authError(c)
 		return

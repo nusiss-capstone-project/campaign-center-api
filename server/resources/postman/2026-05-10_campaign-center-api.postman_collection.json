@@ -237,61 +237,55 @@
       ]
     },
     {
-      "name": "User — Campaigns",
+      "name": "User — Campaigns (mock)",
       "item": [
         {
-          "name": "Get campaign landing page UI",
+          "name": "List campaigns (mock)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/campaign-center-api/v1/web/campaigns"
+          }
+        },
+        {
+          "name": "Get campaign landing page (mock)",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/campaign-center-api/v1/web/campaigns/{{campaignId}}/landing-page?userId={{userId}}&lang=en",
+              "raw": "{{baseUrl}}/campaign-center-api/v1/web/campaigns/{{campaignId}}/landing-page?lang=en",
               "host": ["{{baseUrl}}"],
               "path": ["campaign-center-api", "v1", "web", "campaigns", "{{campaignId}}", "landing-page"],
               "query": [
-                { "key": "userId", "value": "{{userId}}" },
                 { "key": "lang", "value": "en" }
               ]
             }
           }
         },
         {
-          "name": "Join campaign",
+          "name": "Join campaign (mock)",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": 1001\n}\n",
+              "raw": "{}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/campaign-center-api/v1/web/campaigns/{{campaignId}}/join"
           }
         },
         {
-          "name": "Simulate top-up (reward path)",
+          "name": "Deposit for campaign (mock)",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": 1001,\n  \"amount\": 120\n}\n",
+              "raw": "{\n  \"amount\": 120,\n  \"currency\": \"USDT\"\n}\n",
               "options": { "raw": { "language": "json" } }
             },
-            "url": "{{baseUrl}}/campaign-center-api/v1/web/campaigns/{{campaignId}}/top-up"
-          }
-        },
-        {
-          "name": "Simulate top-up (below threshold — 4002)",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"userId\": 1001,\n  \"amount\": 50\n}\n",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": "{{baseUrl}}/campaign-center-api/v1/web/campaigns/{{campaignId}}/top-up"
+            "url": "{{baseUrl}}/campaign-center-api/v1/web/campaigns/{{campaignId}}/deposit"
           }
         }
       ]

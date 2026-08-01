@@ -251,7 +251,7 @@ func landingPageDetailPayload(p *service.LandingPageDetailView) gin.H {
 // @Accept json
 // @Produce json
 // @Param landingPageId path int true "Landing page ID"
-// @Param body body PublishOperatorReq true "Operator"
+// @Param body body data.PublishOperatorReq true "Operator"
 // @Success 200 {object} data.StandardResponse "success"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
@@ -262,7 +262,7 @@ func AdminPublishLandingPage(c *gin.Context) {
 		data.JSON(c, http.StatusBadRequest, -1, "invalid landingPageId", nil)
 		return
 	}
-	var req PublishOperatorReq
+	var req data.PublishOperatorReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
 		return

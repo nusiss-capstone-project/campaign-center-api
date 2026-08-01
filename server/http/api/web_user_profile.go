@@ -4,10 +4,10 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/nusiss-capstone-project/campaign-center-api/server/auth"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/service"
+	commonauth "github.com/nusiss-capstone-project/identity-mservice/common/auth"
 )
 
 // UserProfileData documents StandardResponse.data for the authenticated user profile.
@@ -34,7 +34,7 @@ type UserProfileHTTPResponse struct {
 // @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /web/user-profile [get]
 func UserGetProfile(c *gin.Context) {
-	user, ok := auth.GetUser(c.Request.Context())
+	user, ok := commonauth.GetUser(c.Request.Context())
 	if !ok {
 		authError(c)
 		return
