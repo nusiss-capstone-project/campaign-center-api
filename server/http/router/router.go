@@ -54,14 +54,13 @@ func NewRouter() *gin.Engine {
 		admin.POST("/images/upload", api.AdminUploadImage)
 	}
 
-	// User-facing APIs (campaign handlers are mock until user flow is reimplemented)
+	// User-facing campaign APIs
 	web := basicGroup.Group("/web")
 	web.Use(commonauth.RequireUser())
 	{
 		web.GET("/campaigns", api.UserListCampaigns)
 		web.GET("/campaigns/:campaignId/landing-page", api.UserGetCampaignLanding)
 		web.POST("/campaigns/:campaignId/join", api.UserJoinCampaign)
-		web.POST("/campaigns/:campaignId/deposit", api.UserDepositCampaign)
 	}
 
 	return r

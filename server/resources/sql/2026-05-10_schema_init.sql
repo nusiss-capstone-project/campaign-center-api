@@ -141,22 +141,14 @@ CREATE TABLE IF NOT EXISTS `campaign_user_rewards_ledger` (
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `campaign_participants` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `campaign_id` BIGINT DEFAULT NULL,
-  `user_id` BIGINT DEFAULT NULL,
-  `join_status` VARCHAR(32) DEFAULT NULL,
-  `task_status` VARCHAR(32) DEFAULT NULL,
-  `topup_amount` DECIMAL(18,2) DEFAULT NULL,
-  `risk_status` VARCHAR(32) DEFAULT NULL,
-  `reward_status` VARCHAR(32) DEFAULT NULL,
-  `reward_amount` DECIMAL(18,2) DEFAULT NULL,
-  `joined_at` DATETIME(3) DEFAULT NULL,
-  `completed_at` DATETIME(3) DEFAULT NULL,
-  `rewarded_at` DATETIME(3) DEFAULT NULL,
-  `updated_at` DATETIME(3) DEFAULT NULL,
+  `campaign_id` BIGINT NOT NULL,
+  `user_id` BIGINT NOT NULL,
+  `join_at` DATETIME(3) NOT NULL,
+  `created_at` DATETIME(3) NOT NULL,
+  `updated_at` DATETIME(3) NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_participant_campaign` (`campaign_id`),
-  KEY `idx_participant_user` (`user_id`),
-  KEY `idx_participant_campaign_user` (`campaign_id`, `user_id`)
+  UNIQUE KEY `uk_participant_campaign_user` (`campaign_id`, `user_id`),
+  KEY `idx_participant_user` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------------

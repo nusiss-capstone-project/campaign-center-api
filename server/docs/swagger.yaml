@@ -349,6 +349,9 @@ definitions:
       joined:
         example: false
         type: boolean
+      joinedAt:
+        example: 1717200000
+        type: integer
       landingPage:
         $ref: '#/definitions/data.WebLandingPageContent'
       market:
@@ -357,8 +360,6 @@ definitions:
       name:
         example: Summer Deposit Bonus
         type: string
-      participation:
-        $ref: '#/definitions/data.WebParticipationStatus'
       timeZone:
         example: Asia/Singapore
         type: string
@@ -397,50 +398,12 @@ definitions:
       market:
         example: SG
         type: string
-      name:
-        example: Summer Deposit Bonus
-        type: string
       status:
         example: 2
         type: integer
-    type: object
-  data.WebDepositData:
-    properties:
-      amount:
-        example: 100
-        type: number
-      campaignId:
-        example: 1001
-        type: integer
-      currency:
-        example: USDT
+      title:
+        example: Deposit and get a bonus
         type: string
-      ledgerId:
-        example: 9001
-        type: integer
-      message:
-        example: deposit accepted (mock)
-        type: string
-      rewardStatus:
-        example: pending_distribution
-        type: string
-      taskStatus:
-        example: COMPLETED
-        type: string
-      userId:
-        example: 42
-        type: integer
-    type: object
-  data.WebDepositReq:
-    properties:
-      amount:
-        example: 100
-        type: number
-      currency:
-        example: USDT
-        type: string
-    required:
-    - amount
     type: object
   data.WebJoinCampaignData:
     properties:
@@ -454,7 +417,7 @@ definitions:
         example: 1717200000
         type: integer
       message:
-        example: joined (mock)
+        example: joined
         type: string
       userId:
         example: 42
@@ -468,26 +431,22 @@ definitions:
       description:
         example: Join the campaign and complete the deposit task.
         type: string
+      faq:
+        items:
+          $ref: '#/definitions/data.LandingPageRepeatableItemVO'
+        type: array
       lang:
         example: en
         type: string
+      steps:
+        items:
+          $ref: '#/definitions/data.LandingPageRepeatableItemVO'
+        type: array
       terms:
         example: One reward per user.
         type: string
       title:
         example: Deposit and get a bonus
-        type: string
-    type: object
-  data.WebParticipationStatus:
-    properties:
-      joined:
-        example: false
-        type: boolean
-      rewardStatus:
-        example: NOT_GRANTED
-        type: string
-      taskStatus:
-        example: NOT_STARTED
         type: string
     type: object
 host: localhost:8080
@@ -642,15 +601,11 @@ paths:
           description: success
           schema:
             $ref: '#/definitions/data.StandardResponse'
-        "404":
-          description: campaign not found
+        "400":
+          description: bad request
           schema:
             $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: List campaign participations (admin)
+      summary: List campaign participations (admin, mock)
       tags:
       - admin-campaign-performance
   /admin/campaigns/{campaignId}/performance/daily:
@@ -682,15 +637,7 @@ paths:
           description: bad request
           schema:
             $ref: '#/definitions/data.StandardResponse'
-        "404":
-          description: campaign not found
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: List campaign daily performance (admin)
+      summary: List campaign daily performance (admin, mock)
       tags:
       - admin-campaign-performance
   /admin/campaigns/{campaignId}/performance/summary:
@@ -708,15 +655,11 @@ paths:
           description: success
           schema:
             $ref: '#/definitions/data.StandardResponse'
-        "404":
-          description: campaign not found
+        "400":
+          description: bad request
           schema:
             $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: Get campaign performance summary (admin)
+      summary: Get campaign performance summary (admin, mock)
       tags:
       - admin-campaign-performance
   /admin/campaigns/{campaignId}/publish:
@@ -1259,6 +1202,11 @@ paths:
       - health
   /web/campaigns:
     get:
+      parameters:
+      - description: Preferred language for landing-page title; default en
+        in: query
+        name: lang
+        type: string
       produces:
       - application/json
       responses:
@@ -1275,46 +1223,11 @@ paths:
           description: unauthorized
           schema:
             $ref: '#/definitions/data.StandardResponse'
-      summary: List available campaigns (user, mock)
-      tags:
-      - user-campaign
-  /web/campaigns/{campaignId}/deposit:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Campaign ID
-        in: path
-        name: campaignId
-        required: true
-        type: integer
-      - description: Deposit amount
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/data.WebDepositReq'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: success
-          schema:
-            allOf:
-            - $ref: '#/definitions/data.StandardResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/data.WebDepositData'
-              type: object
-        "400":
-          description: bad request
+        "503":
+          description: database unavailable
           schema:
             $ref: '#/definitions/data.StandardResponse'
-        "401":
-          description: unauthorized
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: Deposit for campaign task (user, mock)
+      summary: List available campaigns (user)
       tags:
       - user-campaign
   /web/campaigns/{campaignId}/join:
@@ -1345,7 +1258,15 @@ paths:
           description: unauthorized
           schema:
             $ref: '#/definitions/data.StandardResponse'
-      summary: Join campaign (user, mock)
+        "404":
+          description: campaign not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Join campaign (user)
       tags:
       - user-campaign
   /web/campaigns/{campaignId}/landing-page:
@@ -1380,7 +1301,15 @@ paths:
           description: unauthorized
           schema:
             $ref: '#/definitions/data.StandardResponse'
-      summary: Get campaign landing page (user, mock)
+        "404":
+          description: campaign not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Get campaign landing page (user)
       tags:
       - user-campaign
 schemes:

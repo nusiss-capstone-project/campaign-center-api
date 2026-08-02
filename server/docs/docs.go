@@ -210,7 +210,7 @@ const docTemplate = `{
                 "tags": [
                     "admin-campaign-performance"
                 ],
-                "summary": "List campaign participations (admin)",
+                "summary": "List campaign participations (admin, mock)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -251,14 +251,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/data.StandardResponse"
                         }
                     },
-                    "404": {
-                        "description": "campaign not found",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    },
-                    "503": {
-                        "description": "database unavailable",
+                    "400": {
+                        "description": "bad request",
                         "schema": {
                             "$ref": "#/definitions/data.StandardResponse"
                         }
@@ -274,7 +268,7 @@ const docTemplate = `{
                 "tags": [
                     "admin-campaign-performance"
                 ],
-                "summary": "List campaign daily performance (admin)",
+                "summary": "List campaign daily performance (admin, mock)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -310,18 +304,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/data.StandardResponse"
                         }
-                    },
-                    "404": {
-                        "description": "campaign not found",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    },
-                    "503": {
-                        "description": "database unavailable",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
                     }
                 }
             }
@@ -334,7 +316,7 @@ const docTemplate = `{
                 "tags": [
                     "admin-campaign-performance"
                 ],
-                "summary": "Get campaign performance summary (admin)",
+                "summary": "Get campaign performance summary (admin, mock)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -351,14 +333,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/data.StandardResponse"
                         }
                     },
-                    "404": {
-                        "description": "campaign not found",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    },
-                    "503": {
-                        "description": "database unavailable",
+                    "400": {
+                        "description": "bad request",
                         "schema": {
                             "$ref": "#/definitions/data.StandardResponse"
                         }
@@ -1249,7 +1225,15 @@ const docTemplate = `{
                 "tags": [
                     "user-campaign"
                 ],
-                "summary": "List available campaigns (user, mock)",
+                "summary": "List available campaigns (user)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Preferred language for landing-page title; default en",
+                        "name": "lang",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "success",
@@ -1274,67 +1258,9 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/data.StandardResponse"
                         }
-                    }
-                }
-            }
-        },
-        "/web/campaigns/{campaignId}/deposit": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "user-campaign"
-                ],
-                "summary": "Deposit for campaign task (user, mock)",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Campaign ID",
-                        "name": "campaignId",
-                        "in": "path",
-                        "required": true
                     },
-                    {
-                        "description": "Deposit amount",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/data.WebDepositReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "success",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/data.StandardResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/data.WebDepositData"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "bad request",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "unauthorized",
+                    "503": {
+                        "description": "database unavailable",
                         "schema": {
                             "$ref": "#/definitions/data.StandardResponse"
                         }
@@ -1350,7 +1276,7 @@ const docTemplate = `{
                 "tags": [
                     "user-campaign"
                 ],
-                "summary": "Join campaign (user, mock)",
+                "summary": "Join campaign (user)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1390,6 +1316,18 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/data.StandardResponse"
                         }
+                    },
+                    "404": {
+                        "description": "campaign not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
                     }
                 }
             }
@@ -1402,7 +1340,7 @@ const docTemplate = `{
                 "tags": [
                     "user-campaign"
                 ],
-                "summary": "Get campaign landing page (user, mock)",
+                "summary": "Get campaign landing page (user)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1445,6 +1383,18 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "campaign not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
                         "schema": {
                             "$ref": "#/definitions/data.StandardResponse"
                         }
@@ -1981,6 +1931,10 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": false
                 },
+                "joinedAt": {
+                    "type": "integer",
+                    "example": 1717200000
+                },
                 "landingPage": {
                     "$ref": "#/definitions/data.WebLandingPageContent"
                 },
@@ -1991,9 +1945,6 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "Summer Deposit Bonus"
-                },
-                "participation": {
-                    "$ref": "#/definitions/data.WebParticipationStatus"
                 },
                 "timeZone": {
                     "type": "string",
@@ -2049,66 +2000,13 @@ const docTemplate = `{
                     "type": "string",
                     "example": "SG"
                 },
-                "name": {
-                    "type": "string",
-                    "example": "Summer Deposit Bonus"
-                },
                 "status": {
                     "type": "integer",
                     "example": 2
-                }
-            }
-        },
-        "data.WebDepositData": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "type": "number",
-                    "example": 100
                 },
-                "campaignId": {
-                    "type": "integer",
-                    "example": 1001
-                },
-                "currency": {
+                "title": {
                     "type": "string",
-                    "example": "USDT"
-                },
-                "ledgerId": {
-                    "type": "integer",
-                    "example": 9001
-                },
-                "message": {
-                    "type": "string",
-                    "example": "deposit accepted (mock)"
-                },
-                "rewardStatus": {
-                    "type": "string",
-                    "example": "pending_distribution"
-                },
-                "taskStatus": {
-                    "type": "string",
-                    "example": "COMPLETED"
-                },
-                "userId": {
-                    "type": "integer",
-                    "example": 42
-                }
-            }
-        },
-        "data.WebDepositReq": {
-            "type": "object",
-            "required": [
-                "amount"
-            ],
-            "properties": {
-                "amount": {
-                    "type": "number",
-                    "example": 100
-                },
-                "currency": {
-                    "type": "string",
-                    "example": "USDT"
+                    "example": "Deposit and get a bonus"
                 }
             }
         },
@@ -2129,7 +2027,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "joined (mock)"
+                    "example": "joined"
                 },
                 "userId": {
                     "type": "integer",
@@ -2148,9 +2046,21 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Join the campaign and complete the deposit task."
                 },
+                "faq": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.LandingPageRepeatableItemVO"
+                    }
+                },
                 "lang": {
                     "type": "string",
                     "example": "en"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.LandingPageRepeatableItemVO"
+                    }
                 },
                 "terms": {
                     "type": "string",
@@ -2159,23 +2069,6 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "example": "Deposit and get a bonus"
-                }
-            }
-        },
-        "data.WebParticipationStatus": {
-            "type": "object",
-            "properties": {
-                "joined": {
-                    "type": "boolean",
-                    "example": false
-                },
-                "rewardStatus": {
-                    "type": "string",
-                    "example": "NOT_GRANTED"
-                },
-                "taskStatus": {
-                    "type": "string",
-                    "example": "NOT_STARTED"
                 }
             }
         }
