@@ -33,7 +33,7 @@ func AdminUploadImage(c *gin.Context) {
 		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
 		return
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	out, err := service.GetImageUploadService().Upload(c.Request.Context(), fileHeader.Filename, f, fileHeader.Size)
 	if err != nil {

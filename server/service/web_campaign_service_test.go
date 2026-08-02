@@ -85,7 +85,7 @@ func (r *webParticipantRepoStub) ListJoinedCampaignIDs(userID int64, campaignIDs
 }
 func (r *webParticipantRepoStub) Join(ctx context.Context, campaignID, userID int64) (*model.CampaignParticipant, error) {
 	now := time.Unix(1_700_000_000, 0).UTC()
-	return &model.CampaignParticipant{CampaignID: campaignID, UserID: userID, JoinAt: now}, nil
+	return &model.CampaignParticipant{CampaignID: campaignID, UserID: userID, JoinedAt: now}, nil
 }
 
 func TestClassifyCampaignWindow(t *testing.T) {

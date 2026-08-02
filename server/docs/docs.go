@@ -1742,6 +1742,12 @@ const docTemplate = `{
         "data.LandingPageListItemVO": {
             "type": "object",
             "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "defaultLang": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },

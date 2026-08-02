@@ -82,7 +82,7 @@ func (s *imageUploadService) Upload(ctx context.Context, filename string, reader
 		// DetectContentType may return image/jpeg without matching filename; normalize aliases.
 		switch contentType {
 		case "image/jpg":
-			ext, ok = ".jpg", true
+			ext = ".jpg"
 			contentType = "image/jpeg"
 		default:
 			return nil, fmt.Errorf("unsupported image type: %s", contentType)
