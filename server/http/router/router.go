@@ -51,6 +51,7 @@ func NewRouter() *gin.Engine {
 		admin.GET("/landing-pages/:landingPageId/detail/:lang", api.AdminGetLandingPageLocaleDetail)
 		admin.GET("/landing-pages/:landingPageId", api.AdminGetLandingPage)
 		admin.POST("/landing-pages/:landingPageId/publish", api.AdminPublishLandingPage)
+		admin.POST("/images/upload", api.AdminUploadImage)
 	}
 
 	// User-facing APIs (campaign handlers are mock until user flow is reimplemented)

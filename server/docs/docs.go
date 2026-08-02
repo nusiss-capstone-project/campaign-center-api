@@ -567,6 +567,67 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/images/upload": {
+            "post": {
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin-images"
+                ],
+                "summary": "Upload image (admin)",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Image file (jpg/png/webp/gif, max 5MB)",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/data.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/data.ImageUploadData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "validation error",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "oss not configured",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/landing-pages": {
             "get": {
                 "produces": [
@@ -606,7 +667,19 @@ const docTemplate = `{
                     "200": {
                         "description": "success",
                         "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/data.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/data.LandingPageListData"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "503": {
@@ -635,7 +708,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.LandingPageBody"
+                            "$ref": "#/definitions/data.LandingPageBody"
                         }
                     }
                 ],
@@ -643,7 +716,19 @@ const docTemplate = `{
                     "200": {
                         "description": "success",
                         "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/data.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/data.LandingPageCreateResp"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -689,7 +774,19 @@ const docTemplate = `{
                     "200": {
                         "description": "success",
                         "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/data.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/data.LandingPageDetailVO"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "404": {
@@ -731,7 +828,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.LandingPageBody"
+                            "$ref": "#/definitions/data.LandingPageBody"
                         }
                     }
                 ],
@@ -739,7 +836,19 @@ const docTemplate = `{
                     "200": {
                         "description": "success",
                         "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/data.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/data.LandingPageUpdateResp"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "404": {
@@ -765,7 +874,6 @@ const docTemplate = `{
         },
         "/admin/landing-pages/{landingPageId}/detail/{lang}": {
             "get": {
-                "description": "title/description/terms come from campaign_landing_page_translations when a row exists for lang; otherwise from campaign_landing_pages. bannerImageUrl, status, timestamps always from campaign_landing_pages.",
                 "produces": [
                     "application/json"
                 ],
@@ -793,7 +901,19 @@ const docTemplate = `{
                     "200": {
                         "description": "success",
                         "schema": {
-                            "$ref": "#/definitions/api.LandingPageLocaleDetailHTTPResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/data.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/data.LandingPageDetailVO"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -851,7 +971,19 @@ const docTemplate = `{
                     "200": {
                         "description": "success",
                         "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/data.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/data.LandingPagePublishResp"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "404": {
@@ -871,7 +1003,6 @@ const docTemplate = `{
         },
         "/admin/landing-pages/{landingPageId}/translations": {
             "get": {
-                "description": "Distinct lang values from the translation table only (excludes default_lang unless a translation row exists).",
                 "produces": [
                     "application/json"
                 ],
@@ -892,7 +1023,19 @@ const docTemplate = `{
                     "200": {
                         "description": "success",
                         "schema": {
-                            "$ref": "#/definitions/api.LandingPageTranslatedLangsHTTPResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/data.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/data.LandingPageTranslatedLangsData"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -918,7 +1061,7 @@ const docTemplate = `{
         },
         "/admin/landing-pages/{landingPageId}/translations/generate": {
             "post": {
-                "description": "Returns LLM-translated title/description/terms for the given landing page. Does not persist.",
+                "description": "Returns LLM-translated title/description/terms/steps/faq. Does not persist.",
                 "consumes": [
                     "application/json"
                 ],
@@ -938,12 +1081,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Source/target languages and optional source copy (falls back to landing page fields when empty)",
+                        "description": "Source/target languages and optional source copy",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.GenerateLandingTranslationReq"
+                            "$ref": "#/definitions/data.GenerateLandingTranslationReq"
                         }
                     }
                 ],
@@ -951,7 +1094,19 @@ const docTemplate = `{
                     "200": {
                         "description": "success",
                         "schema": {
-                            "$ref": "#/definitions/api.GenerateLandingTranslationHTTPResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/data.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/data.GenerateLandingTranslationData"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -983,7 +1138,6 @@ const docTemplate = `{
         },
         "/admin/landing-pages/{landingPageId}/translations/{lang}": {
             "put": {
-                "description": "Creates or updates campaign_landing_page_translations for the given landing page and language code.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1015,7 +1169,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.PutLandingTranslationReq"
+                            "$ref": "#/definitions/data.PutLandingTranslationReq"
                         }
                     }
                 ],
@@ -1023,7 +1177,19 @@ const docTemplate = `{
                     "200": {
                         "description": "success",
                         "schema": {
-                            "$ref": "#/definitions/api.PutLandingTranslationHTTPResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/data.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/data.PutLandingTranslationData"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1288,227 +1454,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "api.GenerateLandingTranslationData": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "lang": {
-                    "type": "string",
-                    "example": "ja"
-                },
-                "terms": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "api.GenerateLandingTranslationHTTPResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "$ref": "#/definitions/api.GenerateLandingTranslationData"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "success"
-                }
-            }
-        },
-        "api.GenerateLandingTranslationReq": {
-            "type": "object",
-            "required": [
-                "sourceLang",
-                "targetLang"
-            ],
-            "properties": {
-                "description": {
-                    "type": "string",
-                    "example": "Recharge now and receive \u003creward_amount\u003e bonus"
-                },
-                "sourceLang": {
-                    "type": "string",
-                    "example": "en"
-                },
-                "targetLang": {
-                    "type": "string",
-                    "example": "ja"
-                },
-                "terms": {
-                    "type": "string",
-                    "example": "Reward will expire in \u003cdays\u003e days"
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Top up \u003camount\u003e to get reward"
-                }
-            }
-        },
-        "api.LandingPageBody": {
-            "type": "object",
-            "required": [
-                "bannerImageUrl",
-                "defaultLang",
-                "description",
-                "terms",
-                "title"
-            ],
-            "properties": {
-                "bannerImageUrl": {
-                    "type": "string"
-                },
-                "defaultLang": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "terms": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "api.LandingPageLocaleDetailData": {
-            "type": "object",
-            "properties": {
-                "bannerImageUrl": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "defaultLang": {
-                    "type": "string",
-                    "example": "en"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 2001
-                },
-                "lang": {
-                    "type": "string",
-                    "example": "ja"
-                },
-                "status": {
-                    "type": "integer"
-                },
-                "terms": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "updatedAt": {
-                    "type": "string"
-                }
-            }
-        },
-        "api.LandingPageLocaleDetailHTTPResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "$ref": "#/definitions/api.LandingPageLocaleDetailData"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "success"
-                }
-            }
-        },
-        "api.LandingPageTranslatedLangsData": {
-            "type": "object",
-            "properties": {
-                "langs": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "api.LandingPageTranslatedLangsHTTPResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "$ref": "#/definitions/api.LandingPageTranslatedLangsData"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "success"
-                }
-            }
-        },
-        "api.PutLandingTranslationData": {
-            "type": "object",
-            "properties": {
-                "landingPageId": {
-                    "type": "integer"
-                },
-                "lang": {
-                    "type": "string"
-                }
-            }
-        },
-        "api.PutLandingTranslationHTTPResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "$ref": "#/definitions/api.PutLandingTranslationData"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "success"
-                }
-            }
-        },
-        "api.PutLandingTranslationReq": {
-            "type": "object",
-            "required": [
-                "description",
-                "terms",
-                "title"
-            ],
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "operator": {
-                    "type": "string",
-                    "example": "admin"
-                },
-                "terms": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
         "data.BudgetVO": {
             "type": "object",
             "properties": {
@@ -1630,6 +1575,302 @@ const docTemplate = `{
                 }
             }
         },
+        "data.GenerateLandingTranslationData": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "faq": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.LandingPageRepeatableItemVO"
+                    }
+                },
+                "lang": {
+                    "type": "string",
+                    "example": "ja"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.LandingPageRepeatableItemVO"
+                    }
+                },
+                "terms": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "data.GenerateLandingTranslationReq": {
+            "type": "object",
+            "required": [
+                "sourceLang",
+                "targetLang"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "faq": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.LandingPageRepeatableItemVO"
+                    }
+                },
+                "sourceLang": {
+                    "type": "string",
+                    "example": "en"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.LandingPageRepeatableItemVO"
+                    }
+                },
+                "targetLang": {
+                    "type": "string",
+                    "example": "ja"
+                },
+                "terms": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "data.ImageUploadData": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "data.LandingPageBody": {
+            "type": "object",
+            "required": [
+                "bannerImageUrl",
+                "defaultLang",
+                "description",
+                "terms",
+                "title"
+            ],
+            "properties": {
+                "bannerImageUrl": {
+                    "type": "string"
+                },
+                "defaultLang": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "faq": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.LandingPageRepeatableItemVO"
+                    }
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.LandingPageRepeatableItemVO"
+                    }
+                },
+                "terms": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "data.LandingPageCreateResp": {
+            "type": "object",
+            "properties": {
+                "bannerImageUrl": {
+                    "type": "string"
+                },
+                "defaultLang": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "faq": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.LandingPageRepeatableItemVO"
+                    }
+                },
+                "landingPageId": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.LandingPageRepeatableItemVO"
+                    }
+                },
+                "terms": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "data.LandingPageDetailVO": {
+            "type": "object",
+            "properties": {
+                "bannerImageUrl": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "defaultLang": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "faq": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.LandingPageRepeatableItemVO"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "lang": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.LandingPageRepeatableItemVO"
+                    }
+                },
+                "terms": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "data.LandingPageListData": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.LandingPageListItemVO"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "data.LandingPageListItemVO": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "data.LandingPagePublishResp": {
+            "type": "object",
+            "properties": {
+                "landingPageId": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
+        "data.LandingPageRepeatableItemVO": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "data.LandingPageTranslatedLangsData": {
+            "type": "object",
+            "properties": {
+                "langs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "data.LandingPageUpdateResp": {
+            "type": "object",
+            "properties": {
+                "bannerImageUrl": {
+                    "type": "string"
+                },
+                "defaultLang": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "faq": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.LandingPageRepeatableItemVO"
+                    }
+                },
+                "landingPageId": {
+                    "type": "integer"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.LandingPageRepeatableItemVO"
+                    }
+                },
+                "terms": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "data.PublishOperatorReq": {
             "type": "object",
             "required": [
@@ -1637,6 +1878,52 @@ const docTemplate = `{
             ],
             "properties": {
                 "operator": {
+                    "type": "string"
+                }
+            }
+        },
+        "data.PutLandingTranslationData": {
+            "type": "object",
+            "properties": {
+                "landingPageId": {
+                    "type": "integer"
+                },
+                "lang": {
+                    "type": "string"
+                }
+            }
+        },
+        "data.PutLandingTranslationReq": {
+            "type": "object",
+            "required": [
+                "description",
+                "terms",
+                "title"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "faq": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.LandingPageRepeatableItemVO"
+                    }
+                },
+                "operator": {
+                    "type": "string",
+                    "example": "admin"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.LandingPageRepeatableItemVO"
+                    }
+                },
+                "terms": {
+                    "type": "string"
+                },
+                "title": {
                     "type": "string"
                 }
             }

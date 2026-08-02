@@ -12,11 +12,17 @@ redis:
   enabled: false
   host: 127.0.0.1
   port: "6379"
-# OpenAI: prefer env OPENAI_API_KEY for secrets; openai.api_key in file is optional.
+# OpenAI: API key from env OPENAI_API_KEY only.
 openai:
-  api_key: ""
   base_url: ""
   model: "gpt-4o-mini"
+
+# Aliyun OSS: AK/SK from env OSS_ACCESS_KEY_ID / OSS_ACCESS_KEY_SECRET only.
+oss:
+  endpoint: oss-ap-southeast-1.aliyuncs.com
+  bucket: campaign-center-img
+  public_base_url: "https://cdn.campaignhub.best"
+  key_prefix: campaign-center
 
 system:
   allowed_origins: 

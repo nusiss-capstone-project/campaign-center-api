@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
@@ -12,65 +11,32 @@ import (
 	"github.com/nusiss-capstone-project/campaign-center-api/server/service"
 )
 
-// LandingPageLocaleDetailData documents StandardResponse.data: title/description/terms from translation when present, else default row; banner/status/timestamps from landing page.
-type LandingPageLocaleDetailData struct {
-	ID             int64  `json:"id" example:"2001"`
-	Lang           string `json:"lang" example:"ja"`
-	DefaultLang    string `json:"defaultLang" example:"en"`
-	BannerImageURL string `json:"bannerImageUrl"`
-	Title          string `json:"title"`
-	Description    string `json:"description"`
-	Terms          string `json:"terms"`
-	Status         int16  `json:"status"`
-	CreatedAt      string `json:"createdAt"`
-	UpdatedAt      string `json:"updatedAt"`
-}
-
-// LandingPageLocaleDetailHTTPResponse documents HTTP 200 for locale detail.
-type LandingPageLocaleDetailHTTPResponse struct {
-	Code    int                         `json:"code" example:"0"`
-	Message string                      `json:"message" example:"success"`
-	Data    LandingPageLocaleDetailData `json:"data"`
-}
-
-// LandingPageBody create/update landing page JSON body.
-type LandingPageBody struct {
-	DefaultLang    string `json:"defaultLang" binding:"required"`
-	BannerImageURL string `json:"bannerImageUrl" binding:"required"`
-	Title          string `json:"title" binding:"required"`
-	Description    string `json:"description" binding:"required"`
-	Terms          string `json:"terms" binding:"required"`
-}
-
 // AdminCreateLandingPage creates a draft landing page.
 // @Summary Create landing page (admin)
 // @Tags admin-landing-page
 // @Accept json
 // @Produce json
-// @Param body body LandingPageBody true "Landing page content"
-// @Success 200 {object} data.StandardResponse "success"
+// @Param body body data.LandingPageBody true "Landing page content"
+// @Success 200 {object} data.StandardResponse{data=data.LandingPageCreateResp} "success"
 // @Failure 400 {object} data.StandardResponse "validation error"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /admin/landing-pages [post]
 func AdminCreateLandingPage(c *gin.Context) {
-	var req LandingPageBody
+	var req data.LandingPageBody
 	if err := c.ShouldBindJSON(&req); err != nil {
 		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
 		return
 	}
-	svc := service.GetLandingPageAdminService()
-	id, status, err := svc.CreateLandingPage(service.CreateLandingPageParams{
-		DefaultLang:    req.DefaultLang,
-		BannerImageURL: req.BannerImageURL,
-		Title:          req.Title,
-		Description:    req.Description,
-		Terms:          req.Terms,
-	})
+	resp, err := service.GetLandingPageAdminService().CreateLandingPage(req)
 	if err != nil {
+		if isLandingPageValidationErr(err) {
+			data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
+			return
+		}
 		handleRepoErr(c, err)
 		return
 	}
-	data.OK(c, gin.H{"landingPageId": id, "status": status})
+	data.OK(c, resp)
 }
 
 // AdminUpdateLandingPage updates a draft landing page.
@@ -79,8 +45,8 @@ func AdminCreateLandingPage(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param landingPageId path int true "Landing page ID"
-// @Param body body LandingPageBody true "Landing page content"
-// @Success 200 {object} data.StandardResponse "success"
+// @Param body body data.LandingPageBody true "Landing page content"
+// @Success 200 {object} data.StandardResponse{data=data.LandingPageUpdateResp} "success"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Failure 409 {object} data.StandardResponse "not draft"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
@@ -91,20 +57,17 @@ func AdminUpdateLandingPage(c *gin.Context) {
 		data.JSON(c, http.StatusBadRequest, -1, "invalid landingPageId", nil)
 		return
 	}
-	var req LandingPageBody
+	var req data.LandingPageBody
 	if err := c.ShouldBindJSON(&req); err != nil {
 		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
 		return
 	}
-	svc := service.GetLandingPageAdminService()
-	err = svc.UpdateDraftLandingPage(id, service.CreateLandingPageParams{
-		DefaultLang:    req.DefaultLang,
-		BannerImageURL: req.BannerImageURL,
-		Title:          req.Title,
-		Description:    req.Description,
-		Terms:          req.Terms,
-	})
+	resp, err := service.GetLandingPageAdminService().UpdateDraftLandingPage(id, req)
 	if err != nil {
+		if isLandingPageValidationErr(err) {
+			data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
+			return
+		}
 		if data.IsLandingPageNotDraft(err) {
 			data.JSON(c, http.StatusConflict, -1, err.Error(), nil)
 			return
@@ -116,7 +79,7 @@ func AdminUpdateLandingPage(c *gin.Context) {
 		handleRepoErr(c, err)
 		return
 	}
-	data.OK(c, gin.H{"landingPageId": id})
+	data.OK(c, resp)
 }
 
 // AdminListLandingPages lists landing pages.
@@ -127,7 +90,7 @@ func AdminUpdateLandingPage(c *gin.Context) {
 // @Param pageSize query int false "Page size"
 // @Param status query int false "Status filter"
 // @Param defaultLang query string false "Default language filter e.g. en"
-// @Success 200 {object} data.StandardResponse "success"
+// @Success 200 {object} data.StandardResponse{data=data.LandingPageListData} "success"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /admin/landing-pages [get]
 func AdminListLandingPages(c *gin.Context) {
@@ -142,26 +105,14 @@ func AdminListLandingPages(c *gin.Context) {
 		}
 	}
 	defaultLang := c.Query("defaultLang")
-	svc := service.GetLandingPageAdminService()
-	items, total, err := svc.ListLandingPages(mysql.LandingPageListFilter{
+	resp, err := service.GetLandingPageAdminService().ListLandingPages(mysql.LandingPageListFilter{
 		Page: page, PageSize: pageSize, Status: statusPtr, DefaultLang: defaultLang,
 	})
 	if err != nil {
 		handleRepoErr(c, err)
 		return
 	}
-	out := make([]gin.H, 0, len(items))
-	for _, it := range items {
-		out = append(out, gin.H{
-			"id":             it.ID,
-			"defaultLang":    it.DefaultLang,
-			"title":          it.Title,
-			"status":         it.Status,
-			"bannerImageUrl": it.BannerImageURL,
-			"createdAt":      it.CreatedAt.Format(time.RFC3339),
-		})
-	}
-	data.OK(c, gin.H{"total": total, "items": out})
+	data.OK(c, resp)
 }
 
 // AdminGetLandingPage returns landing page detail with optional lang overlay.
@@ -170,7 +121,7 @@ func AdminListLandingPages(c *gin.Context) {
 // @Produce json
 // @Param landingPageId path int true "Landing page ID"
 // @Param lang query string false "Requested language (falls back to default)"
-// @Success 200 {object} data.StandardResponse "success"
+// @Success 200 {object} data.StandardResponse{data=data.LandingPageDetailVO} "success"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /admin/landing-pages/{landingPageId} [get]
@@ -180,9 +131,7 @@ func AdminGetLandingPage(c *gin.Context) {
 		data.JSON(c, http.StatusBadRequest, -1, "invalid landingPageId", nil)
 		return
 	}
-	lang := c.Query("lang")
-	svc := service.GetLandingPageAdminService()
-	p, err := svc.GetLandingPage(id, lang)
+	resp, err := service.GetLandingPageAdminService().GetLandingPage(id, c.Query("lang"))
 	if err != nil {
 		if mysql.IsNotFound(err) {
 			data.JSON(c, http.StatusNotFound, -1, "landing page not found", nil)
@@ -191,17 +140,16 @@ func AdminGetLandingPage(c *gin.Context) {
 		handleRepoErr(c, err)
 		return
 	}
-	data.OK(c, landingPageDetailPayload(p))
+	data.OK(c, resp)
 }
 
 // AdminGetLandingPageLocaleDetail returns merged detail for one landing page and locale (path).
 // @Summary Get landing page detail by locale (admin)
-// @Description title/description/terms come from campaign_landing_page_translations when a row exists for lang; otherwise from campaign_landing_pages. bannerImageUrl, status, timestamps always from campaign_landing_pages.
 // @Tags admin-landing-page
 // @Produce json
 // @Param landingPageId path int true "Landing page ID"
 // @Param lang path string true "Locale tag, e.g. ja, zh-CN"
-// @Success 200 {object} LandingPageLocaleDetailHTTPResponse "success"
+// @Success 200 {object} data.StandardResponse{data=data.LandingPageDetailVO} "success"
 // @Failure 400 {object} data.StandardResponse "invalid path"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
@@ -217,8 +165,7 @@ func AdminGetLandingPageLocaleDetail(c *gin.Context) {
 		data.JSON(c, http.StatusBadRequest, -1, "invalid lang", nil)
 		return
 	}
-	svc := service.GetLandingPageAdminService()
-	p, err := svc.GetLandingPage(id, lang)
+	resp, err := service.GetLandingPageAdminService().GetLandingPage(id, lang)
 	if err != nil {
 		if mysql.IsNotFound(err) {
 			data.JSON(c, http.StatusNotFound, -1, "landing page not found", nil)
@@ -227,22 +174,7 @@ func AdminGetLandingPageLocaleDetail(c *gin.Context) {
 		handleRepoErr(c, err)
 		return
 	}
-	data.OK(c, landingPageDetailPayload(p))
-}
-
-func landingPageDetailPayload(p *service.LandingPageDetailView) gin.H {
-	return gin.H{
-		"id":             p.ID,
-		"lang":           p.Lang,
-		"defaultLang":    p.DefaultLang,
-		"bannerImageUrl": p.BannerImageURL,
-		"title":          p.Title,
-		"description":    p.Description,
-		"terms":          p.Terms,
-		"status":         p.Status,
-		"createdAt":      p.CreatedAt.Format(time.RFC3339),
-		"updatedAt":      p.UpdatedAt.Format(time.RFC3339),
-	}
+	data.OK(c, resp)
 }
 
 // AdminPublishLandingPage publishes a landing page.
@@ -252,7 +184,7 @@ func landingPageDetailPayload(p *service.LandingPageDetailView) gin.H {
 // @Produce json
 // @Param landingPageId path int true "Landing page ID"
 // @Param body body data.PublishOperatorReq true "Operator"
-// @Success 200 {object} data.StandardResponse "success"
+// @Success 200 {object} data.StandardResponse{data=data.LandingPagePublishResp} "success"
 // @Failure 404 {object} data.StandardResponse "not found"
 // @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /admin/landing-pages/{landingPageId}/publish [post]
@@ -267,8 +199,7 @@ func AdminPublishLandingPage(c *gin.Context) {
 		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
 		return
 	}
-	svc := service.GetLandingPageAdminService()
-	updated, err := svc.PublishLandingPage(id, req.Operator)
+	resp, err := service.GetLandingPageAdminService().PublishLandingPage(id, req.Operator)
 	if err != nil {
 		if mysql.IsNotFound(err) {
 			data.JSON(c, http.StatusNotFound, -1, "landing page not found", nil)
@@ -277,5 +208,13 @@ func AdminPublishLandingPage(c *gin.Context) {
 		handleRepoErr(c, err)
 		return
 	}
-	data.OK(c, gin.H{"landingPageId": updated.ID, "status": updated.Status})
+	data.OK(c, resp)
+}
+
+func isLandingPageValidationErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "steps") || strings.Contains(msg, "faq")
 }

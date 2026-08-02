@@ -111,12 +111,14 @@ func TestLandingPageTranslationService_SaveTranslation_insert(t *testing.T) {
 	repo := &translationRepoStub{}
 	svc := service.NewLandingPageTranslationService(pages, repo, stubTranslator{})
 
-	err := svc.SaveTranslation(context.Background(), service.SaveTranslationParams{
+	out, err := svc.SaveTranslation(context.Background(), service.SaveTranslationParams{
 		LandingPageID: 1, Lang: "zh-CN",
 		Title: "t", Description: "d", Terms: "x", Operator: "admin",
 	})
 
 	require.NoError(t, err)
+	require.Equal(t, int64(1), out.LandingPageID)
+	require.Equal(t, "zh-CN", out.Lang)
 	require.NotNil(t, repo.upserted)
 	require.Equal(t, "zh-CN", repo.upserted.Lang)
 	require.Equal(t, "admin", repo.upserted.CreatedBy)
@@ -132,12 +134,13 @@ func TestLandingPageTranslationService_SaveTranslation_updatePreservesCreated(t 
 	}}
 	svc := service.NewLandingPageTranslationService(pages, repo, stubTranslator{})
 
-	err := svc.SaveTranslation(context.Background(), service.SaveTranslationParams{
+	out, err := svc.SaveTranslation(context.Background(), service.SaveTranslationParams{
 		LandingPageID: 1, Lang: "zh-CN",
 		Title: "new", Description: "d", Terms: "x",
 	})
 
 	require.NoError(t, err)
+	require.Equal(t, int64(1), out.LandingPageID)
 	require.Equal(t, int64(5), repo.upserted.ID)
 	require.Equal(t, created, repo.upserted.CreatedAt)
 	require.Equal(t, "seed", repo.upserted.CreatedBy)
@@ -149,10 +152,10 @@ func TestLandingPageTranslationService_ListTranslatedLangs(t *testing.T) {
 	repo := &translationRepoStub{langs: []string{"zh-CN", "ja"}}
 	svc := service.NewLandingPageTranslationService(pages, repo, stubTranslator{})
 
-	langs, err := svc.ListTranslatedLangs(context.Background(), 1)
+	out, err := svc.ListTranslatedLangs(context.Background(), 1)
 
 	require.NoError(t, err)
-	require.Equal(t, []string{"zh-CN", "ja"}, langs)
+	require.Equal(t, []string{"zh-CN", "ja"}, out.Langs)
 }
 
 func TestLandingPageTranslationService_ListTranslatedLangs_pageNotFound(t *testing.T) {
@@ -170,7 +173,7 @@ func TestLandingPageTranslationService_SaveTranslation_pageNotFound(t *testing.T
 	pages.On("GetByID", int64(9)).Return(nil, gorm.ErrRecordNotFound)
 	svc := service.NewLandingPageTranslationService(pages, &translationRepoStub{}, stubTranslator{})
 
-	err := svc.SaveTranslation(context.Background(), service.SaveTranslationParams{
+	_, err := svc.SaveTranslation(context.Background(), service.SaveTranslationParams{
 		LandingPageID: 9, Lang: "zh-CN", Title: "t", Description: "d", Terms: "x",
 	})
 
