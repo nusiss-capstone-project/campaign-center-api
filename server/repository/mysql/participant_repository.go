@@ -90,7 +90,6 @@ func (r *participantRepository) Join(ctx context.Context, campaignID, userID int
 		CreatedAt:  now,
 		UpdatedAt:  now,
 	}
-	// Idempotent: existing (campaign_id, user_id) wins.
 	err = db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "campaign_id"}, {Name: "user_id"}},
 		DoNothing: true,
