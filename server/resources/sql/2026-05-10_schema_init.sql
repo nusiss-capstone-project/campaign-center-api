@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS `campaign_participants` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `campaign_id` BIGINT NOT NULL,
   `user_id` BIGINT NOT NULL,
-  `join_at` DATETIME(3) NOT NULL,
+  `joined_at` DATETIME(3) NOT NULL,
   `created_at` DATETIME(3) NOT NULL,
   `updated_at` DATETIME(3) NOT NULL,
   PRIMARY KEY (`id`),

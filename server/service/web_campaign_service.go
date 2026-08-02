@@ -133,7 +133,7 @@ func (s *webCampaignService) GetCampaignLanding(ctx context.Context, campaignID,
 		LandingPage: *lpContent,
 	}
 	if part != nil {
-		out.JoinedAt = timeToUnix(part.JoinAt)
+		out.JoinedAt = timeToUnix(part.JoinedAt)
 	}
 	return out, nil
 }
@@ -150,7 +150,7 @@ func (s *webCampaignService) JoinCampaign(ctx context.Context, campaignID, userI
 		CampaignID: campaignID,
 		UserID:     userID,
 		Joined:     true,
-		JoinedAt:   timeToUnix(row.JoinAt),
+		JoinedAt:   timeToUnix(row.JoinedAt),
 		Message:    "joined",
 	}, nil
 }

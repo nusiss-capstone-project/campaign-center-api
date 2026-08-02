@@ -86,7 +86,7 @@ func (r *participantRepository) Join(ctx context.Context, campaignID, userID int
 	row := &model.CampaignParticipant{
 		CampaignID: campaignID,
 		UserID:     userID,
-		JoinAt:     now,
+		JoinedAt:   now,
 		CreatedAt:  now,
 		UpdatedAt:  now,
 	}

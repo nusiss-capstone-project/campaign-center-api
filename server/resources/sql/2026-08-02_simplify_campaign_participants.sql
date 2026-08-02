@@ -1,11 +1,11 @@
 -- Simplify campaign_participants to join-only fields.
--- Target shape: id, campaign_id, user_id (unique), join_at, created_at, updated_at
+-- Target shape: id, campaign_id, user_id (unique), joined_at, created_at, updated_at
 
 CREATE TABLE IF NOT EXISTS `campaign_participants_new` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `campaign_id` BIGINT NOT NULL,
   `user_id` BIGINT NOT NULL,
-  `join_at` DATETIME(3) NOT NULL,
+  `joined_at` DATETIME(3) NOT NULL,
   `created_at` DATETIME(3) NOT NULL,
   `updated_at` DATETIME(3) NOT NULL,
   PRIMARY KEY (`id`),
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS `campaign_participants_new` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT IGNORE INTO `campaign_participants_new` (
-  `id`, `campaign_id`, `user_id`, `join_at`, `created_at`, `updated_at`
+  `id`, `campaign_id`, `user_id`, `joined_at`, `created_at`, `updated_at`
 )
 SELECT
   `id`,

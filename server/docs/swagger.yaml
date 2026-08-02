@@ -224,6 +224,10 @@ definitions:
     type: object
   data.LandingPageListItemVO:
     properties:
+      createdAt:
+        type: string
+      defaultLang:
+        type: string
       id:
         type: integer
       status:

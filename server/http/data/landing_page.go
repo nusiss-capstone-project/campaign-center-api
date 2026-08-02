@@ -44,9 +44,11 @@ type LandingPageUpdateResp struct {
 
 // LandingPageListItemVO is a compact list row.
 type LandingPageListItemVO struct {
-	ID     int64  `json:"id"`
-	Title  string `json:"title"`
-	Status int16  `json:"status"`
+	ID          int64  `json:"id"`
+	Title       string `json:"title"`
+	Status      int16  `json:"status"`
+	DefaultLang string `json:"defaultLang"`
+	CreatedAt   string `json:"createdAt"`
 }
 
 // LandingPageListData is the list response data envelope.

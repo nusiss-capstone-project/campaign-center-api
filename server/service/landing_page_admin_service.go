@@ -123,9 +123,11 @@ func (s *landingPageAdminService) ListLandingPages(filter mysql.LandingPageListF
 	out := make([]data.LandingPageListItemVO, 0, len(items))
 	for _, item := range items {
 		out = append(out, data.LandingPageListItemVO{
-			ID:     item.ID,
-			Title:  item.Title,
-			Status: item.Status,
+			ID:          item.ID,
+			Title:       item.Title,
+			Status:      item.Status,
+			DefaultLang: item.DefaultLang,
+			CreatedAt:   item.CreatedAt.Format(time.RFC3339),
 		})
 	}
 	return &data.LandingPageListData{Total: total, Items: out}, nil
