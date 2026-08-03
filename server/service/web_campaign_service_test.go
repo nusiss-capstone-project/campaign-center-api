@@ -141,6 +141,32 @@ func TestWebCampaignService_GetCampaignLanding_notPublished(t *testing.T) {
 	require.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }
 
+func TestWebCampaignService_GetCampaignLanding_success(t *testing.T) {
+	joinedAt := time.Unix(1_700_000_000, 0).UTC()
+	svc := NewWebCampaignService(
+		&webCampaignRepoStub{campaigns: []model.Campaign{{
+			ID: 3, Name: "C", Market: "SG", TimeZone: "Asia/Singapore",
+			Status: model.CampaignStatusPublished, LandingPageID: 10,
+		}}},
+		webPageRepoStub{page: &model.CampaignLandingPage{
+			ID: 10, DefaultLang: "en", Title: "EN", Description: "d", Terms: "t", BannerImageURL: "u",
+		}},
+		webTransRepoStub{row: &model.CampaignLandingPageTranslation{
+			Title: "ZH", Description: "zd", Terms: "zt",
+		}},
+		&webParticipantRepoStub{row: &model.CampaignParticipant{
+			CampaignID: 3, UserID: 42, JoinedAt: joinedAt,
+		}},
+	)
+	out, err := svc.GetCampaignLanding(context.Background(), 3, 42, "zh-CN")
+	require.NoError(t, err)
+	require.Equal(t, int64(3), out.CampaignID)
+	require.True(t, out.Joined)
+	require.Equal(t, int64(1_700_000_000), out.JoinedAt)
+	require.Equal(t, "ZH", out.LandingPage.Title)
+	require.Equal(t, "zh-CN", out.LandingPage.Lang)
+}
+
 func TestWebCampaignService_JoinCampaign(t *testing.T) {
 	svc := NewWebCampaignService(
 		&webCampaignRepoStub{campaigns: []model.Campaign{{ID: 9, Status: model.CampaignStatusPublished}}},

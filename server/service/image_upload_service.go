@@ -3,7 +3,7 @@ package service
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -89,7 +89,7 @@ func (s *imageUploadService) Upload(ctx context.Context, filename string, reader
 		}
 	}
 
-	sum := md5.Sum(payload)
+	sum := sha256.Sum256(payload)
 	hash := hex.EncodeToString(sum[:])
 	now := time.Now().UTC()
 	prefix := "campaign-center"

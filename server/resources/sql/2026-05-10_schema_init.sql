@@ -139,25 +139,26 @@ CREATE TABLE IF NOT EXISTS `campaign_user_rewards_ledger` (
 -- ---------------------------------------------------------------------------
 -- campaign_participants
 -- ---------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `campaign_participants` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `campaign_id` BIGINT DEFAULT NULL,
-  `user_id` BIGINT DEFAULT NULL,
-  `join_status` VARCHAR(32) DEFAULT NULL,
-  `task_status` VARCHAR(32) DEFAULT NULL,
-  `topup_amount` DECIMAL(18,2) DEFAULT NULL,
-  `risk_status` VARCHAR(32) DEFAULT NULL,
-  `reward_status` VARCHAR(32) DEFAULT NULL,
-  `reward_amount` DECIMAL(18,2) DEFAULT NULL,
-  `joined_at` DATETIME(3) DEFAULT NULL,
-  `completed_at` DATETIME(3) DEFAULT NULL,
-  `rewarded_at` DATETIME(3) DEFAULT NULL,
-  `updated_at` DATETIME(3) DEFAULT NULL,
+CREATE TABLE IF NOT EXISTS CREATE TABLE `campaign_participants` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `campaign_id` bigint DEFAULT NULL,
+  `user_id` bigint DEFAULT NULL,
+  `join_status` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `task_status` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `topup_amount` decimal(18,2) DEFAULT NULL,
+  `risk_status` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reward_status` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reward_amount` decimal(18,2) DEFAULT NULL,
+  `joined_at` datetime(3) DEFAULT NULL,
+  `completed_at` datetime(3) DEFAULT NULL,
+  `rewarded_at` datetime(3) DEFAULT NULL,
+  `updated_at` datetime(3) DEFAULT NULL,
+  `created_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_user_campaign` (`user_id`,`campaign_id`),
   KEY `idx_participant_campaign` (`campaign_id`),
-  KEY `idx_participant_user` (`user_id`),
-  KEY `idx_participant_campaign_user` (`campaign_id`, `user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  KEY `idx_participant_user` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=90007 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 
 -- ---------------------------------------------------------------------------
 -- reward_transactions
