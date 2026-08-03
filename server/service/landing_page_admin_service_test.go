@@ -24,7 +24,7 @@ type staticLandingPageTranslationRepo struct {
 
 func (r staticLandingPageTranslationRepo) GetByLandingPageAndLang(landingPageID int64, lang string) (*model.CampaignLandingPageTranslation, error) {
 	if r.row == nil || r.row.LandingPageID != landingPageID || r.row.Lang != lang {
-		return nil, gorm.ErrRecordNotFound
+		return nil, nil
 	}
 	return r.row, nil
 }
@@ -40,22 +40,29 @@ func (r staticLandingPageTranslationRepo) Upsert(*model.CampaignLandingPageTrans
 	return nil
 }
 
+func sampleLandingBody() data.LandingPageBody {
+	return data.LandingPageBody{
+		DefaultLang: "en-US", BannerImageURL: "u", Title: "t", Description: "d", Terms: "x",
+		Steps: []data.LandingPageRepeatableItemVO{{Title: "s1", Description: "sd1"}},
+		Faq:   []data.LandingPageRepeatableItemVO{{Title: "q1", Description: "a1"}},
+	}
+}
+
 func TestLandingPageAdminService_CreateLandingPage(t *testing.T) {
 	m := servicemock.NewMockLandingPageRepository(t)
 	m.On("Create", mock.MatchedBy(func(p *model.CampaignLandingPage) bool {
-		return p.DefaultLang == "en-US"
+		return p.DefaultLang == "en-US" && len(p.Steps) == 1 && p.Steps[0].Title == "s1"
 	})).Run(func(args mock.Arguments) {
 		p := args.Get(0).(*model.CampaignLandingPage)
 		p.ID = 7
 	}).Return(nil)
 
 	svc := service.NewLandingPageAdminService(m, noopTrans())
-	id, status, err := svc.CreateLandingPage(service.CreateLandingPageParams{
-		DefaultLang: "en-US", BannerImageURL: "u", Title: "t", Description: "d", Terms: "x",
-	})
+	resp, err := svc.CreateLandingPage(sampleLandingBody())
 	require.NoError(t, err)
-	require.Equal(t, int64(7), id)
-	require.Equal(t, model.LandingPageStatusDraft, status)
+	require.Equal(t, int64(7), resp.LandingPageID)
+	require.Equal(t, model.LandingPageStatusDraft, resp.Status)
+	require.Equal(t, "s1", resp.Steps[0].Title)
 }
 
 func TestLandingPageAdminService_UpdateDraft_notDraft(t *testing.T) {
@@ -65,7 +72,7 @@ func TestLandingPageAdminService_UpdateDraft_notDraft(t *testing.T) {
 	}, nil)
 
 	svc := service.NewLandingPageAdminService(m, noopTrans())
-	err := svc.UpdateDraftLandingPage(1, service.CreateLandingPageParams{
+	_, err := svc.UpdateDraftLandingPage(1, data.LandingPageBody{
 		DefaultLang: "en", BannerImageURL: "u", Title: "t", Description: "d", Terms: "x",
 	})
 	require.Error(t, err)
@@ -77,30 +84,35 @@ func TestLandingPageAdminService_UpdateDraft_success(t *testing.T) {
 	row := &model.CampaignLandingPage{ID: 2, Status: model.LandingPageStatusDraft}
 	m.On("GetByID", int64(2)).Return(row, nil)
 	m.On("Update", mock.MatchedBy(func(p *model.CampaignLandingPage) bool {
-		return p.Title == "new"
+		return p.Title == "new" && len(p.Faq) == 1
 	})).Return(nil)
 
 	svc := service.NewLandingPageAdminService(m, noopTrans())
-	err := svc.UpdateDraftLandingPage(2, service.CreateLandingPageParams{
+	body := data.LandingPageBody{
 		DefaultLang: "en", BannerImageURL: "u", Title: "new", Description: "d", Terms: "x",
-	})
+		Faq: []data.LandingPageRepeatableItemVO{{Title: "q", Description: "a"}},
+	}
+	resp, err := svc.UpdateDraftLandingPage(2, body)
 	require.NoError(t, err)
+	require.Equal(t, int64(2), resp.LandingPageID)
+	require.Equal(t, "new", resp.Title)
 }
 
 func TestLandingPageAdminService_ListGetPublish(t *testing.T) {
 	m := servicemock.NewMockLandingPageRepository(t)
 	f := mysql.LandingPageListFilter{Page: 1, PageSize: 5}
-	m.On("List", f).Return([]model.CampaignLandingPage{{ID: 1}}, int64(1), nil)
+	m.On("List", f).Return([]model.CampaignLandingPage{{ID: 1, Title: "x", Status: 1}}, int64(1), nil)
 	m.On("GetByID", int64(1)).Return(&model.CampaignLandingPage{
 		ID: 1, Title: "x", DefaultLang: "en",
 	}, nil)
 	m.On("Publish", int64(1), "op").Return(&model.CampaignLandingPage{ID: 1, Status: model.LandingPageStatusPublished}, nil)
 
 	svc := service.NewLandingPageAdminService(m, noopTrans())
-	items, total, err := svc.ListLandingPages(f)
+	list, err := svc.ListLandingPages(f)
 	require.NoError(t, err)
-	require.Len(t, items, 1)
-	require.Equal(t, int64(1), total)
+	require.Len(t, list.Items, 1)
+	require.Equal(t, int64(1), list.Total)
+	require.Equal(t, "x", list.Items[0].Title)
 
 	p, err := svc.GetLandingPage(1, "")
 	require.NoError(t, err)
@@ -125,10 +137,12 @@ func TestLandingPageAdminService_GetLandingPage_usesTranslation(t *testing.T) {
 	m := servicemock.NewMockLandingPageRepository(t)
 	m.On("GetByID", int64(1)).Return(&model.CampaignLandingPage{
 		ID: 1, DefaultLang: "en", Title: "default title", Description: "d", Terms: "t",
+		Steps: model.LandingPageRepeatableItems{{Title: "en-step", Description: "en-desc"}},
 	}, nil)
 	trans := staticLandingPageTranslationRepo{row: &model.CampaignLandingPageTranslation{
 		LandingPageID: 1, Lang: "zh-CN",
 		Title: "中文标题", Description: "中文描述", Terms: "中文条款",
+		Steps: model.LandingPageRepeatableItems{{Title: "中文步骤", Description: "中文说明"}},
 	}}
 	svc := service.NewLandingPageAdminService(m, trans)
 
@@ -139,6 +153,7 @@ func TestLandingPageAdminService_GetLandingPage_usesTranslation(t *testing.T) {
 	require.Equal(t, "中文标题", view.Title)
 	require.Equal(t, "中文描述", view.Description)
 	require.Equal(t, "中文条款", view.Terms)
+	require.Equal(t, "中文步骤", view.Steps[0].Title)
 }
 
 func TestLandingPageAdminService_Create_error(t *testing.T) {
@@ -146,8 +161,17 @@ func TestLandingPageAdminService_Create_error(t *testing.T) {
 	m.On("Create", mock.Anything).Return(errors.New("fail"))
 
 	svc := service.NewLandingPageAdminService(m, noopTrans())
-	_, _, err := svc.CreateLandingPage(service.CreateLandingPageParams{
+	_, err := svc.CreateLandingPage(data.LandingPageBody{
 		DefaultLang: "en", BannerImageURL: "u", Title: "t", Description: "d", Terms: "x",
+	})
+	require.Error(t, err)
+}
+
+func TestLandingPageAdminService_Create_rejectsInvalidSteps(t *testing.T) {
+	svc := service.NewLandingPageAdminService(servicemock.NewMockLandingPageRepository(t), noopTrans())
+	_, err := svc.CreateLandingPage(data.LandingPageBody{
+		DefaultLang: "en", BannerImageURL: "u", Title: "t", Description: "d", Terms: "x",
+		Steps: []data.LandingPageRepeatableItemVO{{Title: "", Description: "x"}},
 	})
 	require.Error(t, err)
 }

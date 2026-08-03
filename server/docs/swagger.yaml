@@ -1,183 +1,5 @@
 basePath: /campaign-center-api/v1
 definitions:
-  api.GenerateLandingTranslationData:
-    properties:
-      description:
-        type: string
-      lang:
-        example: ja
-        type: string
-      terms:
-        type: string
-      title:
-        type: string
-    type: object
-  api.GenerateLandingTranslationHTTPResponse:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/api.GenerateLandingTranslationData'
-      message:
-        example: success
-        type: string
-    type: object
-  api.GenerateLandingTranslationReq:
-    properties:
-      description:
-        example: Recharge now and receive <reward_amount> bonus
-        type: string
-      sourceLang:
-        example: en
-        type: string
-      targetLang:
-        example: ja
-        type: string
-      terms:
-        example: Reward will expire in <days> days
-        type: string
-      title:
-        example: Top up <amount> to get reward
-        type: string
-    required:
-    - sourceLang
-    - targetLang
-    type: object
-  api.LandingPageBody:
-    properties:
-      bannerImageUrl:
-        type: string
-      defaultLang:
-        type: string
-      description:
-        type: string
-      terms:
-        type: string
-      title:
-        type: string
-    required:
-    - bannerImageUrl
-    - defaultLang
-    - description
-    - terms
-    - title
-    type: object
-  api.LandingPageLocaleDetailData:
-    properties:
-      bannerImageUrl:
-        type: string
-      createdAt:
-        type: string
-      defaultLang:
-        example: en
-        type: string
-      description:
-        type: string
-      id:
-        example: 2001
-        type: integer
-      lang:
-        example: ja
-        type: string
-      status:
-        type: integer
-      terms:
-        type: string
-      title:
-        type: string
-      updatedAt:
-        type: string
-    type: object
-  api.LandingPageLocaleDetailHTTPResponse:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/api.LandingPageLocaleDetailData'
-      message:
-        example: success
-        type: string
-    type: object
-  api.LandingPageTranslatedLangsData:
-    properties:
-      langs:
-        items:
-          type: string
-        type: array
-    type: object
-  api.LandingPageTranslatedLangsHTTPResponse:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/api.LandingPageTranslatedLangsData'
-      message:
-        example: success
-        type: string
-    type: object
-  api.PutLandingTranslationData:
-    properties:
-      landingPageId:
-        type: integer
-      lang:
-        type: string
-    type: object
-  api.PutLandingTranslationHTTPResponse:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/api.PutLandingTranslationData'
-      message:
-        example: success
-        type: string
-    type: object
-  api.PutLandingTranslationReq:
-    properties:
-      description:
-        type: string
-      operator:
-        example: admin
-        type: string
-      terms:
-        type: string
-      title:
-        type: string
-    required:
-    - description
-    - terms
-    - title
-    type: object
-  api.UserProfileData:
-    properties:
-      email:
-        example: a***e@example.com
-        type: string
-      kycChecked:
-        example: true
-        type: boolean
-      registeredAt:
-        example: "2026-05-16T10:00:00Z"
-        type: string
-      username:
-        example: alice
-        type: string
-    type: object
-  api.UserProfileHTTPResponse:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/api.UserProfileData'
-      message:
-        example: success
-        type: string
-    type: object
   data.BudgetVO:
     properties:
       projectId:
@@ -257,12 +79,243 @@ definitions:
     required:
     - name
     type: object
+  data.GenerateLandingTranslationData:
+    properties:
+      description:
+        type: string
+      faq:
+        items:
+          $ref: '#/definitions/data.LandingPageRepeatableItemVO'
+        type: array
+      lang:
+        example: ja
+        type: string
+      steps:
+        items:
+          $ref: '#/definitions/data.LandingPageRepeatableItemVO'
+        type: array
+      terms:
+        type: string
+      title:
+        type: string
+    type: object
+  data.GenerateLandingTranslationReq:
+    properties:
+      description:
+        type: string
+      faq:
+        items:
+          $ref: '#/definitions/data.LandingPageRepeatableItemVO'
+        type: array
+      sourceLang:
+        example: en
+        type: string
+      steps:
+        items:
+          $ref: '#/definitions/data.LandingPageRepeatableItemVO'
+        type: array
+      targetLang:
+        example: ja
+        type: string
+      terms:
+        type: string
+      title:
+        type: string
+    required:
+    - sourceLang
+    - targetLang
+    type: object
+  data.ImageUploadData:
+    properties:
+      url:
+        type: string
+    type: object
+  data.LandingPageBody:
+    properties:
+      bannerImageUrl:
+        type: string
+      defaultLang:
+        type: string
+      description:
+        type: string
+      faq:
+        items:
+          $ref: '#/definitions/data.LandingPageRepeatableItemVO'
+        type: array
+      steps:
+        items:
+          $ref: '#/definitions/data.LandingPageRepeatableItemVO'
+        type: array
+      terms:
+        type: string
+      title:
+        type: string
+    required:
+    - bannerImageUrl
+    - defaultLang
+    - description
+    - terms
+    - title
+    type: object
+  data.LandingPageCreateResp:
+    properties:
+      bannerImageUrl:
+        type: string
+      defaultLang:
+        type: string
+      description:
+        type: string
+      faq:
+        items:
+          $ref: '#/definitions/data.LandingPageRepeatableItemVO'
+        type: array
+      landingPageId:
+        type: integer
+      status:
+        type: integer
+      steps:
+        items:
+          $ref: '#/definitions/data.LandingPageRepeatableItemVO'
+        type: array
+      terms:
+        type: string
+      title:
+        type: string
+    type: object
+  data.LandingPageDetailVO:
+    properties:
+      bannerImageUrl:
+        type: string
+      createdAt:
+        type: string
+      defaultLang:
+        type: string
+      description:
+        type: string
+      faq:
+        items:
+          $ref: '#/definitions/data.LandingPageRepeatableItemVO'
+        type: array
+      id:
+        type: integer
+      lang:
+        type: string
+      status:
+        type: integer
+      steps:
+        items:
+          $ref: '#/definitions/data.LandingPageRepeatableItemVO'
+        type: array
+      terms:
+        type: string
+      title:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  data.LandingPageListData:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/data.LandingPageListItemVO'
+        type: array
+      total:
+        type: integer
+    type: object
+  data.LandingPageListItemVO:
+    properties:
+      createdAt:
+        type: string
+      defaultLang:
+        type: string
+      id:
+        type: integer
+      status:
+        type: integer
+      title:
+        type: string
+    type: object
+  data.LandingPagePublishResp:
+    properties:
+      landingPageId:
+        type: integer
+      status:
+        type: integer
+    type: object
+  data.LandingPageRepeatableItemVO:
+    properties:
+      description:
+        type: string
+      title:
+        type: string
+    type: object
+  data.LandingPageTranslatedLangsData:
+    properties:
+      langs:
+        items:
+          type: string
+        type: array
+    type: object
+  data.LandingPageUpdateResp:
+    properties:
+      bannerImageUrl:
+        type: string
+      defaultLang:
+        type: string
+      description:
+        type: string
+      faq:
+        items:
+          $ref: '#/definitions/data.LandingPageRepeatableItemVO'
+        type: array
+      landingPageId:
+        type: integer
+      steps:
+        items:
+          $ref: '#/definitions/data.LandingPageRepeatableItemVO'
+        type: array
+      terms:
+        type: string
+      title:
+        type: string
+    type: object
   data.PublishOperatorReq:
     properties:
       operator:
         type: string
     required:
     - operator
+    type: object
+  data.PutLandingTranslationData:
+    properties:
+      landingPageId:
+        type: integer
+      lang:
+        type: string
+    type: object
+  data.PutLandingTranslationReq:
+    properties:
+      description:
+        type: string
+      faq:
+        items:
+          $ref: '#/definitions/data.LandingPageRepeatableItemVO'
+        type: array
+      operator:
+        example: admin
+        type: string
+      steps:
+        items:
+          $ref: '#/definitions/data.LandingPageRepeatableItemVO'
+        type: array
+      terms:
+        type: string
+      title:
+        type: string
+    required:
+    - description
+    - terms
+    - title
     type: object
   data.StandardResponse:
     properties:
@@ -300,6 +353,9 @@ definitions:
       joined:
         example: false
         type: boolean
+      joinedAt:
+        example: 1717200000
+        type: integer
       landingPage:
         $ref: '#/definitions/data.WebLandingPageContent'
       market:
@@ -308,8 +364,6 @@ definitions:
       name:
         example: Summer Deposit Bonus
         type: string
-      participation:
-        $ref: '#/definitions/data.WebParticipationStatus'
       timeZone:
         example: Asia/Singapore
         type: string
@@ -348,50 +402,12 @@ definitions:
       market:
         example: SG
         type: string
-      name:
-        example: Summer Deposit Bonus
-        type: string
       status:
         example: 2
         type: integer
-    type: object
-  data.WebDepositData:
-    properties:
-      amount:
-        example: 100
-        type: number
-      campaignId:
-        example: 1001
-        type: integer
-      currency:
-        example: USDT
+      title:
+        example: Deposit and get a bonus
         type: string
-      ledgerId:
-        example: 9001
-        type: integer
-      message:
-        example: deposit accepted (mock)
-        type: string
-      rewardStatus:
-        example: pending_distribution
-        type: string
-      taskStatus:
-        example: COMPLETED
-        type: string
-      userId:
-        example: 42
-        type: integer
-    type: object
-  data.WebDepositReq:
-    properties:
-      amount:
-        example: 100
-        type: number
-      currency:
-        example: USDT
-        type: string
-    required:
-    - amount
     type: object
   data.WebJoinCampaignData:
     properties:
@@ -405,7 +421,7 @@ definitions:
         example: 1717200000
         type: integer
       message:
-        example: joined (mock)
+        example: joined
         type: string
       userId:
         example: 42
@@ -419,9 +435,17 @@ definitions:
       description:
         example: Join the campaign and complete the deposit task.
         type: string
+      faq:
+        items:
+          $ref: '#/definitions/data.LandingPageRepeatableItemVO'
+        type: array
       lang:
         example: en
         type: string
+      steps:
+        items:
+          $ref: '#/definitions/data.LandingPageRepeatableItemVO'
+        type: array
       terms:
         example: One reward per user.
         type: string
@@ -429,23 +453,11 @@ definitions:
         example: Deposit and get a bonus
         type: string
     type: object
-  data.WebParticipationStatus:
-    properties:
-      joined:
-        example: false
-        type: boolean
-      rewardStatus:
-        example: NOT_GRANTED
-        type: string
-      taskStatus:
-        example: NOT_STARTED
-        type: string
-    type: object
 host: localhost:8080
 info:
   contact:
     name: API Support
-  description: HTTP API for campaign center (admin campaign/landing-page + user account/campaign
+  description: HTTP API for campaign center (admin campaign/landing-page + user campaign
     mocks). Operates under `/campaign-center-api/v1`;
   license:
     name: Apache 2.0
@@ -593,15 +605,11 @@ paths:
           description: success
           schema:
             $ref: '#/definitions/data.StandardResponse'
-        "404":
-          description: campaign not found
+        "400":
+          description: bad request
           schema:
             $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: List campaign participations (admin)
+      summary: List campaign participations (admin, mock)
       tags:
       - admin-campaign-performance
   /admin/campaigns/{campaignId}/performance/daily:
@@ -633,15 +641,7 @@ paths:
           description: bad request
           schema:
             $ref: '#/definitions/data.StandardResponse'
-        "404":
-          description: campaign not found
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: List campaign daily performance (admin)
+      summary: List campaign daily performance (admin, mock)
       tags:
       - admin-campaign-performance
   /admin/campaigns/{campaignId}/performance/summary:
@@ -659,15 +659,11 @@ paths:
           description: success
           schema:
             $ref: '#/definitions/data.StandardResponse'
-        "404":
-          description: campaign not found
+        "400":
+          description: bad request
           schema:
             $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: Get campaign performance summary (admin)
+      summary: Get campaign performance summary (admin, mock)
       tags:
       - admin-campaign-performance
   /admin/campaigns/{campaignId}/publish:
@@ -794,6 +790,43 @@ paths:
       summary: Edit campaign draft version (admin)
       tags:
       - admin-campaign
+  /admin/images/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: Image file (jpg/png/webp/gif, max 5MB)
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.ImageUploadData'
+              type: object
+        "400":
+          description: validation error
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "500":
+          description: internal error
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: oss not configured
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Upload image (admin)
+      tags:
+      - admin-images
   /admin/landing-pages:
     get:
       parameters:
@@ -819,7 +852,12 @@ paths:
         "200":
           description: success
           schema:
-            $ref: '#/definitions/data.StandardResponse'
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.LandingPageListData'
+              type: object
         "503":
           description: database unavailable
           schema:
@@ -836,14 +874,19 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/api.LandingPageBody'
+          $ref: '#/definitions/data.LandingPageBody'
       produces:
       - application/json
       responses:
         "200":
           description: success
           schema:
-            $ref: '#/definitions/data.StandardResponse'
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.LandingPageCreateResp'
+              type: object
         "400":
           description: validation error
           schema:
@@ -873,7 +916,12 @@ paths:
         "200":
           description: success
           schema:
-            $ref: '#/definitions/data.StandardResponse'
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.LandingPageDetailVO'
+              type: object
         "404":
           description: not found
           schema:
@@ -899,14 +947,19 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/api.LandingPageBody'
+          $ref: '#/definitions/data.LandingPageBody'
       produces:
       - application/json
       responses:
         "200":
           description: success
           schema:
-            $ref: '#/definitions/data.StandardResponse'
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.LandingPageUpdateResp'
+              type: object
         "404":
           description: not found
           schema:
@@ -924,9 +977,6 @@ paths:
       - admin-landing-page
   /admin/landing-pages/{landingPageId}/detail/{lang}:
     get:
-      description: title/description/terms come from campaign_landing_page_translations
-        when a row exists for lang; otherwise from campaign_landing_pages. bannerImageUrl,
-        status, timestamps always from campaign_landing_pages.
       parameters:
       - description: Landing page ID
         in: path
@@ -944,7 +994,12 @@ paths:
         "200":
           description: success
           schema:
-            $ref: '#/definitions/api.LandingPageLocaleDetailHTTPResponse'
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.LandingPageDetailVO'
+              type: object
         "400":
           description: invalid path
           schema:
@@ -982,7 +1037,12 @@ paths:
         "200":
           description: success
           schema:
-            $ref: '#/definitions/data.StandardResponse'
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.LandingPagePublishResp'
+              type: object
         "404":
           description: not found
           schema:
@@ -996,8 +1056,6 @@ paths:
       - admin-landing-page
   /admin/landing-pages/{landingPageId}/translations:
     get:
-      description: Distinct lang values from the translation table only (excludes
-        default_lang unless a translation row exists).
       parameters:
       - description: Landing page ID
         in: path
@@ -1010,7 +1068,12 @@ paths:
         "200":
           description: success
           schema:
-            $ref: '#/definitions/api.LandingPageTranslatedLangsHTTPResponse'
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.LandingPageTranslatedLangsData'
+              type: object
         "400":
           description: invalid path
           schema:
@@ -1030,8 +1093,6 @@ paths:
     put:
       consumes:
       - application/json
-      description: Creates or updates campaign_landing_page_translations for the given
-        landing page and language code.
       parameters:
       - description: Landing page ID
         in: path
@@ -1048,14 +1109,19 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/api.PutLandingTranslationReq'
+          $ref: '#/definitions/data.PutLandingTranslationReq'
       produces:
       - application/json
       responses:
         "200":
           description: success
           schema:
-            $ref: '#/definitions/api.PutLandingTranslationHTTPResponse'
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.PutLandingTranslationData'
+              type: object
         "400":
           description: validation error
           schema:
@@ -1079,28 +1145,32 @@ paths:
     post:
       consumes:
       - application/json
-      description: Returns LLM-translated title/description/terms for the given landing
-        page. Does not persist.
+      description: Returns LLM-translated title/description/terms/steps/faq. Does
+        not persist.
       parameters:
       - description: Landing page ID
         in: path
         name: landingPageId
         required: true
         type: integer
-      - description: Source/target languages and optional source copy (falls back
-          to landing page fields when empty)
+      - description: Source/target languages and optional source copy
         in: body
         name: body
         required: true
         schema:
-          $ref: '#/definitions/api.GenerateLandingTranslationReq'
+          $ref: '#/definitions/data.GenerateLandingTranslationReq'
       produces:
       - application/json
       responses:
         "200":
           description: success
           schema:
-            $ref: '#/definitions/api.GenerateLandingTranslationHTTPResponse'
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.GenerateLandingTranslationData'
+              type: object
         "400":
           description: validation or empty source
           schema:
@@ -1134,66 +1204,13 @@ paths:
       summary: Ping
       tags:
       - health
-  /web/account/summary:
-    get:
-      parameters:
-      - description: Currency (default USDT)
-        in: query
-        name: currency
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: success
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "400":
-          description: bad request
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: Get account summary (user)
-      tags:
-      - user-account
-  /web/account/transactions:
-    get:
-      parameters:
-      - description: Transaction type RECHARGE or CAMPAIGN_REWARD
-        in: query
-        name: type
-        type: string
-      - description: Pagination cursor (transaction id)
-        in: query
-        name: cursor
-        type: integer
-      - description: Page size (default 20, max 100)
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: success
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "400":
-          description: bad request
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "503":
-          description: database unavailable
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: List account transactions (user)
-      tags:
-      - user-account
   /web/campaigns:
     get:
+      parameters:
+      - description: Preferred language for landing-page title; default en
+        in: query
+        name: lang
+        type: string
       produces:
       - application/json
       responses:
@@ -1210,46 +1227,11 @@ paths:
           description: unauthorized
           schema:
             $ref: '#/definitions/data.StandardResponse'
-      summary: List available campaigns (user, mock)
-      tags:
-      - user-campaign
-  /web/campaigns/{campaignId}/deposit:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Campaign ID
-        in: path
-        name: campaignId
-        required: true
-        type: integer
-      - description: Deposit amount
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/data.WebDepositReq'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: success
-          schema:
-            allOf:
-            - $ref: '#/definitions/data.StandardResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/data.WebDepositData'
-              type: object
-        "400":
-          description: bad request
+        "503":
+          description: database unavailable
           schema:
             $ref: '#/definitions/data.StandardResponse'
-        "401":
-          description: unauthorized
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: Deposit for campaign task (user, mock)
+      summary: List available campaigns (user)
       tags:
       - user-campaign
   /web/campaigns/{campaignId}/join:
@@ -1280,7 +1262,15 @@ paths:
           description: unauthorized
           schema:
             $ref: '#/definitions/data.StandardResponse'
-      summary: Join campaign (user, mock)
+        "404":
+          description: campaign not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Join campaign (user)
       tags:
       - user-campaign
   /web/campaigns/{campaignId}/landing-page:
@@ -1315,29 +1305,17 @@ paths:
           description: unauthorized
           schema:
             $ref: '#/definitions/data.StandardResponse'
-      summary: Get campaign landing page (user, mock)
-      tags:
-      - user-campaign
-  /web/user-profile:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: success
-          schema:
-            $ref: '#/definitions/api.UserProfileHTTPResponse'
         "404":
-          description: user not found
+          description: campaign not found
           schema:
             $ref: '#/definitions/data.StandardResponse'
         "503":
           description: database unavailable
           schema:
             $ref: '#/definitions/data.StandardResponse'
-      summary: Get user profile (user)
+      summary: Get campaign landing page (user)
       tags:
-      - user-profile
+      - user-campaign
 schemes:
 - http
 - https

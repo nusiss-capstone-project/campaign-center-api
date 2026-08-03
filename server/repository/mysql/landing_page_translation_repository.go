@@ -96,6 +96,8 @@ func (r *landingPageTranslationRepository) Upsert(t *model.CampaignLandingPageTr
 		"title":       t.Title,
 		"description": t.Description,
 		"terms":       t.Terms,
+		"steps":       t.Steps,
+		"faq":         t.Faq,
 		"updated_at":  t.UpdatedAt,
 		"updated_by":  t.UpdatedBy,
 	}).Error

@@ -46,12 +46,6 @@ const (
 	MarketBR     = "BR"
 )
 
-const (
-	KYCStatusPassed  = "PASSED"
-	KYCStatusPending = "PENDING"
-	KYCStatusFailed  = "FAILED"
-)
-
 // Participation / task / reward status values used by admin reads and web mocks.
 const (
 	JoinStatusJoined = "JOINED"
@@ -67,12 +61,3 @@ const (
 )
 
 const DefaultCurrency = "USDT"
-
-const (
-	AccountTxnTypeRecharge        = "RECHARGE"
-	AccountTxnTypeCampaignReward  = "CAMPAIGN_REWARD"
-	AccountTxnStatusSuccess       = "SUCCESS"
-	AccountTxnStatusFailed        = "FAILED"
-	AccountTxnRelatedTypeCampaign = "CAMPAIGN"
-	AccountTxnRelatedTypeRecharge = "RECHARGE"
-)

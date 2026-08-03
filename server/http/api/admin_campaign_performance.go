@@ -7,34 +7,33 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
-	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
-	"github.com/nusiss-capstone-project/campaign-center-api/server/service"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/log"
 )
 
-// AdminGetCampaignPerformanceSummary returns aggregated campaign metrics.
-// @Summary Get campaign performance summary (admin)
+// AdminGetCampaignPerformanceSummary returns mock aggregated campaign metrics.
+// @Summary Get campaign performance summary (admin, mock)
 // @Tags admin-campaign-performance
 // @Produce json
 // @Param campaignId path int true "Campaign ID"
 // @Success 200 {object} data.StandardResponse "success"
-// @Failure 404 {object} data.StandardResponse "campaign not found"
-// @Failure 503 {object} data.StandardResponse "database unavailable"
+// @Failure 400 {object} data.StandardResponse "bad request"
 // @Router /admin/campaigns/{campaignId}/performance/summary [get]
 func AdminGetCampaignPerformanceSummary(c *gin.Context) {
 	campaignID, err := parseCampaignID(c)
 	if err != nil {
 		return
 	}
-	payload, err := service.GetCampaignPerformanceAdminService().GetPerformanceSummary(campaignID)
-	if err != nil {
-		handleCampaignPerfErr(c, err)
-		return
-	}
-	data.OK(c, payload)
+	log.WithContext(c.Request.Context()).Infow("admin_performance_summary_mock", "campaign_id", campaignID)
+	data.OK(c, gin.H{
+		"participantCount":   0,
+		"participationCount": 0,
+		"rewardIssuedCount":  0,
+		"rewardIssuedAmount": 0,
+	})
 }
 
-// AdminListCampaignDailyPerformance returns daily performance rows.
-// @Summary List campaign daily performance (admin)
+// AdminListCampaignDailyPerformance returns mock daily performance rows.
+// @Summary List campaign daily performance (admin, mock)
 // @Tags admin-campaign-performance
 // @Produce json
 // @Param campaignId path int true "Campaign ID"
@@ -42,29 +41,22 @@ func AdminGetCampaignPerformanceSummary(c *gin.Context) {
 // @Param endDate query string true "End date YYYY-MM-DD"
 // @Success 200 {object} data.StandardResponse "success"
 // @Failure 400 {object} data.StandardResponse "bad request"
-// @Failure 404 {object} data.StandardResponse "campaign not found"
-// @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /admin/campaigns/{campaignId}/performance/daily [get]
 func AdminListCampaignDailyPerformance(c *gin.Context) {
 	campaignID, err := parseCampaignID(c)
 	if err != nil {
 		return
 	}
-	start, end, err := parseDateRange(c)
-	if err != nil {
+	if _, _, err := parseDateRange(c); err != nil {
 		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
 		return
 	}
-	items, err := service.GetCampaignPerformanceAdminService().ListDailyPerformance(campaignID, start, end)
-	if err != nil {
-		handleCampaignPerfErr(c, err)
-		return
-	}
-	data.OK(c, gin.H{"items": items})
+	log.WithContext(c.Request.Context()).Infow("admin_performance_daily_mock", "campaign_id", campaignID)
+	data.OK(c, gin.H{"items": []any{}})
 }
 
-// AdminListCampaignParticipations lists participation records.
-// @Summary List campaign participations (admin)
+// AdminListCampaignParticipations returns mock participation records.
+// @Summary List campaign participations (admin, mock)
 // @Tags admin-campaign-performance
 // @Produce json
 // @Param campaignId path int true "Campaign ID"
@@ -73,8 +65,7 @@ func AdminListCampaignDailyPerformance(c *gin.Context) {
 // @Param userId query int false "Filter by user ID"
 // @Param status query string false "Filter by reward status e.g. GRANTED"
 // @Success 200 {object} data.StandardResponse "success"
-// @Failure 404 {object} data.StandardResponse "campaign not found"
-// @Failure 503 {object} data.StandardResponse "database unavailable"
+// @Failure 400 {object} data.StandardResponse "bad request"
 // @Router /admin/campaigns/{campaignId}/participations [get]
 func AdminListCampaignParticipations(c *gin.Context) {
 	campaignID, err := parseCampaignID(c)
@@ -83,24 +74,14 @@ func AdminListCampaignParticipations(c *gin.Context) {
 	}
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
-	filter := mysql.ParticipationListFilter{
-		CampaignID: campaignID, Page: page, PageSize: pageSize,
-		RewardStatus: c.Query("status"),
+	if page < 1 {
+		page = 1
 	}
-	if uid := c.Query("userId"); uid != "" {
-		v, parseErr := strconv.ParseInt(uid, 10, 64)
-		if parseErr != nil {
-			data.JSON(c, http.StatusBadRequest, -1, "invalid userId", nil)
-			return
-		}
-		filter.UserID = &v
+	if pageSize < 1 {
+		pageSize = 20
 	}
-	items, total, err := service.GetCampaignPerformanceAdminService().ListParticipations(filter)
-	if err != nil {
-		handleCampaignPerfErr(c, err)
-		return
-	}
-	data.OK(c, gin.H{"items": items, "page": page, "pageSize": pageSize, "total": total})
+	log.WithContext(c.Request.Context()).Infow("admin_participations_mock", "campaign_id", campaignID)
+	data.OK(c, gin.H{"items": []any{}, "page": page, "pageSize": pageSize, "total": 0})
 }
 
 func parseCampaignID(c *gin.Context) (int64, error) {
@@ -129,14 +110,6 @@ func parseDateRange(c *gin.Context) (time.Time, time.Time, error) {
 		return time.Time{}, time.Time{}, errInvalidDateRange()
 	}
 	return start, end, nil
-}
-
-func handleCampaignPerfErr(c *gin.Context, err error) {
-	if mysql.IsNotFound(err) {
-		data.JSON(c, http.StatusNotFound, -1, "campaign not found", nil)
-		return
-	}
-	handleRepoErr(c, err)
 }
 
 type dateRangeError string

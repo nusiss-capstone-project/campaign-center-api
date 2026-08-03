@@ -12,23 +12,14 @@ import (
 
 // LandingPageAdminService admin landing page operations.
 type LandingPageAdminService interface {
-	CreateLandingPage(p CreateLandingPageParams) (id int64, status int16, err error)
-	UpdateDraftLandingPage(id int64, p CreateLandingPageParams) error
-	ListLandingPages(filter mysql.LandingPageListFilter) ([]model.CampaignLandingPage, int64, error)
-	GetLandingPage(id int64, lang string) (*LandingPageDetailView, error)
-	PublishLandingPage(id int64, operator string) (*model.CampaignLandingPage, error)
+	CreateLandingPage(body data.LandingPageBody) (*data.LandingPageCreateResp, error)
+	UpdateDraftLandingPage(id int64, body data.LandingPageBody) (*data.LandingPageUpdateResp, error)
+	ListLandingPages(filter mysql.LandingPageListFilter) (*data.LandingPageListData, error)
+	GetLandingPage(id int64, lang string) (*data.LandingPageDetailVO, error)
+	PublishLandingPage(id int64, operator string) (*data.LandingPagePublishResp, error)
 }
 
-// CreateLandingPageParams body fields for create/update landing page.
-type CreateLandingPageParams struct {
-	DefaultLang    string
-	BannerImageURL string
-	Title          string
-	Description    string
-	Terms          string
-}
-
-// LandingPageDetailView is resolved landing page text for admin or user display.
+// LandingPageDetailView is resolved landing page text for admin display.
 type LandingPageDetailView struct {
 	ID             int64
 	Lang           string
@@ -37,6 +28,8 @@ type LandingPageDetailView struct {
 	Title          string
 	Description    string
 	Terms          string
+	Steps          []data.LandingPageRepeatableItemVO
+	Faq            []data.LandingPageRepeatableItemVO
 	Status         int16
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
@@ -71,49 +64,76 @@ func GetLandingPageAdminService() LandingPageAdminService {
 	return landingPageAdminServiceInst
 }
 
-func (s *landingPageAdminService) CreateLandingPage(p CreateLandingPageParams) (int64, int16, error) {
+func (s *landingPageAdminService) CreateLandingPage(body data.LandingPageBody) (*data.LandingPageCreateResp, error) {
+	if err := validateLandingPageContent(body.Steps, body.Faq); err != nil {
+		return nil, err
+	}
 	now := time.Now()
 	row := model.CampaignLandingPage{
-		DefaultLang:    p.DefaultLang,
-		BannerImageURL: p.BannerImageURL,
-		Title:          p.Title,
-		Description:    p.Description,
-		Terms:          p.Terms,
+		DefaultLang:    body.DefaultLang,
+		BannerImageURL: body.BannerImageURL,
+		Title:          body.Title,
+		Description:    body.Description,
+		Terms:          body.Terms,
+		Steps:          toModelRepeatableItems(body.Steps),
+		Faq:            toModelRepeatableItems(body.Faq),
 		Status:         model.LandingPageStatusDraft,
 		CreatedAt:      now,
 		UpdatedAt:      now,
 	}
 	if err := s.pages.Create(&row); err != nil {
-		return 0, 0, err
+		return nil, err
 	}
 	log.Logger.Infow("landing_page_created", "id", row.ID)
-	return row.ID, row.Status, nil
+	return landingPageCreateResp(row.ID, row.Status, body), nil
 }
 
-func (s *landingPageAdminService) UpdateDraftLandingPage(id int64, p CreateLandingPageParams) error {
+func (s *landingPageAdminService) UpdateDraftLandingPage(id int64, body data.LandingPageBody) (*data.LandingPageUpdateResp, error) {
+	if err := validateLandingPageContent(body.Steps, body.Faq); err != nil {
+		return nil, err
+	}
 	existing, err := s.pages.GetByID(id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if existing.Status != model.LandingPageStatusDraft {
-		return data.ErrLandingPageNotDraft
+		return nil, data.ErrLandingPageNotDraft
 	}
 	now := time.Now()
-	existing.DefaultLang = p.DefaultLang
-	existing.BannerImageURL = p.BannerImageURL
-	existing.Title = p.Title
-	existing.Description = p.Description
-	existing.Terms = p.Terms
+	existing.DefaultLang = body.DefaultLang
+	existing.BannerImageURL = body.BannerImageURL
+	existing.Title = body.Title
+	existing.Description = body.Description
+	existing.Terms = body.Terms
+	existing.Steps = toModelRepeatableItems(body.Steps)
+	existing.Faq = toModelRepeatableItems(body.Faq)
 	existing.UpdatedAt = now
 	log.Logger.Infow("landing_page_draft_updated", "id", id)
-	return s.pages.Update(existing)
+	if err := s.pages.Update(existing); err != nil {
+		return nil, err
+	}
+	return landingPageUpdateResp(id, body), nil
 }
 
-func (s *landingPageAdminService) ListLandingPages(filter mysql.LandingPageListFilter) ([]model.CampaignLandingPage, int64, error) {
-	return s.pages.List(filter)
+func (s *landingPageAdminService) ListLandingPages(filter mysql.LandingPageListFilter) (*data.LandingPageListData, error) {
+	items, total, err := s.pages.List(filter)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]data.LandingPageListItemVO, 0, len(items))
+	for _, item := range items {
+		out = append(out, data.LandingPageListItemVO{
+			ID:          item.ID,
+			Title:       item.Title,
+			Status:      item.Status,
+			DefaultLang: item.DefaultLang,
+			CreatedAt:   item.CreatedAt.Format(time.RFC3339),
+		})
+	}
+	return &data.LandingPageListData{Total: total, Items: out}, nil
 }
 
-func (s *landingPageAdminService) GetLandingPage(id int64, lang string) (*LandingPageDetailView, error) {
+func (s *landingPageAdminService) GetLandingPage(id int64, lang string) (*data.LandingPageDetailVO, error) {
 	page, err := s.pages.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -121,23 +141,27 @@ func (s *landingPageAdminService) GetLandingPage(id int64, lang string) (*Landin
 	view := landingPageViewFromRow(page)
 	if lang == "" || lang == page.DefaultLang {
 		view.Lang = page.DefaultLang
-		return view, nil
+		return landingPageDetailVO(view), nil
 	}
 	tr, err := s.translations.GetByLandingPageAndLang(id, lang)
 	if err != nil {
 		return nil, err
 	}
 	if tr != nil {
-		applyTranslationToView(view, lang, tr.Title, tr.Description, tr.Terms)
-		return view, nil
+		applyTranslationToView(view, lang, tr)
+		return landingPageDetailVO(view), nil
 	}
 	view.Lang = page.DefaultLang
-	return view, nil
+	return landingPageDetailVO(view), nil
 }
 
-func (s *landingPageAdminService) PublishLandingPage(id int64, operator string) (*model.CampaignLandingPage, error) {
+func (s *landingPageAdminService) PublishLandingPage(id int64, operator string) (*data.LandingPagePublishResp, error) {
 	log.Logger.Infow("landing_page_publish", "id", id, "operator", operator)
-	return s.pages.Publish(id, operator)
+	updated, err := s.pages.Publish(id, operator)
+	if err != nil {
+		return nil, err
+	}
+	return &data.LandingPagePublishResp{LandingPageID: updated.ID, Status: updated.Status}, nil
 }
 
 func landingPageViewFromRow(p *model.CampaignLandingPage) *LandingPageDetailView {
@@ -148,15 +172,19 @@ func landingPageViewFromRow(p *model.CampaignLandingPage) *LandingPageDetailView
 		Title:          p.Title,
 		Description:    p.Description,
 		Terms:          p.Terms,
+		Steps:          toDataRepeatableItems(p.Steps),
+		Faq:            toDataRepeatableItems(p.Faq),
 		Status:         p.Status,
 		CreatedAt:      p.CreatedAt,
 		UpdatedAt:      p.UpdatedAt,
 	}
 }
 
-func applyTranslationToView(v *LandingPageDetailView, lang, title, description, terms string) {
+func applyTranslationToView(v *LandingPageDetailView, lang string, tr *model.CampaignLandingPageTranslation) {
 	v.Lang = lang
-	v.Title = title
-	v.Description = description
-	v.Terms = terms
+	v.Title = tr.Title
+	v.Description = tr.Description
+	v.Terms = tr.Terms
+	v.Steps = toDataRepeatableItems(tr.Steps)
+	v.Faq = toDataRepeatableItems(tr.Faq)
 }

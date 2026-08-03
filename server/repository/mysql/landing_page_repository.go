@@ -66,6 +66,8 @@ func (r *landingPageRepository) Update(p *model.CampaignLandingPage) error {
 		"title":            p.Title,
 		"description":      p.Description,
 		"terms":            p.Terms,
+		"steps":            p.Steps,
+		"faq":              p.Faq,
 		"updated_at":       p.UpdatedAt,
 		"updated_by":       p.UpdatedBy,
 	}).Error

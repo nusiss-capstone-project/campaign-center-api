@@ -30,7 +30,7 @@ func NewRouter() *gin.Engine {
 	basicGroup.GET("/ping", api.Ping)
 
 	admin := basicGroup.Group("/admin")
-	admin.Use(commonauth.RequireAdmin())
+	admin.Use(commonauth.RequireRole([]string{commonauth.RoleCampaignOps, commonauth.RoleAdmin}))
 	{
 		admin.POST("/campaigns", api.AdminCreateCampaign)
 		admin.POST("/campaigns/:campaignId/versions", api.AdminCreateCampaignVersion)
@@ -51,19 +51,16 @@ func NewRouter() *gin.Engine {
 		admin.GET("/landing-pages/:landingPageId/detail/:lang", api.AdminGetLandingPageLocaleDetail)
 		admin.GET("/landing-pages/:landingPageId", api.AdminGetLandingPage)
 		admin.POST("/landing-pages/:landingPageId/publish", api.AdminPublishLandingPage)
+		admin.POST("/images/upload", api.AdminUploadImage)
 	}
 
-	// User-facing APIs (campaign handlers are mock until user flow is reimplemented)
+	// User-facing campaign APIs
 	web := basicGroup.Group("/web")
 	web.Use(commonauth.RequireUser())
 	{
-		web.GET("/user-profile", api.UserGetProfile)
-		web.GET("/account/summary", api.UserGetAccountSummary)
-		web.GET("/account/transactions", api.UserListAccountTransactions)
 		web.GET("/campaigns", api.UserListCampaigns)
 		web.GET("/campaigns/:campaignId/landing-page", api.UserGetCampaignLanding)
 		web.POST("/campaigns/:campaignId/join", api.UserJoinCampaign)
-		web.POST("/campaigns/:campaignId/deposit", api.UserDepositCampaign)
 	}
 
 	return r

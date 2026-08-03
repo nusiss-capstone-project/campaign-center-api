@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/nusiss-capstone-project/campaign-center-api/server/config"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/log"
 	openai "github.com/sashabaranov/go-openai"
 )
@@ -15,11 +16,11 @@ import (
 const landingTranslateSystemPrompt = `You are a professional multilingual translation assistant for marketing campaign content.
 Translate the provided content from the source language to the target language.
 Requirements:
-1. Preserve all placeholders exactly as-is (e.g. {{amount}}, {{reward_amount}}, {{days}}).
-2. Do NOT translate placeholders.
-3. Do NOT modify placeholder format.
-4. Keep the response concise and natural for marketing usage.
-5. Return valid JSON only with keys title, description, terms.
+1. If the source already contains placeholders like {{amount}}, {{reward_amount}}, or {{days}}, keep them exactly as-is. Do not translate or reformat them.
+2. Do NOT invent, add, or replace numbers/text with placeholders. If the source says "10 days", keep "10" as a literal number in the translation.
+3. Keep the response concise and natural for marketing usage.
+4. Return valid JSON only with keys title, description, terms, steps, faq.
+5. steps and faq must be arrays of objects with title and description. Preserve array length and order.
 6. Do not add explanations.`
 
 type openAILandingPageTranslator struct {
@@ -101,13 +102,23 @@ func (t *openAILandingPageTranslator) callChat(ctx context.Context, in LandingPa
 }
 
 func marshalUserPrompt(in LandingPageTranslateInput) (string, error) {
+	steps := in.Steps
+	if steps == nil {
+		steps = []data.LandingPageRepeatableItemVO{}
+	}
+	faq := in.Faq
+	if faq == nil {
+		faq = []data.LandingPageRepeatableItemVO{}
+	}
 	payload := map[string]any{
 		"source_lang": in.SourceLang,
 		"target_lang": in.TargetLang,
-		"content": map[string]string{
+		"content": map[string]any{
 			"title":       in.Title,
 			"description": in.Description,
 			"terms":       in.Terms,
+			"steps":       steps,
+			"faq":         faq,
 		},
 	}
 	b, err := json.Marshal(payload)
@@ -120,15 +131,24 @@ func marshalUserPrompt(in LandingPageTranslateInput) (string, error) {
 func parseTranslateJSON(raw string) (*LandingPageTranslateOutput, error) {
 	s := stripJSONFence(raw)
 	var parsed struct {
-		Title       string `json:"title"`
-		Description string `json:"description"`
-		Terms       string `json:"terms"`
+		Title       string                           `json:"title"`
+		Description string                           `json:"description"`
+		Terms       string                           `json:"terms"`
+		Steps       []data.LandingPageRepeatableItemVO `json:"steps"`
+		Faq         []data.LandingPageRepeatableItemVO `json:"faq"`
 	}
 	if err := json.Unmarshal([]byte(s), &parsed); err != nil {
 		return nil, err
 	}
+	if parsed.Steps == nil {
+		parsed.Steps = []data.LandingPageRepeatableItemVO{}
+	}
+	if parsed.Faq == nil {
+		parsed.Faq = []data.LandingPageRepeatableItemVO{}
+	}
 	return &LandingPageTranslateOutput{
 		Title: parsed.Title, Description: parsed.Description, Terms: parsed.Terms,
+		Steps: parsed.Steps, Faq: parsed.Faq,
 	}, nil
 }
 

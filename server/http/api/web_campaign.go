@@ -3,22 +3,23 @@ package api
 import (
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/log"
-	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/service"
 	commonauth "github.com/nusiss-capstone-project/identity-mservice/common/auth"
 )
 
-// UserListCampaigns returns a mock list of ongoing/upcoming campaigns.
-// @Summary List available campaigns (user, mock)
+// UserListCampaigns lists published campaigns split into ongoing / upcoming.
+// @Summary List available campaigns (user)
 // @Tags user-campaign
 // @Produce json
+// @Param lang query string false "Preferred language for landing-page title; default en"
 // @Success 200 {object} data.StandardResponse{data=data.WebCampaignListData} "success"
 // @Failure 401 {object} data.StandardResponse "unauthorized"
+// @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /web/campaigns [get]
 func UserListCampaigns(c *gin.Context) {
 	userID, ok := commonauth.GetUserID(c.Request.Context())
@@ -26,28 +27,22 @@ func UserListCampaigns(c *gin.Context) {
 		authError(c)
 		return
 	}
-	now := time.Now().Unix()
-	payload := data.WebCampaignListData{
-		Ongoing: []data.WebCampaignListItem{{
-			ID: 1001, Name: "Summer Deposit Bonus", Market: model.MarketSG,
-			Status: model.CampaignStatusPublished,
-			CampaignStartTime: now - 86400, CampaignEndTime: now + 86400*30,
-			LandingPageID: 2001, Joined: false,
-		}},
-		Upcoming: []data.WebCampaignListItem{{
-			ID: 1002, Name: "Autumn Welcome", Market: model.MarketSG,
-			Status: model.CampaignStatusPublished,
-			CampaignStartTime: now + 86400*7, CampaignEndTime: now + 86400*37,
-			LandingPageID: 2002, Joined: false,
-		}},
+	lang := c.Query("lang")
+	if lang == "" {
+		lang = c.DefaultQuery("language", "en")
 	}
-	log.WithContext(c.Request.Context()).Infow("web_list_campaigns_mock", "user_id", userID,
+	payload, err := service.GetWebCampaignService().ListCampaigns(c.Request.Context(), userID, lang)
+	if err != nil {
+		handleRepoErr(c, err)
+		return
+	}
+	log.WithContext(c.Request.Context()).Infow("web_list_campaigns", "user_id", userID, "lang", lang,
 		"ongoing", len(payload.Ongoing), "upcoming", len(payload.Upcoming))
 	data.OK(c, payload)
 }
 
-// UserGetCampaignLanding returns a mock landing-page UI payload.
-// @Summary Get campaign landing page (user, mock)
+// UserGetCampaignLanding returns campaign detail with localized landing-page content.
+// @Summary Get campaign landing page (user)
 // @Tags user-campaign
 // @Produce json
 // @Param campaignId path int true "Campaign ID"
@@ -55,6 +50,8 @@ func UserListCampaigns(c *gin.Context) {
 // @Success 200 {object} data.StandardResponse{data=data.WebCampaignLandingPageData} "success"
 // @Failure 400 {object} data.StandardResponse "bad request"
 // @Failure 401 {object} data.StandardResponse "unauthorized"
+// @Failure 404 {object} data.StandardResponse "campaign not found"
+// @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /web/campaigns/{campaignId}/landing-page [get]
 func UserGetCampaignLanding(c *gin.Context) {
 	campaignID, ok := parseWebCampaignID(c)
@@ -70,39 +67,30 @@ func UserGetCampaignLanding(c *gin.Context) {
 	if lang == "" {
 		lang = c.DefaultQuery("language", "en")
 	}
-	payload := data.WebCampaignLandingPageData{
-		CampaignID: campaignID,
-		UserID:     userID,
-		Name:       "Summer Deposit Bonus",
-		Market:     model.MarketSG,
-		TimeZone:   "Asia/Singapore",
-		Joined:     false,
-		LandingPage: data.WebLandingPageContent{
-			Lang:           lang,
-			BannerImageURL: "https://cdn.example.com/banner.png",
-			Title:          "Deposit and get a bonus",
-			Description:    "Join the campaign and complete the deposit task.",
-			Terms:          "One reward per user.",
-		},
-		Participation: data.WebParticipationStatus{
-			Joined:       false,
-			TaskStatus:   model.TaskStatusNotStarted,
-			RewardStatus: model.RewardStatusNotGranted,
-		},
+	payload, err := service.GetWebCampaignService().GetCampaignLanding(c.Request.Context(), campaignID, userID, lang)
+	if err != nil {
+		if mysql.IsNotFound(err) {
+			data.JSON(c, http.StatusNotFound, -1, "campaign not found", nil)
+			return
+		}
+		handleRepoErr(c, err)
+		return
 	}
-	log.WithContext(c.Request.Context()).Infow("web_get_campaign_landing_mock",
+	log.WithContext(c.Request.Context()).Infow("web_get_campaign_landing",
 		"campaign_id", campaignID, "user_id", userID, "lang", lang)
 	data.OK(c, payload)
 }
 
-// UserJoinCampaign returns a mock successful join response.
-// @Summary Join campaign (user, mock)
+// UserJoinCampaign joins the current user into a published campaign.
+// @Summary Join campaign (user)
 // @Tags user-campaign
 // @Produce json
 // @Param campaignId path int true "Campaign ID"
 // @Success 200 {object} data.StandardResponse{data=data.WebJoinCampaignData} "success"
 // @Failure 400 {object} data.StandardResponse "bad request"
 // @Failure 401 {object} data.StandardResponse "unauthorized"
+// @Failure 404 {object} data.StandardResponse "campaign not found"
+// @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /web/campaigns/{campaignId}/join [post]
 func UserJoinCampaign(c *gin.Context) {
 	campaignID, ok := parseWebCampaignID(c)
@@ -114,61 +102,17 @@ func UserJoinCampaign(c *gin.Context) {
 		authError(c)
 		return
 	}
-	payload := data.WebJoinCampaignData{
-		CampaignID: campaignID,
-		UserID:     userID,
-		Joined:     true,
-		JoinedAt:   time.Now().Unix(),
-		Message:    "joined (mock)",
+	payload, err := service.GetWebCampaignService().JoinCampaign(c.Request.Context(), campaignID, userID)
+	if err != nil {
+		if mysql.IsNotFound(err) {
+			data.JSON(c, http.StatusNotFound, -1, "campaign not found", nil)
+			return
+		}
+		handleRepoErr(c, err)
+		return
 	}
-	log.WithContext(c.Request.Context()).Infow("web_join_campaign_mock",
+	log.WithContext(c.Request.Context()).Infow("web_join_campaign",
 		"campaign_id", campaignID, "user_id", userID)
-	data.OK(c, payload)
-}
-
-// UserDepositCampaign returns a mock deposit / task-complete response.
-// @Summary Deposit for campaign task (user, mock)
-// @Tags user-campaign
-// @Accept json
-// @Produce json
-// @Param campaignId path int true "Campaign ID"
-// @Param body body data.WebDepositReq true "Deposit amount"
-// @Success 200 {object} data.StandardResponse{data=data.WebDepositData} "success"
-// @Failure 400 {object} data.StandardResponse "bad request"
-// @Failure 401 {object} data.StandardResponse "unauthorized"
-// @Router /web/campaigns/{campaignId}/deposit [post]
-func UserDepositCampaign(c *gin.Context) {
-	campaignID, ok := parseWebCampaignID(c)
-	if !ok {
-		return
-	}
-	userID, ok := commonauth.GetUserID(c.Request.Context())
-	if !ok {
-		authError(c)
-		return
-	}
-	var req data.WebDepositReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		log.WithContext(c.Request.Context()).Warnw("web_deposit_campaign_bad_request", "error", err.Error())
-		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
-		return
-	}
-	currency := req.Currency
-	if currency == "" {
-		currency = model.DefaultCurrency
-	}
-	payload := data.WebDepositData{
-		CampaignID:   campaignID,
-		UserID:       userID,
-		Amount:       req.Amount,
-		Currency:     currency,
-		TaskStatus:   model.TaskStatusCompleted,
-		RewardStatus: model.LedgerRewardStatusPendingDistribution,
-		LedgerID:     9001,
-		Message:      "deposit accepted (mock)",
-	}
-	log.WithContext(c.Request.Context()).Infow("web_deposit_campaign_mock",
-		"campaign_id", campaignID, "user_id", userID, "amount", req.Amount, "currency", currency)
 	data.OK(c, payload)
 }
 

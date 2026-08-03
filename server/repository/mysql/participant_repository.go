@@ -1,24 +1,21 @@
 package mysql
 
 import (
+	"context"
+	"errors"
 	"sync"
+	"time"
 
 	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
-// ParticipationListFilter filters admin participation list.
-type ParticipationListFilter struct {
-	CampaignID   int64
-	UserID       *int64
-	RewardStatus string
-	Page         int
-	PageSize     int
-}
-
-// ParticipantRepository persists campaign participants.
+// ParticipantRepository persists campaign join records.
 type ParticipantRepository interface {
-	ListByCampaign(filter ParticipationListFilter) ([]model.CampaignParticipant, int64, error)
+	GetByCampaignAndUser(campaignID, userID int64) (*model.CampaignParticipant, error)
+	ListJoinedCampaignIDs(userID int64, campaignIDs []int64) (map[int64]struct{}, error)
+	Join(ctx context.Context, campaignID, userID int64) (*model.CampaignParticipant, error)
 }
 
 type participantRepository struct{}
@@ -43,33 +40,69 @@ func (r *participantRepository) db() (*gorm.DB, error) {
 	return DB, nil
 }
 
-func (r *participantRepository) ListByCampaign(filter ParticipationListFilter) ([]model.CampaignParticipant, int64, error) {
+func (r *participantRepository) GetByCampaignAndUser(campaignID, userID int64) (*model.CampaignParticipant, error) {
 	db, err := r.db()
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	q := db.Model(&model.CampaignParticipant{}).Where("campaign_id = ?", filter.CampaignID)
-	if filter.UserID != nil {
-		q = q.Where("user_id = ?", *filter.UserID)
+	var row model.CampaignParticipant
+	err = db.Where("campaign_id = ? AND user_id = ?", campaignID, userID).First(&row).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
 	}
-	if filter.RewardStatus != "" {
-		q = q.Where("reward_status = ?", filter.RewardStatus)
+	if err != nil {
+		return nil, err
 	}
-	var total int64
-	if err := q.Count(&total).Error; err != nil {
-		return nil, 0, err
+	return &row, nil
+}
+
+func (r *participantRepository) ListJoinedCampaignIDs(userID int64, campaignIDs []int64) (map[int64]struct{}, error) {
+	out := make(map[int64]struct{})
+	if len(campaignIDs) == 0 {
+		return out, nil
 	}
-	page, pageSize := filter.Page, filter.PageSize
-	if page < 1 {
-		page = 1
+	db, err := r.db()
+	if err != nil {
+		return nil, err
 	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
+	var ids []int64
+	if err := db.Model(&model.CampaignParticipant{}).
+		Where("user_id = ? AND campaign_id IN ?", userID, campaignIDs).
+		Pluck("campaign_id", &ids).Error; err != nil {
+		return nil, err
 	}
-	offset := (page - 1) * pageSize
-	var rows []model.CampaignParticipant
-	if err := q.Order("id DESC").Offset(offset).Limit(pageSize).Find(&rows).Error; err != nil {
-		return nil, 0, err
+	for _, id := range ids {
+		out[id] = struct{}{}
 	}
-	return rows, total, nil
+	return out, nil
+}
+
+func (r *participantRepository) Join(ctx context.Context, campaignID, userID int64) (*model.CampaignParticipant, error) {
+	db, err := session(ctx)
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now().UTC()
+	row := &model.CampaignParticipant{
+		CampaignID: campaignID,
+		UserID:     userID,
+		JoinedAt:   now,
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
+	err = db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "campaign_id"}, {Name: "user_id"}},
+		DoNothing: true,
+	}).Create(row).Error
+	if err != nil {
+		return nil, err
+	}
+	if row.ID != 0 {
+		return row, nil
+	}
+	var existing model.CampaignParticipant
+	if err := db.Where("campaign_id = ? AND user_id = ?", campaignID, userID).First(&existing).Error; err != nil {
+		return nil, err
+	}
+	return &existing, nil
 }
