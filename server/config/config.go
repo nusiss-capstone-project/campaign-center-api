@@ -12,13 +12,17 @@ var (
 )
 
 type Conf struct {
-	GrpcConfig   *GrpcConfig   `mapstructure:"grpc"`
-	LogConfig    *LogConfig    `mapstructure:"log"`
-	HttpConfig   *HttpConfig   `mapstructure:"http"`
-	RedisConfig  *RedisConfig  `mapstructure:"redis"`
-	SystemConfig *SystemConfig `mapstructure:"system"`
-	OpenAIConfig *OpenAIConfig `mapstructure:"openai"`
-	OSSConfig    *OSSConfig    `mapstructure:"oss"`
+	GrpcConfig       *GrpcConfig       `mapstructure:"grpc"`
+	LogConfig        *LogConfig        `mapstructure:"log"`
+	HttpConfig       *HttpConfig       `mapstructure:"http"`
+	RedisConfig      *RedisConfig      `mapstructure:"redis"`
+	SystemConfig     *SystemConfig     `mapstructure:"system"`
+	OpenAIConfig     *OpenAIConfig     `mapstructure:"openai"`
+	OSSConfig        *OSSConfig        `mapstructure:"oss"`
+	KafkaConfig      *KafkaConfig      `mapstructure:"kafka"`
+	UsergroupGrpc    *GrpcClientConfig `mapstructure:"usergroup_grpc"`
+	TaskGrpc         *GrpcClientConfig `mapstructure:"task_grpc"`
+	RewardGrpc       *GrpcClientConfig `mapstructure:"reward_grpc"`
 }
 
 type SystemConfig struct {
@@ -35,11 +39,11 @@ type OpenAIConfig struct {
 
 // OSSConfig is Aliyun OSS settings. Access keys come from env only.
 type OSSConfig struct {
-	Endpoint      string `mapstructure:"endpoint"`
-	Bucket        string `mapstructure:"bucket"`
-	PublicBaseURL string `mapstructure:"public_base_url"`
-	KeyPrefix     string `mapstructure:"key_prefix"`
-	AccessKeyID   string `mapstructure:"-"`
+	Endpoint        string `mapstructure:"endpoint"`
+	Bucket          string `mapstructure:"bucket"`
+	PublicBaseURL   string `mapstructure:"public_base_url"`
+	KeyPrefix       string `mapstructure:"key_prefix"`
+	AccessKeyID     string `mapstructure:"-"`
 	AccessKeySecret string `mapstructure:"-"`
 }
 
@@ -60,10 +64,24 @@ type GrpcConfig struct {
 	MaxPoolSize    int    `mapstructure:"max_pool_size"`
 }
 
+// GrpcClientConfig is an outbound gRPC dependency endpoint.
+type GrpcClientConfig struct {
+	Host string `mapstructure:"host"`
+	Port int    `mapstructure:"port"`
+}
+
 type RedisConfig struct {
 	Enabled bool   `mapstructure:"enabled"`
 	Host    string `mapstructure:"host"`
 	Port    string `mapstructure:"port"`
+}
+
+type KafkaConfig struct {
+	Enabled  bool     `mapstructure:"enabled"`
+	Brokers  []string `mapstructure:"brokers"`
+	GroupID  string   `mapstructure:"group_id"`
+	ClientID string   `mapstructure:"client_id"`
+	Topics   []string `mapstructure:"topics"`
 }
 
 func Init() {
@@ -95,6 +113,15 @@ func Init() {
 	viper.SetDefault("oss.endpoint", "oss-ap-southeast-1.aliyuncs.com")
 	viper.SetDefault("oss.bucket", "campaign-center-img")
 	viper.SetDefault("oss.key_prefix", "campaign-center")
+	viper.SetDefault("kafka.enabled", false)
+	viper.SetDefault("kafka.group_id", "campaign-center-api")
+	viper.SetDefault("kafka.client_id", "campaign-center-api")
+	viper.SetDefault("usergroup_grpc.host", "127.0.0.1")
+	viper.SetDefault("usergroup_grpc.port", 50051)
+	viper.SetDefault("task_grpc.host", "127.0.0.1")
+	viper.SetDefault("task_grpc.port", 50052)
+	viper.SetDefault("reward_grpc.host", "127.0.0.1")
+	viper.SetDefault("reward_grpc.port", 50053)
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
@@ -119,6 +146,18 @@ func applyConfigDefaults() {
 	if Config.OSSConfig == nil {
 		Config.OSSConfig = &OSSConfig{}
 	}
+	if Config.KafkaConfig == nil {
+		Config.KafkaConfig = &KafkaConfig{}
+	}
+	if Config.UsergroupGrpc == nil {
+		Config.UsergroupGrpc = &GrpcClientConfig{}
+	}
+	if Config.TaskGrpc == nil {
+		Config.TaskGrpc = &GrpcClientConfig{}
+	}
+	if Config.RewardGrpc == nil {
+		Config.RewardGrpc = &GrpcClientConfig{}
+	}
 	if strings.TrimSpace(Config.OSSConfig.Endpoint) == "" {
 		Config.OSSConfig.Endpoint = "oss-ap-southeast-1.aliyuncs.com"
 	}
@@ -127,6 +166,15 @@ func applyConfigDefaults() {
 	}
 	if strings.TrimSpace(Config.OSSConfig.KeyPrefix) == "" {
 		Config.OSSConfig.KeyPrefix = "campaign-center"
+	}
+	if strings.TrimSpace(Config.KafkaConfig.GroupID) == "" {
+		Config.KafkaConfig.GroupID = "campaign-center-api"
+	}
+	if strings.TrimSpace(Config.KafkaConfig.ClientID) == "" {
+		Config.KafkaConfig.ClientID = "campaign-center-api"
+	}
+	if len(Config.KafkaConfig.Topics) == 0 {
+		Config.KafkaConfig.Topics = []string{"task.events.completed", "reward.distribution.result"}
 	}
 }
 

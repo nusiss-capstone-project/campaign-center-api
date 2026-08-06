@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS `campaign_user_rewards_ledger` (
   `rule_id` BIGINT NOT NULL DEFAULT 0 COMMENT 'campaign_reward_rules.id',
   `reward_status` VARCHAR(64) NOT NULL DEFAULT 'pending_distribution'
     COMMENT 'pending_distribution / distributing / distribute_success / distribute_fail',
-  `voucher_id` BIGINT NOT NULL DEFAULT 0 COMMENT 'voucher_issue_record.id',
+  `voucher_id` VARCHAR(128) NOT NULL DEFAULT '' COMMENT 'reward voucher id',
   `created_at` DATETIME(3) DEFAULT NULL,
   `updated_at` DATETIME(3) DEFAULT NULL,
   PRIMARY KEY (`id`),

@@ -44,8 +44,8 @@ type webPageRepoStub struct {
 	page *model.CampaignLandingPage
 }
 
-func (r webPageRepoStub) Create(*model.CampaignLandingPage) error  { return nil }
-func (r webPageRepoStub) Update(*model.CampaignLandingPage) error  { return nil }
+func (r webPageRepoStub) Create(*model.CampaignLandingPage) error { return nil }
+func (r webPageRepoStub) Update(*model.CampaignLandingPage) error { return nil }
 func (r webPageRepoStub) Publish(int64, string) (*model.CampaignLandingPage, error) {
 	return nil, nil
 }
@@ -88,6 +88,63 @@ func (r *webParticipantRepoStub) Join(ctx context.Context, campaignID, userID in
 	return &model.CampaignParticipant{CampaignID: campaignID, UserID: userID, JoinedAt: now}, nil
 }
 
+type webRulesRepoStub struct {
+	rules []model.CampaignRewardRule
+}
+
+func (r webRulesRepoStub) ListByCampaignID(int64) ([]model.CampaignRewardRule, error) {
+	return r.rules, nil
+}
+func (r webRulesRepoStub) ListByRef(string, int64) ([]model.CampaignRewardRule, error) { return nil, nil }
+func (r webRulesRepoStub) ReplaceByCampaignID(context.Context, int64, []model.CampaignRewardRule) error {
+	return nil
+}
+func (r webRulesRepoStub) DeleteByCampaignID(context.Context, int64) error { return nil }
+
+type webUsergroupStub struct {
+	matched bool
+	err     error
+	calls   int
+}
+
+func (s *webUsergroupStub) MatchUserGroup(context.Context, int64, int64) (bool, error) {
+	s.calls++
+	return s.matched, s.err
+}
+
+type webTaskStub struct {
+	err       error
+	enrolled  int64
+	callCount int
+}
+
+func (s *webTaskStub) EnrollTaskGroup(_ context.Context, userID, taskGroupID int64) error {
+	s.callCount++
+	s.enrolled = taskGroupID
+	return s.err
+}
+
+func newWebSvc(
+	campaigns mysql.CampaignRepository,
+	pages mysql.LandingPageRepository,
+	trans mysql.LandingPageTranslationRepository,
+	parts mysql.ParticipantRepository,
+	rules mysql.CampaignRewardRuleRepository,
+	ug *webUsergroupStub,
+	task *webTaskStub,
+) WebCampaignService {
+	if ug == nil {
+		ug = &webUsergroupStub{matched: true}
+	}
+	if task == nil {
+		task = &webTaskStub{}
+	}
+	if rules == nil {
+		rules = webRulesRepoStub{}
+	}
+	return NewWebCampaignService(campaigns, pages, trans, parts, rules, ug, task)
+}
+
 func TestClassifyCampaignWindow(t *testing.T) {
 	now := time.Date(2026, 8, 2, 12, 0, 0, 0, time.UTC)
 	startPast := now.Add(-time.Hour)
@@ -114,11 +171,12 @@ func TestWebCampaignService_ListCampaigns_splitsAndTitles(t *testing.T) {
 		{ID: 2, LandingPageID: 10, Status: model.CampaignStatusPublished, Market: "SG",
 			CampaignStartTime: &startFuture, CampaignEndTime: &endLater},
 	}
-	svc := NewWebCampaignService(
+	svc := newWebSvc(
 		&webCampaignRepoStub{campaigns: campaigns},
 		webPageRepoStub{page: &model.CampaignLandingPage{ID: 10, DefaultLang: "en", Title: "EN Title"}},
 		webTransRepoStub{row: &model.CampaignLandingPageTranslation{Title: "ZH Title"}},
 		&webParticipantRepoStub{joined: map[int64]struct{}{1: {}}},
+		nil, nil, nil,
 	)
 
 	out, err := svc.ListCampaigns(context.Background(), 42, "zh-CN")
@@ -131,11 +189,9 @@ func TestWebCampaignService_ListCampaigns_splitsAndTitles(t *testing.T) {
 }
 
 func TestWebCampaignService_GetCampaignLanding_notPublished(t *testing.T) {
-	svc := NewWebCampaignService(
+	svc := newWebSvc(
 		&webCampaignRepoStub{campaigns: []model.Campaign{{ID: 1, Status: model.CampaignStatusDraft}}},
-		webPageRepoStub{},
-		webTransRepoStub{},
-		&webParticipantRepoStub{},
+		webPageRepoStub{}, webTransRepoStub{}, &webParticipantRepoStub{}, nil, nil, nil,
 	)
 	_, err := svc.GetCampaignLanding(context.Background(), 1, 42, "en")
 	require.ErrorIs(t, err, gorm.ErrRecordNotFound)
@@ -143,7 +199,7 @@ func TestWebCampaignService_GetCampaignLanding_notPublished(t *testing.T) {
 
 func TestWebCampaignService_GetCampaignLanding_success(t *testing.T) {
 	joinedAt := time.Unix(1_700_000_000, 0).UTC()
-	svc := NewWebCampaignService(
+	svc := newWebSvc(
 		&webCampaignRepoStub{campaigns: []model.Campaign{{
 			ID: 3, Name: "C", Market: "SG", TimeZone: "Asia/Singapore",
 			Status: model.CampaignStatusPublished, LandingPageID: 10,
@@ -157,6 +213,7 @@ func TestWebCampaignService_GetCampaignLanding_success(t *testing.T) {
 		&webParticipantRepoStub{row: &model.CampaignParticipant{
 			CampaignID: 3, UserID: 42, JoinedAt: joinedAt,
 		}},
+		nil, nil, nil,
 	)
 	out, err := svc.GetCampaignLanding(context.Background(), 3, 42, "zh-CN")
 	require.NoError(t, err)
@@ -168,15 +225,36 @@ func TestWebCampaignService_GetCampaignLanding_success(t *testing.T) {
 }
 
 func TestWebCampaignService_JoinCampaign(t *testing.T) {
-	svc := NewWebCampaignService(
-		&webCampaignRepoStub{campaigns: []model.Campaign{{ID: 9, Status: model.CampaignStatusPublished}}},
-		webPageRepoStub{},
-		webTransRepoStub{},
-		&webParticipantRepoStub{},
+	ug := &webUsergroupStub{matched: true}
+	task := &webTaskStub{}
+	svc := newWebSvc(
+		&webCampaignRepoStub{campaigns: []model.Campaign{{
+			ID: 9, Status: model.CampaignStatusPublished, TargetUserGroupID: 0,
+		}}},
+		webPageRepoStub{}, webTransRepoStub{}, &webParticipantRepoStub{},
+		webRulesRepoStub{rules: []model.CampaignRewardRule{{
+			RefClient: model.RewardRefClientTaskGroup, RefID: 55,
+		}}},
+		ug, task,
 	)
 	out, err := svc.JoinCampaign(context.Background(), 9, 7)
 	require.NoError(t, err)
 	require.Equal(t, &data.WebJoinCampaignData{
 		CampaignID: 9, UserID: 7, Joined: true, JoinedAt: 1_700_000_000, Message: "joined",
 	}, out)
+	require.Equal(t, 1, ug.calls)
+	require.Equal(t, 1, task.callCount)
+	require.Equal(t, int64(55), task.enrolled)
+}
+
+func TestWebCampaignService_JoinCampaign_notEligible(t *testing.T) {
+	svc := newWebSvc(
+		&webCampaignRepoStub{campaigns: []model.Campaign{{
+			ID: 9, Status: model.CampaignStatusPublished, TargetUserGroupID: 10,
+		}}},
+		webPageRepoStub{}, webTransRepoStub{}, &webParticipantRepoStub{},
+		nil, &webUsergroupStub{matched: false}, nil,
+	)
+	_, err := svc.JoinCampaign(context.Background(), 9, 7)
+	require.ErrorIs(t, err, ErrUserNotEligible)
 }

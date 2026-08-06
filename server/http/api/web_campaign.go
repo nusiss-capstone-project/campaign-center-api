@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -104,6 +105,10 @@ func UserJoinCampaign(c *gin.Context) {
 	}
 	payload, err := service.GetWebCampaignService().JoinCampaign(c.Request.Context(), campaignID, userID)
 	if err != nil {
+		if errors.Is(err, service.ErrUserNotEligible) {
+			data.BizErr(c, data.CodeNotEligible, service.MsgUserNotEligible, nil)
+			return
+		}
 		if mysql.IsNotFound(err) {
 			data.JSON(c, http.StatusNotFound, -1, "campaign not found", nil)
 			return

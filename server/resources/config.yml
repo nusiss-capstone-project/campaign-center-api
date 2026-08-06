@@ -24,6 +24,26 @@ oss:
   public_base_url: "https://cdn.campaignhub.best"
   key_prefix: campaign-center
 
+usergroup_grpc:
+  host: 127.0.0.1
+  port: 50051
+task_grpc:
+  host: 127.0.0.1
+  port: 50052
+reward_grpc:
+  host: 127.0.0.1
+  port: 50053
+
+kafka:
+  enabled: false
+  brokers:
+    - localhost:9092
+  group_id: campaign-center-api
+  client_id: campaign-center-api
+  topics:
+    - task.events.completed
+    - reward.distribution.result
+
 system:
   allowed_origins: 
   - https://campaign-center-admin-web.vercel.app

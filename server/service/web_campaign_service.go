@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/proxy"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
 	"gorm.io/gorm"
@@ -25,6 +27,9 @@ type webCampaignService struct {
 	pages        mysql.LandingPageRepository
 	translations mysql.LandingPageTranslationRepository
 	participants mysql.ParticipantRepository
+	rules        mysql.CampaignRewardRuleRepository
+	usergroup    proxy.UsergroupClient
+	task         proxy.TaskClient
 }
 
 var (
@@ -38,12 +43,18 @@ func NewWebCampaignService(
 	pages mysql.LandingPageRepository,
 	translations mysql.LandingPageTranslationRepository,
 	participants mysql.ParticipantRepository,
+	rules mysql.CampaignRewardRuleRepository,
+	usergroup proxy.UsergroupClient,
+	task proxy.TaskClient,
 ) WebCampaignService {
 	return &webCampaignService{
 		campaigns:    campaigns,
 		pages:        pages,
 		translations: translations,
 		participants: participants,
+		rules:        rules,
+		usergroup:    usergroup,
+		task:         task,
 	}
 }
 
@@ -55,6 +66,9 @@ func GetWebCampaignService() WebCampaignService {
 			mysql.GetLandingPageRepository(),
 			mysql.GetLandingPageTranslationRepository(),
 			mysql.GetParticipantRepository(),
+			mysql.GetCampaignRewardRuleRepository(),
+			proxy.GetUsergroupClient(),
+			proxy.GetTaskClient(),
 		)
 	})
 	return webCampaignSvcInst
@@ -139,9 +153,42 @@ func (s *webCampaignService) GetCampaignLanding(ctx context.Context, campaignID,
 }
 
 func (s *webCampaignService) JoinCampaign(ctx context.Context, campaignID, userID int64) (*data.WebJoinCampaignData, error) {
-	if _, err := s.requirePublishedCampaign(campaignID); err != nil {
+	campaign, err := s.requirePublishedCampaign(campaignID)
+	if err != nil {
 		return nil, err
 	}
+
+	// Idempotent: already joined → return existing row.
+	if existing, err := s.participants.GetByCampaignAndUser(campaignID, userID); err != nil {
+		return nil, err
+	} else if existing != nil {
+		return &data.WebJoinCampaignData{
+			CampaignID: campaignID,
+			UserID:     userID,
+			Joined:     true,
+			JoinedAt:   timeToUnix(existing.JoinedAt),
+			Message:    "joined",
+		}, nil
+	}
+
+	matched, err := s.usergroup.MatchUserGroup(ctx, userID, campaign.TargetUserGroupID)
+	if err != nil {
+		return nil, err
+	}
+	if !matched {
+		return nil, ErrUserNotEligible
+	}
+
+	taskGroupID, err := s.resolveTaskGroupID(campaignID)
+	if err != nil {
+		return nil, err
+	}
+	if taskGroupID > 0 {
+		if err := s.task.EnrollTaskGroup(ctx, userID, taskGroupID); err != nil {
+			return nil, fmt.Errorf("enroll task group: %w", err)
+		}
+	}
+
 	row, err := s.participants.Join(ctx, campaignID, userID)
 	if err != nil {
 		return nil, err
@@ -153,6 +200,19 @@ func (s *webCampaignService) JoinCampaign(ctx context.Context, campaignID, userI
 		JoinedAt:   timeToUnix(row.JoinedAt),
 		Message:    "joined",
 	}, nil
+}
+
+func (s *webCampaignService) resolveTaskGroupID(campaignID int64) (int64, error) {
+	rules, err := s.rules.ListByCampaignID(campaignID)
+	if err != nil {
+		return 0, err
+	}
+	for _, rule := range rules {
+		if rule.RefClient == model.RewardRefClientTaskGroup && rule.RefID > 0 {
+			return rule.RefID, nil
+		}
+	}
+	return 0, nil
 }
 
 func (s *webCampaignService) requirePublishedCampaign(campaignID int64) (*model.Campaign, error) {

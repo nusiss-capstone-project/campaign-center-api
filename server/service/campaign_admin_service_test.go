@@ -182,6 +182,18 @@ func (r *memRuleRepo) ListByCampaignID(campaignID int64) ([]model.CampaignReward
 	return append([]model.CampaignRewardRule(nil), r.byCampaign[campaignID]...), nil
 }
 
+func (r *memRuleRepo) ListByRef(refClient string, refID int64) ([]model.CampaignRewardRule, error) {
+	out := make([]model.CampaignRewardRule, 0)
+	for _, rules := range r.byCampaign {
+		for _, rule := range rules {
+			if rule.RefClient == refClient && rule.RefID == refID {
+				out = append(out, rule)
+			}
+		}
+	}
+	return out, nil
+}
+
 func (r *memRuleRepo) DeleteByCampaignID(_ context.Context, campaignID int64) error {
 	delete(r.byCampaign, campaignID)
 	return nil

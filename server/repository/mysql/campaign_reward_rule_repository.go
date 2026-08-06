@@ -12,6 +12,7 @@ import (
 // CampaignRewardRuleRepository persists flattened campaign reward rules.
 type CampaignRewardRuleRepository interface {
 	ListByCampaignID(campaignID int64) ([]model.CampaignRewardRule, error)
+	ListByRef(refClient string, refID int64) ([]model.CampaignRewardRule, error)
 	ReplaceByCampaignID(ctx context.Context, campaignID int64, rules []model.CampaignRewardRule) error
 	DeleteByCampaignID(ctx context.Context, campaignID int64) error
 }
@@ -45,6 +46,18 @@ func (r *campaignRewardRuleRepository) ListByCampaignID(campaignID int64) ([]mod
 	}
 	var items []model.CampaignRewardRule
 	if err := db.Where("campaign_id = ?", campaignID).Order("id ASC").Find(&items).Error; err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (r *campaignRewardRuleRepository) ListByRef(refClient string, refID int64) ([]model.CampaignRewardRule, error) {
+	db, err := r.db()
+	if err != nil {
+		return nil, err
+	}
+	var items []model.CampaignRewardRule
+	if err := db.Where("ref_client = ? AND ref_id = ?", refClient, refID).Order("id ASC").Find(&items).Error; err != nil {
 		return nil, err
 	}
 	return items, nil
