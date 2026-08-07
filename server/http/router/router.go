@@ -22,47 +22,51 @@ func NewRouter() *gin.Engine {
 	r := gin.New()
 	r.Use(log.RecoveryMiddleware())
 	r.Use(otelgin.Middleware(data.ServiceName))
-	r.Use(log.HTTPObservabilityMiddleware())
+	r.Use(log.HTTPResponseIDMiddleware())
 	r.Use(corsMiddleware())
 
 	basicGroup := r.Group(serviceURIPrefix)
-	basicGroup.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	basicGroup.GET("/ping", api.Ping)
-
-	admin := basicGroup.Group("/admin")
-	admin.Use(commonauth.RequireRole([]string{commonauth.RoleCampaignOps, commonauth.RoleAdmin}))
 	{
-		admin.POST("/campaigns", api.AdminCreateCampaign)
-		admin.POST("/campaigns/:campaignId/versions", api.AdminCreateCampaignVersion)
-		admin.PUT("/campaigns/:campaignId/versions/:version", api.AdminEditCampaignVersion)
-		admin.GET("/campaigns", api.AdminListCampaigns)
-		admin.GET("/campaigns/:campaignId", api.AdminGetCampaign)
-		admin.POST("/campaigns/:campaignId/publish", api.AdminPublishCampaign)
-		admin.GET("/campaigns/:campaignId/performance/summary", api.AdminGetCampaignPerformanceSummary)
-		admin.GET("/campaigns/:campaignId/performance/daily", api.AdminListCampaignDailyPerformance)
-		admin.GET("/campaigns/:campaignId/participations", api.AdminListCampaignParticipations)
-		admin.GET("/campaigns/:campaignId/users/:userId", api.AdminGetCampaignUser)
-		admin.GET("/campaigns/:campaignId/users", api.AdminListCampaignUsers)
+		// High-frequency / non-business routes: no HTTP access log.
+		basicGroup.GET("/ping", api.Ping)
+		basicGroup.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-		admin.POST("/landing-pages/:landingPageId/translations/generate", api.AdminGenerateLandingTranslation)
-		admin.GET("/landing-pages/:landingPageId/translations", api.AdminListLandingPageTranslatedLangs)
-		admin.PUT("/landing-pages/:landingPageId/translations/:lang", api.AdminPutLandingTranslation)
-		admin.POST("/landing-pages", api.AdminCreateLandingPage)
-		admin.PUT("/landing-pages/:landingPageId", api.AdminUpdateLandingPage)
-		admin.GET("/landing-pages", api.AdminListLandingPages)
-		admin.GET("/landing-pages/:landingPageId/detail/:lang", api.AdminGetLandingPageLocaleDetail)
-		admin.GET("/landing-pages/:landingPageId", api.AdminGetLandingPage)
-		admin.POST("/landing-pages/:landingPageId/publish", api.AdminPublishLandingPage)
-		admin.POST("/images/upload", api.AdminUploadImage)
-	}
+		// Business routes: enable request access logging.
+		apiGroup := basicGroup.Group("")
+		apiGroup.Use(log.HTTPObservabilityMiddleware())
+		{
+			admin := apiGroup.Group("/admin")
+			admin.Use(commonauth.RequireRole([]string{commonauth.RoleCampaignOps, commonauth.RoleAdmin}))
+			{
+				admin.POST("/campaigns", api.AdminCreateCampaign)
+				admin.POST("/campaigns/:campaignId/versions", api.AdminCreateCampaignVersion)
+				admin.PUT("/campaigns/:campaignId/versions/:version", api.AdminEditCampaignVersion)
+				admin.GET("/campaigns", api.AdminListCampaigns)
+				admin.GET("/campaigns/:campaignId", api.AdminGetCampaign)
+				admin.POST("/campaigns/:campaignId/publish", api.AdminPublishCampaign)
+				admin.GET("/campaigns/:campaignId/users/:userId", api.AdminGetCampaignUser)
+				admin.GET("/campaigns/:campaignId/users", api.AdminListCampaignUsers)
 
-	// User-facing campaign APIs
-	web := basicGroup.Group("/web")
-	web.Use(commonauth.RequireUser())
-	{
-		web.GET("/campaigns", api.UserListCampaigns)
-		web.GET("/campaigns/:campaignId/landing-page", api.UserGetCampaignLanding)
-		web.POST("/campaigns/:campaignId/join", api.UserJoinCampaign)
+				admin.POST("/landing-pages/:landingPageId/translations/generate", api.AdminGenerateLandingTranslation)
+				admin.GET("/landing-pages/:landingPageId/translations", api.AdminListLandingPageTranslatedLangs)
+				admin.PUT("/landing-pages/:landingPageId/translations/:lang", api.AdminPutLandingTranslation)
+				admin.POST("/landing-pages", api.AdminCreateLandingPage)
+				admin.PUT("/landing-pages/:landingPageId", api.AdminUpdateLandingPage)
+				admin.GET("/landing-pages", api.AdminListLandingPages)
+				admin.GET("/landing-pages/:landingPageId/detail/:lang", api.AdminGetLandingPageLocaleDetail)
+				admin.GET("/landing-pages/:landingPageId", api.AdminGetLandingPage)
+				admin.POST("/landing-pages/:landingPageId/publish", api.AdminPublishLandingPage)
+				admin.POST("/images/upload", api.AdminUploadImage)
+			}
+
+			web := apiGroup.Group("/web")
+			web.Use(commonauth.RequireUser())
+			{
+				web.GET("/campaigns", api.UserListCampaigns)
+				web.GET("/campaigns/:campaignId/landing-page", api.UserGetCampaignLanding)
+				web.POST("/campaigns/:campaignId/join", api.UserJoinCampaign)
+			}
+		}
 	}
 
 	return r
@@ -76,10 +80,12 @@ func corsMiddleware() gin.HandlerFunc {
 		},
 		AllowHeaders: []string{
 			"Origin", "Content-Type", "Accept", "Authorization",
-			commonauth.HeaderInternalUserID, commonauth.HeaderUserRole, log.RequestIDHeader,
+			commonauth.HeaderInternalUserID, commonauth.HeaderUserRole,
+			log.RequestIDHeader, log.TraceIDHeader,
 		},
 		ExposeHeaders: []string{
-			"Content-Length", commonauth.HeaderInternalUserID, commonauth.HeaderUserRole, log.RequestIDHeader,
+			"Content-Length", commonauth.HeaderInternalUserID, commonauth.HeaderUserRole,
+			log.RequestIDHeader, log.TraceIDHeader,
 		},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,

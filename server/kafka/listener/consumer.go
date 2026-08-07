@@ -10,6 +10,7 @@ import (
 
 	"github.com/nusiss-capstone-project/campaign-center-api/server/config"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/kafka"
+	kafkatrace "github.com/nusiss-capstone-project/campaign-center-api/server/kafka/trace"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/log"
 	"github.com/twmb/franz-go/pkg/kgo"
 )
@@ -102,34 +103,41 @@ func (c *consumer) run(ctx context.Context) {
 	}
 }
 
-func (c *consumer) handleRecord(ctx context.Context, record *kgo.Record) {
+func (c *consumer) handleRecord(parentCtx context.Context, record *kgo.Record) {
 	start := time.Now()
-	handlers := kafka.HandlersForTopic(record.Topic)
-	if len(handlers) == 0 {
-		log.Logger.Warnw("no handlers registered for topic, skipping commit",
-			"topic", record.Topic, "partition", record.Partition, "offset", record.Offset)
+	ctx, span := kafkatrace.StartConsume(parentCtx, record)
+	var err error
+	defer func() {
+		kafkatrace.Finish(span, err)
+	}()
+
+	topicHandlers := kafka.HandlersForTopic(record.Topic)
+	if len(topicHandlers) == 0 {
+		log.WithContext(ctx).Warnw("no handlers registered for topic, skipping commit",
+			"topic", record.Topic,
+			"partition", record.Partition,
+			"offset", record.Offset,
+		)
 		return
 	}
-	log.WithContext(ctx).Infow("kafka message consume started",
-		"topic", record.Topic, "partition", record.Partition, "offset", record.Offset,
-		"handler_count", len(handlers))
-	err := invokeHandlersParallel(ctx, handlers, toMessage(record))
-	durationMs := float64(time.Since(start).Microseconds()) / 1000
+
+	kafkatrace.LogConsumeStart(ctx, record, len(topicHandlers))
+
+	err = invokeHandlersParallel(ctx, topicHandlers, toMessage(record))
+	kafkatrace.LogConsumeFinish(ctx, record, float64(time.Since(start).Microseconds())/1000, err)
 	if err != nil {
-		log.WithContext(ctx).Errorw("kafka message consume failed",
-			"topic", record.Topic, "partition", record.Partition, "offset", record.Offset,
-			"duration_ms", durationMs, "error", err)
 		return
 	}
+
 	if commitErr := c.client.CommitRecords(ctx, record); commitErr != nil {
 		log.WithContext(ctx).Errorw("kafka manual commit failed",
-			"topic", record.Topic, "partition", record.Partition, "offset", record.Offset,
-			"error", commitErr)
-		return
+			"topic", record.Topic,
+			"partition", record.Partition,
+			"offset", record.Offset,
+			"error", commitErr,
+		)
+		err = commitErr
 	}
-	log.WithContext(ctx).Infow("kafka message consume completed",
-		"topic", record.Topic, "partition", record.Partition, "offset", record.Offset,
-		"duration_ms", durationMs)
 }
 
 func invokeHandlersParallel(ctx context.Context, handlers []kafka.Handler, msg *kafka.Message) error {
