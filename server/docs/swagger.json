@@ -1382,6 +1382,70 @@
                     }
                 }
             }
+        },
+        "/web/campaigns/{campaignId}/rules": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-campaign"
+                ],
+                "summary": "Get campaign rules summary (user)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Campaign ID",
+                        "name": "campaignId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/data.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/data.WebCampaignRulesData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "campaign not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -2039,6 +2103,23 @@
                 "title": {
                     "type": "string",
                     "example": "Deposit and get a bonus"
+                }
+            }
+        },
+        "data.WebCampaignRulesData": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "projectId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "taskGroupId": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },

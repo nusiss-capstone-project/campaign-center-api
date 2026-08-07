@@ -82,6 +82,39 @@ func UserGetCampaignLanding(c *gin.Context) {
 	data.OK(c, payload)
 }
 
+// UserGetCampaignRules returns campaign id, task group id and budget project id.
+// @Summary Get campaign rules summary (user)
+// @Tags user-campaign
+// @Produce json
+// @Param campaignId path int true "Campaign ID"
+// @Success 200 {object} data.StandardResponse{data=data.WebCampaignRulesData} "success"
+// @Failure 400 {object} data.StandardResponse "bad request"
+// @Failure 401 {object} data.StandardResponse "unauthorized"
+// @Failure 404 {object} data.StandardResponse "campaign not found"
+// @Failure 503 {object} data.StandardResponse "database unavailable"
+// @Router /web/campaigns/{campaignId}/rules [get]
+func UserGetCampaignRules(c *gin.Context) {
+	campaignID, ok := parseWebCampaignID(c)
+	if !ok {
+		return
+	}
+	if _, ok := commonauth.GetUserID(c.Request.Context()); !ok {
+		authError(c)
+		return
+	}
+	payload, err := service.GetWebCampaignService().GetCampaignRules(c.Request.Context(), campaignID)
+	if err != nil {
+		if mysql.IsNotFound(err) {
+			data.JSON(c, http.StatusNotFound, -1, "campaign not found", nil)
+			return
+		}
+		handleRepoErr(c, err)
+		return
+	}
+	log.WithContext(c.Request.Context()).Infow("web_get_campaign_rules", "campaign_id", campaignID)
+	data.OK(c, payload)
+}
+
 // UserJoinCampaign joins the current user into a published campaign.
 // @Summary Join campaign (user)
 // @Tags user-campaign

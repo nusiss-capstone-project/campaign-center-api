@@ -303,3 +303,22 @@ func TestWebCampaignService_JoinCampaign_skipsEnrollWithoutTaskGroup(t *testing.
 	require.True(t, out.Joined)
 	require.Equal(t, 0, task.callCount)
 }
+
+func TestWebCampaignService_GetCampaignRules(t *testing.T) {
+	svc := newWebSvc(
+		&webCampaignRepoStub{campaigns: []model.Campaign{{
+			ID: 9, Status: model.CampaignStatusPublished, BudgetProjectID: 42,
+		}}},
+		webPageRepoStub{}, webTransRepoStub{}, &webParticipantRepoStub{},
+		webRulesRepoStub{rules: []model.CampaignRewardRule{{
+			RefClient: model.RewardRefClientTaskGroup, RefID: 77,
+		}}},
+		nil, nil,
+	)
+	out, err := svc.GetCampaignRules(context.Background(), 9)
+	require.NoError(t, err)
+	require.Equal(t, &data.WebCampaignRulesData{ID: 9, TaskGroupID: 77, ProjectID: 42}, out)
+
+	_, err = svc.GetCampaignRules(context.Background(), 99)
+	require.ErrorIs(t, err, gorm.ErrRecordNotFound)
+}

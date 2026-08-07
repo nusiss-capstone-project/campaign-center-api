@@ -64,6 +64,7 @@ func NewRouter() *gin.Engine {
 			{
 				web.GET("/campaigns", api.UserListCampaigns)
 				web.GET("/campaigns/:campaignId/landing-page", api.UserGetCampaignLanding)
+				web.GET("/campaigns/:campaignId/rules", api.UserGetCampaignRules)
 				web.POST("/campaigns/:campaignId/join", api.UserJoinCampaign)
 			}
 		}

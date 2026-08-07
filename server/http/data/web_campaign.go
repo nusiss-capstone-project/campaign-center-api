@@ -49,3 +49,10 @@ type WebJoinCampaignData struct {
 	JoinedAt   int64  `json:"joinedAt" example:"1717200000"`
 	Message    string `json:"message" example:"joined"`
 }
+
+// WebCampaignRulesData is the campaign rules summary for the user UI.
+type WebCampaignRulesData struct {
+	ID          int64 `json:"id" example:"1"`
+	TaskGroupID int64 `json:"taskGroupId" example:"1"`
+	ProjectID   int64 `json:"projectId" example:"1"`
+}

@@ -19,6 +19,7 @@ const webCampaignListLimit = 1000
 type WebCampaignService interface {
 	ListCampaigns(ctx context.Context, userID int64, lang string) (*data.WebCampaignListData, error)
 	GetCampaignLanding(ctx context.Context, campaignID, userID int64, lang string) (*data.WebCampaignLandingPageData, error)
+	GetCampaignRules(ctx context.Context, campaignID int64) (*data.WebCampaignRulesData, error)
 	JoinCampaign(ctx context.Context, campaignID, userID int64) (*data.WebJoinCampaignData, error)
 }
 
@@ -150,6 +151,22 @@ func (s *webCampaignService) GetCampaignLanding(ctx context.Context, campaignID,
 		out.JoinedAt = timeToUnix(part.JoinedAt)
 	}
 	return out, nil
+}
+
+func (s *webCampaignService) GetCampaignRules(ctx context.Context, campaignID int64) (*data.WebCampaignRulesData, error) {
+	campaign, err := s.requirePublishedCampaign(campaignID)
+	if err != nil {
+		return nil, err
+	}
+	taskGroupID, err := s.resolveTaskGroupID(campaignID)
+	if err != nil {
+		return nil, err
+	}
+	return &data.WebCampaignRulesData{
+		ID:          campaign.ID,
+		TaskGroupID: taskGroupID,
+		ProjectID:   campaign.BudgetProjectID,
+	}, nil
 }
 
 func (s *webCampaignService) JoinCampaign(ctx context.Context, campaignID, userID int64) (*data.WebJoinCampaignData, error) {

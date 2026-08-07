@@ -438,6 +438,18 @@ definitions:
         example: Deposit and get a bonus
         type: string
     type: object
+  data.WebCampaignRulesData:
+    properties:
+      id:
+        example: 1
+        type: integer
+      projectId:
+        example: 1
+        type: integer
+      taskGroupId:
+        example: 1
+        type: integer
+    type: object
   data.WebJoinCampaignData:
     properties:
       campaignId:
@@ -1326,6 +1338,45 @@ paths:
           schema:
             $ref: '#/definitions/data.StandardResponse'
       summary: Get campaign landing page (user)
+      tags:
+      - user-campaign
+  /web/campaigns/{campaignId}/rules:
+    get:
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.WebCampaignRulesData'
+              type: object
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "401":
+          description: unauthorized
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: campaign not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Get campaign rules summary (user)
       tags:
       - user-campaign
 schemes:
