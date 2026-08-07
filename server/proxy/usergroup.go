@@ -52,15 +52,22 @@ func (c *usergroupClient) MatchUserGroup(ctx context.Context, userID, userGroupI
 	if userGroupID == 0 {
 		return true, nil
 	}
-	resp, err := c.raw.MatchUserGroup(ctx, &usergrouppb.MatchUserGroupRequest{
-		UserId:      userID,
-		UserGroupId: userGroupID,
+	var matched bool
+	err := withGRPCCall(ctx, "usergroup.MatchUserGroup", []any{
+		"user_id", userID, "user_group_id", userGroupID,
+	}, func(callCtx context.Context) error {
+		resp, err := c.raw.MatchUserGroup(callCtx, &usergrouppb.MatchUserGroupRequest{
+			UserId:      userID,
+			UserGroupId: userGroupID,
+		})
+		if err != nil {
+			return err
+		}
+		if info := resp.GetBaseResponseInfo(); info != nil && info.GetCode() != usergrouppb.ErrorCode_OK {
+			return fmt.Errorf("usergroup MatchUserGroup failed: code=%v message=%s", info.GetCode(), info.GetMessage())
+		}
+		matched = resp.GetMatched()
+		return nil
 	})
-	if err != nil {
-		return false, err
-	}
-	if info := resp.GetBaseResponseInfo(); info != nil && info.GetCode() != usergrouppb.ErrorCode_OK {
-		return false, fmt.Errorf("usergroup MatchUserGroup failed: code=%v message=%s", info.GetCode(), info.GetMessage())
-	}
-	return resp.GetMatched(), nil
+	return matched, err
 }

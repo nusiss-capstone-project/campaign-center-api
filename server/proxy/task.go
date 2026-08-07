@@ -52,15 +52,19 @@ func (c *taskClient) EnrollTaskGroup(ctx context.Context, userID, taskGroupID in
 	if taskGroupID <= 0 {
 		return fmt.Errorf("task_group_id is required")
 	}
-	resp, err := c.raw.EnrollTask(ctx, &taskpb.EnrollTaskRequest{
-		UserId:      userID,
-		TaskGroupId: taskGroupID,
+	return withGRPCCall(ctx, "task.EnrollTask", []any{
+		"user_id", userID, "task_group_id", taskGroupID,
+	}, func(callCtx context.Context) error {
+		resp, err := c.raw.EnrollTask(callCtx, &taskpb.EnrollTaskRequest{
+			UserId:      userID,
+			TaskGroupId: taskGroupID,
+		})
+		if err != nil {
+			return err
+		}
+		if base := resp.GetBase(); base != nil && base.GetCode() != taskpb.ErrorCode_OK {
+			return fmt.Errorf("task EnrollTask failed: code=%v message=%s", base.GetCode(), base.GetMessage())
+		}
+		return nil
 	})
-	if err != nil {
-		return err
-	}
-	if base := resp.GetBase(); base != nil && base.GetCode() != taskpb.ErrorCode_OK {
-		return fmt.Errorf("task EnrollTask failed: code=%v message=%s", base.GetCode(), base.GetMessage())
-	}
-	return nil
 }

@@ -63,24 +63,34 @@ func NewRewardClientForTest(raw rewardpb.RewardServiceClient) RewardClient {
 }
 
 func (c *rewardClient) Distribute(ctx context.Context, req RewardDistributeRequest) (*RewardDistributeResult, error) {
-	resp, err := c.raw.Reward(ctx, &rewardpb.RewardDistributionRequest{
-		ClientRefId: req.ClientRefID,
-		UserId:      uint64(req.UserID),
-		ProjectId:   uint64(req.ProjectID),
-		TemplateId:  uint64(req.TemplateID),
-		BaseInfo: &rewardpb.BaseRequestInfo{
-			From: "campaign-center-api",
-			To:   "reward-mservice",
-		},
+	var out *RewardDistributeResult
+	err := withGRPCCall(ctx, "reward.Reward", []any{
+		"client_ref_id", req.ClientRefID,
+		"user_id", req.UserID,
+		"project_id", req.ProjectID,
+		"template_id", req.TemplateID,
+	}, func(callCtx context.Context) error {
+		resp, err := c.raw.Reward(callCtx, &rewardpb.RewardDistributionRequest{
+			ClientRefId: req.ClientRefID,
+			UserId:      uint64(req.UserID),
+			ProjectId:   uint64(req.ProjectID),
+			TemplateId:  uint64(req.TemplateID),
+			BaseInfo: &rewardpb.BaseRequestInfo{
+				From: "campaign-center-api",
+				To:   "reward-mservice",
+			},
+		})
+		if err != nil {
+			return err
+		}
+		if info := resp.GetBaseInfo(); info != nil && info.GetCode() != rewardpb.ErrorCode_OK {
+			return fmt.Errorf("reward Distribute failed: code=%v message=%s", info.GetCode(), info.GetMessage())
+		}
+		out = &RewardDistributeResult{
+			ClientRefID: resp.GetClientRefId(),
+			VoucherID:   resp.GetVoucherId(),
+		}
+		return nil
 	})
-	if err != nil {
-		return nil, err
-	}
-	if info := resp.GetBaseInfo(); info != nil && info.GetCode() != rewardpb.ErrorCode_OK {
-		return nil, fmt.Errorf("reward Distribute failed: code=%v message=%s", info.GetCode(), info.GetMessage())
-	}
-	return &RewardDistributeResult{
-		ClientRefID: resp.GetClientRefId(),
-		VoucherID:   resp.GetVoucherId(),
-	}, nil
+	return out, err
 }
