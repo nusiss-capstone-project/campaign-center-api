@@ -16,12 +16,11 @@ import (
 const landingTranslateSystemPrompt = `You are a professional multilingual translation assistant for marketing campaign content.
 Translate the provided content from the source language to the target language.
 Requirements:
-1. If the source already contains placeholders like {{amount}}, {{reward_amount}}, or {{days}}, keep them exactly as-is. Do not translate or reformat them.
-2. Do NOT invent, add, or replace numbers/text with placeholders. If the source says "10 days", keep "10" as a literal number in the translation.
-3. Keep the response concise and natural for marketing usage.
-4. Return valid JSON only with keys title, description, terms, steps, faq.
-5. steps and faq must be arrays of objects with title and description. Preserve array length and order.
-6. Do not add explanations.`
+1. Translate faithfully. Do not add, invent, or omit content.
+2. Keep the response concise and natural for marketing usage.
+3. Return valid JSON only with keys title, description, terms, steps, faq.
+4. steps and faq must be arrays of objects with title and description. Preserve array length and order.
+5. Do not add explanations.`
 
 type openAILandingPageTranslator struct {
 	client *openai.Client
