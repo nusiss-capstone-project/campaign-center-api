@@ -127,8 +127,8 @@ github.com/nusiss-capstone-project/task-mservice/client v0.0.4 h1:c7WkLb5U+Gx913
 github.com/nusiss-capstone-project/task-mservice/client v0.0.4/go.mod h1:ZX2yNQbaJ7RwTtUeA7r9LRRFj62A8Mb9HWnyZiEGwXA=
 github.com/nusiss-capstone-project/task-mservice/common v0.0.3 h1:S8ZR8CrDQsKChaxNNYK1YLzv5PYOjZ5ZFtBBrAj7glQ=
 github.com/nusiss-capstone-project/task-mservice/common v0.0.3/go.mod h1:tPD2R3y/lQ6TmEaH3l5mP9sqV8z+4zfSbDhXsZ6HEJQ=
-github.com/nusiss-capstone-project/usergroup-mservice/client v0.0.2 h1:5nyJn6k/yXCTIt0ln9g3MbwjjaB8CpaE181NspGejqw=
-github.com/nusiss-capstone-project/usergroup-mservice/client v0.0.2/go.mod h1:n7zdAkEZotsl8WoG2Rczxq1oEdBGZ+7gOpjCr+Oqo4g=
+github.com/nusiss-capstone-project/usergroup-mservice/client v0.0.3 h1:/+oMamlKjaaE7/dsLH3kYauW1qKTnlrkLyn5Qz9NQ3Y=
+github.com/nusiss-capstone-project/usergroup-mservice/client v0.0.3/go.mod h1:dU/p7h0I7ICYUdE2GDQeFJfmSm1l5enSQFUB0pESDbw=
 github.com/nusiss-capstone-project/usergroup-mservice/common v0.0.2 h1:c1xN0jb1qz8CVaKkyYkKLnbqHNxhZoOWe00bTi608fA=
 github.com/nusiss-capstone-project/usergroup-mservice/common v0.0.2/go.mod h1:BNMUslFNSoxKDDecp7VLtHx9dbsDAQSZMymTlncK1Pc=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
