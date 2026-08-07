@@ -41,6 +41,8 @@ func NewRouter() *gin.Engine {
 		admin.GET("/campaigns/:campaignId/performance/summary", api.AdminGetCampaignPerformanceSummary)
 		admin.GET("/campaigns/:campaignId/performance/daily", api.AdminListCampaignDailyPerformance)
 		admin.GET("/campaigns/:campaignId/participations", api.AdminListCampaignParticipations)
+		admin.GET("/campaigns/:campaignId/users/:userId", api.AdminGetCampaignUser)
+		admin.GET("/campaigns/:campaignId/users", api.AdminListCampaignUsers)
 
 		admin.POST("/landing-pages/:landingPageId/translations/generate", api.AdminGenerateLandingTranslation)
 		admin.GET("/landing-pages/:landingPageId/translations", api.AdminListLandingPageTranslatedLangs)

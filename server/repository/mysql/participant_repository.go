@@ -14,6 +14,7 @@ import (
 // ParticipantRepository persists campaign join records.
 type ParticipantRepository interface {
 	GetByCampaignAndUser(campaignID, userID int64) (*model.CampaignParticipant, error)
+	ListByCampaignID(campaignID int64) ([]model.CampaignParticipant, error)
 	ListJoinedCampaignIDs(userID int64, campaignIDs []int64) (map[int64]struct{}, error)
 	Join(ctx context.Context, campaignID, userID int64) (*model.CampaignParticipant, error)
 }
@@ -54,6 +55,20 @@ func (r *participantRepository) GetByCampaignAndUser(campaignID, userID int64) (
 		return nil, err
 	}
 	return &row, nil
+}
+
+const maxParticipantsPerCampaign = 200
+
+func (r *participantRepository) ListByCampaignID(campaignID int64) ([]model.CampaignParticipant, error) {
+	db, err := r.db()
+	if err != nil {
+		return nil, err
+	}
+	var rows []model.CampaignParticipant
+	if err := db.Where("campaign_id = ?", campaignID).Order("id DESC").Limit(maxParticipantsPerCampaign).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	return rows, nil
 }
 
 func (r *participantRepository) ListJoinedCampaignIDs(userID int64, campaignIDs []int64) (map[int64]struct{}, error) {

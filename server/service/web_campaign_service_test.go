@@ -77,6 +77,12 @@ type webParticipantRepoStub struct {
 func (r *webParticipantRepoStub) GetByCampaignAndUser(campaignID, userID int64) (*model.CampaignParticipant, error) {
 	return r.row, nil
 }
+func (r *webParticipantRepoStub) ListByCampaignID(campaignID int64) ([]model.CampaignParticipant, error) {
+	if r.row == nil {
+		return nil, nil
+	}
+	return []model.CampaignParticipant{*r.row}, nil
+}
 func (r *webParticipantRepoStub) ListJoinedCampaignIDs(userID int64, campaignIDs []int64) (map[int64]struct{}, error) {
 	if r.joined == nil {
 		return map[int64]struct{}{}, nil

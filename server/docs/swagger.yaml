@@ -1,5 +1,34 @@
 basePath: /campaign-center-api/v1
 definitions:
+  data.AdminParticipantCampaignVO:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      project_id:
+        type: integer
+      task_group_id:
+        type: integer
+    type: object
+  data.AdminParticipantListData:
+    properties:
+      campaign:
+        $ref: '#/definitions/data.AdminParticipantCampaignVO'
+      participants:
+        items:
+          $ref: '#/definitions/data.AdminParticipantVO'
+        type: array
+    type: object
+  data.AdminParticipantVO:
+    properties:
+      joined_at:
+        type: integer
+      risk_level:
+        type: string
+      user_id:
+        type: integer
+    type: object
   data.BudgetVO:
     properties:
       projectId:
@@ -705,6 +734,81 @@ paths:
       summary: Publish campaign (admin)
       tags:
       - admin-campaign
+  /admin/campaigns/{campaignId}/users:
+    get:
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.AdminParticipantListData'
+              type: object
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: campaign not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: List campaign participants (admin)
+      tags:
+      - admin-participant
+  /admin/campaigns/{campaignId}/users/{userId}:
+    get:
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.AdminParticipantVO'
+              type: object
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Get campaign participant detail (admin)
+      tags:
+      - admin-participant
   /admin/campaigns/{campaignId}/versions:
     post:
       parameters:
