@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"sync"
 
 	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
@@ -8,7 +9,7 @@ import (
 
 // AuditRepository appends audit rows.
 type AuditRepository interface {
-	Create(a *model.AuditLog) error
+	Create(ctx context.Context, a *model.AuditLog) error
 }
 
 type auditRepository struct{}
@@ -26,9 +27,10 @@ func GetAuditRepository() AuditRepository {
 	return auditRepositoryInstance
 }
 
-func (r *auditRepository) Create(a *model.AuditLog) error {
-	if DB == nil {
-		return ErrDatabaseDisabled
+func (r *auditRepository) Create(ctx context.Context, a *model.AuditLog) error {
+	db, err := session(ctx)
+	if err != nil {
+		return err
 	}
-	return DB.Create(a).Error
+	return db.Create(a).Error
 }

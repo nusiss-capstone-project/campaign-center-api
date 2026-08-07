@@ -44,9 +44,9 @@ type webPageRepoStub struct {
 	page *model.CampaignLandingPage
 }
 
-func (r webPageRepoStub) Create(*model.CampaignLandingPage) error { return nil }
-func (r webPageRepoStub) Update(*model.CampaignLandingPage) error { return nil }
-func (r webPageRepoStub) Publish(int64, string) (*model.CampaignLandingPage, error) {
+func (r webPageRepoStub) Create(context.Context, *model.CampaignLandingPage) error { return nil }
+func (r webPageRepoStub) Update(context.Context, *model.CampaignLandingPage) error { return nil }
+func (r webPageRepoStub) Publish(context.Context, int64, string) (*model.CampaignLandingPage, error) {
 	return nil, nil
 }
 func (r webPageRepoStub) List(mysql.LandingPageListFilter) ([]model.CampaignLandingPage, int64, error) {
@@ -67,7 +67,7 @@ func (r webTransRepoStub) GetByLandingPageAndLang(int64, string) (*model.Campaig
 	return r.row, nil
 }
 func (r webTransRepoStub) ListLangsByLandingPageID(int64) ([]string, error) { return nil, nil }
-func (r webTransRepoStub) Upsert(*model.CampaignLandingPageTranslation) error { return nil }
+func (r webTransRepoStub) Upsert(context.Context, *model.CampaignLandingPageTranslation) error { return nil }
 
 type webParticipantRepoStub struct {
 	joined map[int64]struct{}

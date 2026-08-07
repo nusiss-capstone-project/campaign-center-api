@@ -10,12 +10,16 @@ import (
 // writeStartKey stores the write start time inside the GORM statement settings.
 const writeStartKey = "cc:db_write_start"
 
-// writeLoggedTables limits write logging to campaign admin tables.
+// writeLoggedTables limits write logging to application tables that mutate data.
 var writeLoggedTables = map[string]struct{}{
-	"campaigns":                    {},
-	"campaign_drafts":              {},
-	"campaign_reward_rules":        {},
-	"campaign_user_rewards_ledger": {},
+	"campaigns":                           {},
+	"campaign_drafts":                     {},
+	"campaign_reward_rules":               {},
+	"campaign_user_rewards_ledger":        {},
+	"campaign_landing_pages":              {},
+	"campaign_landing_page_translations":  {},
+	"campaign_participants":               {},
+	"audit_logs":                          {},
 }
 
 // registerWriteLoggingCallbacks logs every create/update/delete on campaign

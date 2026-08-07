@@ -21,8 +21,8 @@ import (
 // @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /admin/campaigns/{campaignId}/users [get]
 func AdminListCampaignUsers(c *gin.Context) {
-	campaignID, err := parseCampaignID(c)
-	if err != nil {
+	campaignID, ok := parseCampaignIDParam(c)
+	if !ok {
 		return
 	}
 	out, err := service.GetAdminParticipantService().ListParticipants(campaignID)
@@ -49,8 +49,8 @@ func AdminListCampaignUsers(c *gin.Context) {
 // @Failure 503 {object} data.StandardResponse "database unavailable"
 // @Router /admin/campaigns/{campaignId}/users/{userId} [get]
 func AdminGetCampaignUser(c *gin.Context) {
-	campaignID, err := parseCampaignID(c)
-	if err != nil {
+	campaignID, ok := parseCampaignIDParam(c)
+	if !ok {
 		return
 	}
 	userID, err := strconv.ParseInt(c.Param("userId"), 10, 64)

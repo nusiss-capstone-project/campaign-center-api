@@ -64,20 +64,20 @@ func (r *campaignRewardRuleRepository) ListByRef(refClient string, refID int64) 
 }
 
 func (r *campaignRewardRuleRepository) DeleteByCampaignID(ctx context.Context, campaignID int64) error {
-	db, err := r.db()
+	db, err := session(ctx)
 	if err != nil {
 		return err
 	}
-	return db.WithContext(ctx).Where("campaign_id = ?", campaignID).Delete(&model.CampaignRewardRule{}).Error
+	return db.Where("campaign_id = ?", campaignID).Delete(&model.CampaignRewardRule{}).Error
 }
 
 func (r *campaignRewardRuleRepository) ReplaceByCampaignID(ctx context.Context, campaignID int64, rules []model.CampaignRewardRule) error {
-	db, err := r.db()
+	db, err := session(ctx)
 	if err != nil {
 		return err
 	}
 	now := time.Now()
-	return db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	return db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("campaign_id = ?", campaignID).Delete(&model.CampaignRewardRule{}).Error; err != nil {
 			return err
 		}

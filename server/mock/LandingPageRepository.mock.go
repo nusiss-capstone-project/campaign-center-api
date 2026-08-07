@@ -3,6 +3,8 @@
 package mock
 
 import (
+	context "context"
+
 	mysql "github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
 	model "github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
 	mock "github.com/stretchr/testify/mock"
@@ -13,17 +15,17 @@ type MockLandingPageRepository struct {
 	mock.Mock
 }
 
-// Create provides a mock function with given fields: p
-func (_m *MockLandingPageRepository) Create(p *model.CampaignLandingPage) error {
-	ret := _m.Called(p)
+// Create provides a mock function with given fields: ctx, p
+func (_m *MockLandingPageRepository) Create(ctx context.Context, p *model.CampaignLandingPage) error {
+	ret := _m.Called(ctx, p)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*model.CampaignLandingPage) error); ok {
-		r0 = rf(p)
+	if rf, ok := ret.Get(0).(func(context.Context, *model.CampaignLandingPage) error); ok {
+		r0 = rf(ctx, p)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -98,9 +100,9 @@ func (_m *MockLandingPageRepository) List(f mysql.LandingPageListFilter) ([]mode
 	return r0, r1, r2
 }
 
-// Publish provides a mock function with given fields: id, operator
-func (_m *MockLandingPageRepository) Publish(id int64, operator string) (*model.CampaignLandingPage, error) {
-	ret := _m.Called(id, operator)
+// Publish provides a mock function with given fields: ctx, id, operator
+func (_m *MockLandingPageRepository) Publish(ctx context.Context, id int64, operator string) (*model.CampaignLandingPage, error) {
+	ret := _m.Called(ctx, id, operator)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Publish")
@@ -108,19 +110,19 @@ func (_m *MockLandingPageRepository) Publish(id int64, operator string) (*model.
 
 	var r0 *model.CampaignLandingPage
 	var r1 error
-	if rf, ok := ret.Get(0).(func(int64, string) (*model.CampaignLandingPage, error)); ok {
-		return rf(id, operator)
+	if rf, ok := ret.Get(0).(func(context.Context, int64, string) (*model.CampaignLandingPage, error)); ok {
+		return rf(ctx, id, operator)
 	}
-	if rf, ok := ret.Get(0).(func(int64, string) *model.CampaignLandingPage); ok {
-		r0 = rf(id, operator)
+	if rf, ok := ret.Get(0).(func(context.Context, int64, string) *model.CampaignLandingPage); ok {
+		r0 = rf(ctx, id, operator)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.CampaignLandingPage)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(int64, string) error); ok {
-		r1 = rf(id, operator)
+	if rf, ok := ret.Get(1).(func(context.Context, int64, string) error); ok {
+		r1 = rf(ctx, id, operator)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -128,17 +130,17 @@ func (_m *MockLandingPageRepository) Publish(id int64, operator string) (*model.
 	return r0, r1
 }
 
-// Update provides a mock function with given fields: p
-func (_m *MockLandingPageRepository) Update(p *model.CampaignLandingPage) error {
-	ret := _m.Called(p)
+// Update provides a mock function with given fields: ctx, p
+func (_m *MockLandingPageRepository) Update(ctx context.Context, p *model.CampaignLandingPage) error {
+	ret := _m.Called(ctx, p)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*model.CampaignLandingPage) error); ok {
-		r0 = rf(p)
+	if rf, ok := ret.Get(0).(func(context.Context, *model.CampaignLandingPage) error); ok {
+		r0 = rf(ctx, p)
 	} else {
 		r0 = ret.Error(0)
 	}
