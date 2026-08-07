@@ -67,6 +67,33 @@ func TestAdminParticipantService_ListUnpublishedReturnsEmpty(t *testing.T) {
 	require.Empty(t, list.Participants)
 }
 
+func TestAdminParticipantService_ListWithoutTaskGroupRule(t *testing.T) {
+	campaigns := &webCampaignRepoStub{campaigns: []model.Campaign{{
+		ID: 5, Name: "NoGroup", BudgetProjectID: 3, Status: model.CampaignStatusPublished,
+	}}}
+	svc := NewAdminParticipantService(campaigns, webRulesRepoStub{rules: []model.CampaignRewardRule{{
+		CampaignID: 5, RefClient: model.RewardRefClientTask, RefID: 9,
+	}}}, &adminParticipantRepoStub{})
+
+	list, err := svc.ListParticipants(5)
+	require.NoError(t, err)
+	require.Zero(t, list.Campaign.TaskGroupID)
+	require.Equal(t, int64(3), list.Campaign.ProjectID)
+	require.Empty(t, list.Participants)
+}
+
+func TestAdminParticipantService_GetRequiresCampaign(t *testing.T) {
+	svc := NewAdminParticipantService(
+		&webCampaignRepoStub{},
+		webRulesRepoStub{},
+		&adminParticipantRepoStub{rows: []model.CampaignParticipant{{
+			CampaignID: 1, UserID: 1, JoinedAt: time.Unix(1, 0).UTC(),
+		}}},
+	)
+	_, err := svc.GetParticipant(1, 1)
+	require.ErrorIs(t, err, gorm.ErrRecordNotFound)
+}
+
 type adminParticipantRepoStub struct {
 	rows []model.CampaignParticipant
 }

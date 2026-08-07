@@ -119,12 +119,12 @@ github.com/nusiss-capstone-project/campaign-center-api/common v0.0.2 h1:kc9CYYpC
 github.com/nusiss-capstone-project/campaign-center-api/common v0.0.2/go.mod h1:uca7MCBQHr7CQGE0mw4G19whObk48O7Q73kO9Kdl5Hk=
 github.com/nusiss-capstone-project/identity-mservice/common v0.0.2-alpha.4 h1:uwsxL5cSLViFXvhcxHq0iHaGesQYGbWB1/U8aadfCLU=
 github.com/nusiss-capstone-project/identity-mservice/common v0.0.2-alpha.4/go.mod h1:NI9LLqL+frasX8a7FHcbgbWsddF7FzJf4SkPWzdPgUU=
-github.com/nusiss-capstone-project/reward-mservice/client v0.0.2-alpha.2 h1:uIvlKi+ph+CeoqBcHE0ymtFfhG8SWMyWTCQ6KS4HAk4=
-github.com/nusiss-capstone-project/reward-mservice/client v0.0.2-alpha.2/go.mod h1:u6cmgBEOMRwXn7cC441czUUuHa1n6WVKsnqa2J/wdy0=
+github.com/nusiss-capstone-project/reward-mservice/client v0.0.2 h1:z4tAr57Thz7GOuOpVw0DRsjYCaosLmydW0zeMALE7BM=
+github.com/nusiss-capstone-project/reward-mservice/client v0.0.2/go.mod h1:iYdQdPgjzCddHK9beU+khfN7VX/IrDq129xFwF/6t2w=
 github.com/nusiss-capstone-project/reward-mservice/common v0.0.2-alpha.2 h1:Ox2FDzwfGTtqJW0X3LPg6fjkcM7zjFHjYu6l0hpY1kY=
 github.com/nusiss-capstone-project/reward-mservice/common v0.0.2-alpha.2/go.mod h1:5xBkFaOK6pjww7Akc95a5wLT3YkDkU/F6zA3qw9oX/E=
-github.com/nusiss-capstone-project/task-mservice/client v0.0.3 h1:OeY9EEypzWOTEkH7BxqoZ099+Hgw+yCSleNbDRsIY5U=
-github.com/nusiss-capstone-project/task-mservice/client v0.0.3/go.mod h1:kmalzUp0jBhXd41dt3YdPfrcFzBniq8ixgo6A0zTKwc=
+github.com/nusiss-capstone-project/task-mservice/client v0.0.4 h1:c7WkLb5U+Gx913C/0DZj521To3KIlMTtlHJoD3k0zZA=
+github.com/nusiss-capstone-project/task-mservice/client v0.0.4/go.mod h1:ZX2yNQbaJ7RwTtUeA7r9LRRFj62A8Mb9HWnyZiEGwXA=
 github.com/nusiss-capstone-project/task-mservice/common v0.0.3 h1:S8ZR8CrDQsKChaxNNYK1YLzv5PYOjZ5ZFtBBrAj7glQ=
 github.com/nusiss-capstone-project/task-mservice/common v0.0.3/go.mod h1:tPD2R3y/lQ6TmEaH3l5mP9sqV8z+4zfSbDhXsZ6HEJQ=
 github.com/nusiss-capstone-project/usergroup-mservice/client v0.0.2 h1:5nyJn6k/yXCTIt0ln9g3MbwjjaB8CpaE181NspGejqw=

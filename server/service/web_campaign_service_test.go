@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -253,14 +254,52 @@ func TestWebCampaignService_JoinCampaign(t *testing.T) {
 	require.Equal(t, int64(55), task.enrolled)
 }
 
-func TestWebCampaignService_JoinCampaign_notEligible(t *testing.T) {
+func TestWebCampaignService_JoinCampaign_alreadyJoinedAndEnrollFail(t *testing.T) {
+	joinedAt := time.Unix(1_700_000_100, 0).UTC()
 	svc := newWebSvc(
 		&webCampaignRepoStub{campaigns: []model.Campaign{{
-			ID: 9, Status: model.CampaignStatusPublished, TargetUserGroupID: 10,
+			ID: 9, Status: model.CampaignStatusPublished, TargetUserGroupID: 0,
+		}}},
+		webPageRepoStub{}, webTransRepoStub{},
+		&webParticipantRepoStub{row: &model.CampaignParticipant{
+			CampaignID: 9, UserID: 7, JoinedAt: joinedAt,
+		}},
+		nil, &webUsergroupStub{matched: true}, &webTaskStub{},
+	)
+	out, err := svc.JoinCampaign(context.Background(), 9, 7)
+	require.NoError(t, err)
+	require.Equal(t, int64(1_700_000_100), out.JoinedAt)
+
+	task := &webTaskStub{err: errors.New("enroll failed")}
+	svcFail := newWebSvc(
+		&webCampaignRepoStub{campaigns: []model.Campaign{{
+			ID: 9, Status: model.CampaignStatusPublished, TargetUserGroupID: 0,
 		}}},
 		webPageRepoStub{}, webTransRepoStub{}, &webParticipantRepoStub{},
-		nil, &webUsergroupStub{matched: false}, nil,
+		webRulesRepoStub{rules: []model.CampaignRewardRule{{
+			RefClient: model.RewardRefClientTaskGroup, RefID: 55,
+		}}},
+		&webUsergroupStub{matched: true}, task,
 	)
-	_, err := svc.JoinCampaign(context.Background(), 9, 7)
-	require.ErrorIs(t, err, ErrUserNotEligible)
+	_, err = svcFail.JoinCampaign(context.Background(), 9, 7)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "enroll task group")
+}
+
+func TestWebCampaignService_JoinCampaign_skipsEnrollWithoutTaskGroup(t *testing.T) {
+	task := &webTaskStub{}
+	svc := newWebSvc(
+		&webCampaignRepoStub{campaigns: []model.Campaign{{
+			ID: 9, Status: model.CampaignStatusPublished, TargetUserGroupID: 0,
+		}}},
+		webPageRepoStub{}, webTransRepoStub{}, &webParticipantRepoStub{},
+		webRulesRepoStub{rules: []model.CampaignRewardRule{{
+			RefClient: model.RewardRefClientTask, RefID: 1,
+		}}},
+		&webUsergroupStub{matched: true}, task,
+	)
+	out, err := svc.JoinCampaign(context.Background(), 9, 7)
+	require.NoError(t, err)
+	require.True(t, out.Joined)
+	require.Equal(t, 0, task.callCount)
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/nusiss-capstone-project/campaign-center-api/server/proxy"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
+	"gorm.io/gorm"
 )
 
 const (
@@ -223,15 +224,17 @@ func (s *campaignRewardEventService) HandleRewardResult(ctx context.Context, eve
 	if err != nil {
 		return err
 	}
+	if ledger == nil {
+		return gorm.ErrRecordNotFound
+	}
 	status := model.LedgerRewardStatusDistributeFail
 	switch strings.ToUpper(event.Status) {
 	case rewardResultStatusDistributed:
 		status = model.LedgerRewardStatusDistributeSuccess
 	case rewardResultStatusFailed:
-		status = model.LedgerRewardStatusDistributeFail
+		// keep DistributeFail
 	default:
 		log.WithContext(ctx).Warnw("reward_result_unknown_status", "status", event.Status, "ledger_id", ledgerID)
-		status = model.LedgerRewardStatusDistributeFail
 	}
 	voucherID := event.VoucherID
 	if voucherID == "" {
