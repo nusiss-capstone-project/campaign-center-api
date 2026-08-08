@@ -50,10 +50,12 @@ func Start(ctx context.Context, cfg *config.KafkaConfig) {
 		log.Logger.Errorw("failed to create kafka consumer", "error", err)
 		return
 	}
+	topics := kafka.PrefixedTopics(cfg.Topics)
 	log.Logger.Infow("kafka consumer started",
 		"brokers", cfg.Brokers,
 		"group_id", cfg.GroupID,
-		"topics", cfg.Topics,
+		"topics", topics,
+		"topic_prefix", kafka.TopicPrefix(),
 		"registered_topics", kafka.RegisteredTopics(),
 	)
 	go c.run(ctx)
@@ -63,7 +65,7 @@ func newConsumer(cfg *config.KafkaConfig) (*consumer, error) {
 	opts := []kgo.Opt{
 		kgo.SeedBrokers(cfg.Brokers...),
 		kgo.ConsumerGroup(cfg.GroupID),
-		kgo.ConsumeTopics(cfg.Topics...),
+		kgo.ConsumeTopics(kafka.PrefixedTopics(cfg.Topics)...),
 		kgo.DisableAutoCommit(),
 	}
 	if cfg.ClientID != "" {
