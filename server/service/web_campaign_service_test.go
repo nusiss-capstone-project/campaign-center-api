@@ -173,15 +173,15 @@ func TestWebCampaignService_ListCampaigns_splitsAndTitles(t *testing.T) {
 	endLater := now.Add(48 * time.Hour)
 
 	campaigns := []model.Campaign{
-		{ID: 1, LandingPageID: 10, Status: model.CampaignStatusPublished, Market: "SG",
+		{ID: 1, Name: "Ongoing Campaign", LandingPageID: 10, Status: model.CampaignStatusPublished, Market: "SG",
 			CampaignStartTime: &startPast, CampaignEndTime: &endFuture},
-		{ID: 2, LandingPageID: 10, Status: model.CampaignStatusPublished, Market: "SG",
+		{ID: 2, Name: "Upcoming Campaign", LandingPageID: 10, Status: model.CampaignStatusPublished, Market: "SG",
 			CampaignStartTime: &startFuture, CampaignEndTime: &endLater},
 	}
 	svc := newWebSvc(
 		&webCampaignRepoStub{campaigns: campaigns},
-		webPageRepoStub{page: &model.CampaignLandingPage{ID: 10, DefaultLang: "en", Title: "EN Title"}},
-		webTransRepoStub{row: &model.CampaignLandingPageTranslation{Title: "ZH Title"}},
+		webPageRepoStub{},
+		webTransRepoStub{},
 		&webParticipantRepoStub{joined: map[int64]struct{}{1: {}}},
 		nil, nil, nil,
 	)
@@ -190,7 +190,8 @@ func TestWebCampaignService_ListCampaigns_splitsAndTitles(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, out.Ongoing, 1)
 	require.Len(t, out.Upcoming, 1)
-	require.Equal(t, "ZH Title", out.Ongoing[0].Title)
+	require.Equal(t, "Ongoing Campaign", out.Ongoing[0].Title)
+	require.Equal(t, "Upcoming Campaign", out.Upcoming[0].Title)
 	require.True(t, out.Ongoing[0].Joined)
 	require.False(t, out.Upcoming[0].Joined)
 }

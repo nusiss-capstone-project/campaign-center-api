@@ -91,11 +91,6 @@ func (s *webCampaignService) ListCampaigns(ctx context.Context, userID int64, la
 		return nil, err
 	}
 
-	titleByLP, err := s.resolveTitles(campaigns, lang)
-	if err != nil {
-		return nil, err
-	}
-
 	now := time.Now().UTC()
 	out := &data.WebCampaignListData{
 		Ongoing:  make([]data.WebCampaignListItem, 0),
@@ -104,7 +99,7 @@ func (s *webCampaignService) ListCampaigns(ctx context.Context, userID int64, la
 	for _, c := range campaigns {
 		item := data.WebCampaignListItem{
 			ID:                c.ID,
-			Title:             titleByLP[c.LandingPageID],
+			Title:             c.Name,
 			Market:            c.Market,
 			Status:            c.Status,
 			CampaignStartTime: timePtrToUnix(c.CampaignStartTime),
@@ -241,31 +236,6 @@ func (s *webCampaignService) requirePublishedCampaign(campaignID int64) (*model.
 		return nil, gorm.ErrRecordNotFound
 	}
 	return campaign, nil
-}
-
-func (s *webCampaignService) resolveTitles(campaigns []model.Campaign, lang string) (map[int64]string, error) {
-	out := make(map[int64]string)
-	seen := make(map[int64]struct{})
-	for _, c := range campaigns {
-		lpID := c.LandingPageID
-		if lpID == 0 {
-			continue
-		}
-		if _, ok := seen[lpID]; ok {
-			continue
-		}
-		seen[lpID] = struct{}{}
-		content, err := s.loadLandingContent(lpID, lang)
-		if err != nil {
-			if mysql.IsNotFound(err) {
-				out[lpID] = ""
-				continue
-			}
-			return nil, err
-		}
-		out[lpID] = content.Title
-	}
-	return out, nil
 }
 
 func (s *webCampaignService) loadLandingContent(landingPageID int64, lang string) (*data.WebLandingPageContent, error) {
