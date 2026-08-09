@@ -1,6 +1,10 @@
 package mysql
 
-import "github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
+import (
+	"context"
+
+	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
+)
 
 type noopLandingPageTranslationRepository struct{}
 
@@ -14,7 +18,7 @@ func (noopLandingPageTranslationRepository) ListLangsByLandingPageID(int64) ([]s
 	return []string{}, nil
 }
 
-func (noopLandingPageTranslationRepository) Upsert(*model.CampaignLandingPageTranslation) error {
+func (noopLandingPageTranslationRepository) Upsert(context.Context, *model.CampaignLandingPageTranslation) error {
 	return nil
 }
 

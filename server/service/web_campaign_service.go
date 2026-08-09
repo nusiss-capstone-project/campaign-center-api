@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/proxy"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
 	"gorm.io/gorm"
@@ -17,6 +19,7 @@ const webCampaignListLimit = 1000
 type WebCampaignService interface {
 	ListCampaigns(ctx context.Context, userID int64, lang string) (*data.WebCampaignListData, error)
 	GetCampaignLanding(ctx context.Context, campaignID, userID int64, lang string) (*data.WebCampaignLandingPageData, error)
+	GetCampaignRules(ctx context.Context, campaignID int64) (*data.WebCampaignRulesData, error)
 	JoinCampaign(ctx context.Context, campaignID, userID int64) (*data.WebJoinCampaignData, error)
 }
 
@@ -25,6 +28,9 @@ type webCampaignService struct {
 	pages        mysql.LandingPageRepository
 	translations mysql.LandingPageTranslationRepository
 	participants mysql.ParticipantRepository
+	rules        mysql.CampaignRewardRuleRepository
+	usergroup    proxy.UsergroupClient
+	task         proxy.TaskClient
 }
 
 var (
@@ -38,12 +44,18 @@ func NewWebCampaignService(
 	pages mysql.LandingPageRepository,
 	translations mysql.LandingPageTranslationRepository,
 	participants mysql.ParticipantRepository,
+	rules mysql.CampaignRewardRuleRepository,
+	usergroup proxy.UsergroupClient,
+	task proxy.TaskClient,
 ) WebCampaignService {
 	return &webCampaignService{
 		campaigns:    campaigns,
 		pages:        pages,
 		translations: translations,
 		participants: participants,
+		rules:        rules,
+		usergroup:    usergroup,
+		task:         task,
 	}
 }
 
@@ -55,6 +67,9 @@ func GetWebCampaignService() WebCampaignService {
 			mysql.GetLandingPageRepository(),
 			mysql.GetLandingPageTranslationRepository(),
 			mysql.GetParticipantRepository(),
+			mysql.GetCampaignRewardRuleRepository(),
+			proxy.GetUsergroupClient(),
+			proxy.GetTaskClient(),
 		)
 	})
 	return webCampaignSvcInst
@@ -76,11 +91,6 @@ func (s *webCampaignService) ListCampaigns(ctx context.Context, userID int64, la
 		return nil, err
 	}
 
-	titleByLP, err := s.resolveTitles(campaigns, lang)
-	if err != nil {
-		return nil, err
-	}
-
 	now := time.Now().UTC()
 	out := &data.WebCampaignListData{
 		Ongoing:  make([]data.WebCampaignListItem, 0),
@@ -89,7 +99,7 @@ func (s *webCampaignService) ListCampaigns(ctx context.Context, userID int64, la
 	for _, c := range campaigns {
 		item := data.WebCampaignListItem{
 			ID:                c.ID,
-			Title:             titleByLP[c.LandingPageID],
+			Title:             c.Name,
 			Market:            c.Market,
 			Status:            c.Status,
 			CampaignStartTime: timePtrToUnix(c.CampaignStartTime),
@@ -138,10 +148,59 @@ func (s *webCampaignService) GetCampaignLanding(ctx context.Context, campaignID,
 	return out, nil
 }
 
-func (s *webCampaignService) JoinCampaign(ctx context.Context, campaignID, userID int64) (*data.WebJoinCampaignData, error) {
-	if _, err := s.requirePublishedCampaign(campaignID); err != nil {
+func (s *webCampaignService) GetCampaignRules(ctx context.Context, campaignID int64) (*data.WebCampaignRulesData, error) {
+	campaign, err := s.requirePublishedCampaign(campaignID)
+	if err != nil {
 		return nil, err
 	}
+	taskGroupID, err := s.resolveTaskGroupID(campaignID)
+	if err != nil {
+		return nil, err
+	}
+	return &data.WebCampaignRulesData{
+		ID:          campaign.ID,
+		TaskGroupID: taskGroupID,
+		ProjectID:   campaign.BudgetProjectID,
+	}, nil
+}
+
+func (s *webCampaignService) JoinCampaign(ctx context.Context, campaignID, userID int64) (*data.WebJoinCampaignData, error) {
+	campaign, err := s.requirePublishedCampaign(campaignID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Idempotent: already joined → return existing row.
+	if existing, err := s.participants.GetByCampaignAndUser(campaignID, userID); err != nil {
+		return nil, err
+	} else if existing != nil {
+		return &data.WebJoinCampaignData{
+			CampaignID: campaignID,
+			UserID:     userID,
+			Joined:     true,
+			JoinedAt:   timeToUnix(existing.JoinedAt),
+			Message:    "joined",
+		}, nil
+	}
+
+	matched, err := s.usergroup.MatchUserGroup(ctx, userID, campaign.TargetUserGroupID)
+	if err != nil {
+		return nil, err
+	}
+	if !matched {
+		return nil, ErrUserNotEligible
+	}
+
+	taskGroupID, err := s.resolveTaskGroupID(campaignID)
+	if err != nil {
+		return nil, err
+	}
+	if taskGroupID > 0 {
+		if err := s.task.EnrollTaskGroup(ctx, userID, taskGroupID); err != nil {
+			return nil, fmt.Errorf("enroll task group: %w", err)
+		}
+	}
+
 	row, err := s.participants.Join(ctx, campaignID, userID)
 	if err != nil {
 		return nil, err
@@ -155,6 +214,19 @@ func (s *webCampaignService) JoinCampaign(ctx context.Context, campaignID, userI
 	}, nil
 }
 
+func (s *webCampaignService) resolveTaskGroupID(campaignID int64) (int64, error) {
+	rules, err := s.rules.ListByCampaignID(campaignID)
+	if err != nil {
+		return 0, err
+	}
+	for _, rule := range rules {
+		if rule.RefClient == model.RewardRefClientTaskGroup && rule.RefID > 0 {
+			return rule.RefID, nil
+		}
+	}
+	return 0, nil
+}
+
 func (s *webCampaignService) requirePublishedCampaign(campaignID int64) (*model.Campaign, error) {
 	campaign, err := s.campaigns.GetByID(campaignID)
 	if err != nil {
@@ -164,31 +236,6 @@ func (s *webCampaignService) requirePublishedCampaign(campaignID int64) (*model.
 		return nil, gorm.ErrRecordNotFound
 	}
 	return campaign, nil
-}
-
-func (s *webCampaignService) resolveTitles(campaigns []model.Campaign, lang string) (map[int64]string, error) {
-	out := make(map[int64]string)
-	seen := make(map[int64]struct{})
-	for _, c := range campaigns {
-		lpID := c.LandingPageID
-		if lpID == 0 {
-			continue
-		}
-		if _, ok := seen[lpID]; ok {
-			continue
-		}
-		seen[lpID] = struct{}{}
-		content, err := s.loadLandingContent(lpID, lang)
-		if err != nil {
-			if mysql.IsNotFound(err) {
-				out[lpID] = ""
-				continue
-			}
-			return nil, err
-		}
-		out[lpID] = content.Title
-	}
-	return out, nil
 }
 
 func (s *webCampaignService) loadLandingContent(landingPageID int64, lang string) (*data.WebLandingPageContent, error) {

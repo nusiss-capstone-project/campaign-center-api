@@ -202,146 +202,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/campaigns/{campaignId}/participations": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "admin-campaign-performance"
-                ],
-                "summary": "List campaign participations (admin, mock)",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Campaign ID",
-                        "name": "campaignId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page (default 1)",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size (default 20)",
-                        "name": "pageSize",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by user ID",
-                        "name": "userId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by reward status e.g. GRANTED",
-                        "name": "status",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "success",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "bad request",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/campaigns/{campaignId}/performance/daily": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "admin-campaign-performance"
-                ],
-                "summary": "List campaign daily performance (admin, mock)",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Campaign ID",
-                        "name": "campaignId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start date YYYY-MM-DD",
-                        "name": "startDate",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "End date YYYY-MM-DD",
-                        "name": "endDate",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "success",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "bad request",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/campaigns/{campaignId}/performance/summary": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "admin-campaign-performance"
-                ],
-                "summary": "Get campaign performance summary (admin, mock)",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Campaign ID",
-                        "name": "campaignId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "success",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "bad request",
-                        "schema": {
-                            "$ref": "#/definitions/data.StandardResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/admin/campaigns/{campaignId}/publish": {
             "post": {
                 "consumes": [
@@ -399,6 +259,129 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/campaigns/{campaignId}/users": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin-participant"
+                ],
+                "summary": "List campaign participants (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Campaign ID",
+                        "name": "campaignId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/data.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/data.AdminParticipantListData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "campaign not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/campaigns/{campaignId}/users/{userId}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin-participant"
+                ],
+                "summary": "Get campaign participant detail (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Campaign ID",
+                        "name": "campaignId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/data.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/data.AdminParticipantVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
                         "schema": {
                             "$ref": "#/definitions/data.StandardResponse"
                         }
@@ -1401,9 +1384,118 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/web/campaigns/{campaignId}/rules": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-campaign"
+                ],
+                "summary": "Get campaign rules summary (user)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Campaign ID",
+                        "name": "campaignId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/data.StandardResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/data.WebCampaignRulesData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "campaign not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "database unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/data.StandardResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "data.AdminParticipantCampaignVO": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "project_id": {
+                    "type": "integer"
+                },
+                "task_group_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "data.AdminParticipantListData": {
+            "type": "object",
+            "properties": {
+                "campaign": {
+                    "$ref": "#/definitions/data.AdminParticipantCampaignVO"
+                },
+                "participants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/data.AdminParticipantVO"
+                    }
+                }
+            }
+        },
+        "data.AdminParticipantVO": {
+            "type": "object",
+            "properties": {
+                "joined_at": {
+                    "type": "integer"
+                },
+                "risk_level": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "data.BudgetVO": {
             "type": "object",
             "properties": {
@@ -2013,6 +2105,23 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "example": "Deposit and get a bonus"
+                }
+            }
+        },
+        "data.WebCampaignRulesData": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "projectId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "taskGroupId": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },

@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -18,11 +19,11 @@ type LandingPageListFilter struct {
 
 // LandingPageRepository persists campaign landing pages.
 type LandingPageRepository interface {
-	Create(p *model.CampaignLandingPage) error
-	Update(p *model.CampaignLandingPage) error
+	Create(ctx context.Context, p *model.CampaignLandingPage) error
+	Update(ctx context.Context, p *model.CampaignLandingPage) error
 	GetByID(id int64) (*model.CampaignLandingPage, error)
 	List(f LandingPageListFilter) ([]model.CampaignLandingPage, int64, error)
-	Publish(id int64, operator string) (*model.CampaignLandingPage, error)
+	Publish(ctx context.Context, id int64, operator string) (*model.CampaignLandingPage, error)
 }
 
 type landingPageRepository struct{}
@@ -47,16 +48,16 @@ func (r *landingPageRepository) db() (*gorm.DB, error) {
 	return DB, nil
 }
 
-func (r *landingPageRepository) Create(p *model.CampaignLandingPage) error {
-	db, err := r.db()
+func (r *landingPageRepository) Create(ctx context.Context, p *model.CampaignLandingPage) error {
+	db, err := session(ctx)
 	if err != nil {
 		return err
 	}
 	return db.Create(p).Error
 }
 
-func (r *landingPageRepository) Update(p *model.CampaignLandingPage) error {
-	db, err := r.db()
+func (r *landingPageRepository) Update(ctx context.Context, p *model.CampaignLandingPage) error {
+	db, err := session(ctx)
 	if err != nil {
 		return err
 	}
@@ -117,8 +118,8 @@ func (r *landingPageRepository) List(f LandingPageListFilter) ([]model.CampaignL
 	return items, total, nil
 }
 
-func (r *landingPageRepository) Publish(id int64, operator string) (*model.CampaignLandingPage, error) {
-	db, err := r.db()
+func (r *landingPageRepository) Publish(ctx context.Context, id int64, operator string) (*model.CampaignLandingPage, error) {
+	db, err := session(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +140,7 @@ func (r *landingPageRepository) Publish(id int64, operator string) (*model.Campa
 		if err := tx.Where("id = ?", id).First(&updated).Error; err != nil {
 			return err
 		}
-		log := model.AuditLog{
+		logRow := model.AuditLog{
 			EntityType:   "landing_page",
 			EntityID:     id,
 			Action:       "PUBLISH",
@@ -147,7 +148,7 @@ func (r *landingPageRepository) Publish(id int64, operator string) (*model.Campa
 			DetailJSON:   `{"action":"publish"}`,
 			CreatedAt:    now,
 		}
-		return tx.Create(&log).Error
+		return tx.Create(&logRow).Error
 	})
 	if err != nil {
 		return nil, err

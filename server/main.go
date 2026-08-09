@@ -11,6 +11,7 @@ import (
 
 	"github.com/nusiss-capstone-project/campaign-center-api/server/config"
 	serverhttp "github.com/nusiss-capstone-project/campaign-center-api/server/http"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/kafka/listener"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/log"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/telemetry"
@@ -49,9 +50,13 @@ func main() {
 		}
 	}()
 	log.Logger.Info("Telemetry initialized.")
+	kafkaCtx, kafkaCancel := context.WithCancel(context.Background())
+	defer kafkaCancel()
+	listener.Init(kafkaCtx)
 	go serverhttp.Init(sigCh)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-sigCh
 	debug.PrintStack()
 	log.Logger.Infof("Received signal: %v, shutting down", sig)
+	kafkaCancel()
 }

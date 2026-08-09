@@ -1,0 +1,94 @@
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing git / image tag to roll back to
+        required: true
+        type: string
+      environment:
+        description: Deployment target
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - prod
+
+permissions:
+  contents: read
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve gitops branch
+        id: meta
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          ENV="${{ github.event.inputs.environment }}"
+          if [ -z "${TAG}" ]; then
+            echo "tag is required"
+            exit 1
+          fi
+          if [ "${ENV}" = "prod" ]; then
+            GITOPS_BRANCH="main"
+          else
+            GITOPS_BRANCH="dev"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "gitops_branch=${GITOPS_BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "Rollback tag: ${TAG} -> gitops branch ${GITOPS_BRANCH}"
+
+      - name: Verify git tag exists
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check tag
+        run: |
+          TAG="${{ steps.meta.outputs.tag }}"
+          if ! git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            echo "Git tag not found: ${TAG}"
+            exit 1
+          fi
+
+      - name: Checkout gitops repo
+        uses: actions/checkout@v4
+        with:
+          repository: nusiss-capstone-project/campaign-gitops
+          token: ${{ secrets.GITOPS_TOKEN }}
+          ref: ${{ steps.meta.outputs.gitops_branch }}
+          path: gitops
+
+      - name: Update image tag
+        working-directory: gitops
+        run: |
+          TAG="${{ steps.meta.outputs.tag }}"
+          VALUES_FILE="apps/campaign-center-api/values.yaml"
+          sed -i "s/^  tag: .*/  tag: ${TAG}/" "${VALUES_FILE}"
+          echo "Updated ${VALUES_FILE}:"
+          grep -A2 '^image:' "${VALUES_FILE}"
+
+      - name: Commit and push
+        working-directory: gitops
+        run: |
+          git config user.name "${GIT_USER_NAME:-github-actions[bot]}"
+          git config user.email "${GIT_USER_EMAIL:-41898282+github-actions[bot]@users.noreply.github.com}"
+          git add apps/campaign-center-api/values.yaml
+          if git diff --cached --quiet; then
+            echo "No changes to commit (already on ${{ steps.meta.outputs.tag }})."
+            exit 0
+          fi
+          git commit -m "chore(campaign-center-api): rollback image tag to ${{ steps.meta.outputs.tag }}"
+          git push origin "${{ steps.meta.outputs.gitops_branch }}"
+
+      - name: Rollback summary
+        run: |
+          echo "### Rollback Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Environment**: \`${{ github.event.inputs.environment }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **GitOps branch**: \`${{ steps.meta.outputs.gitops_branch }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Image tag**: \`${{ steps.meta.outputs.tag }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **File**: \`apps/campaign-center-api/values.yaml\`" >> "$GITHUB_STEP_SUMMARY"

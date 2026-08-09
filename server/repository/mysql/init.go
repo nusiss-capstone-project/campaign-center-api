@@ -30,7 +30,6 @@ func Init() (*gorm.DB, error) {
 		&model.CampaignLandingPageTranslation{},
 		&model.CampaignParticipant{},
 		&model.AuditLog{},
-		&model.CampaignPerformanceDaily{},
 	); err != nil {
 		return DB, err
 	}

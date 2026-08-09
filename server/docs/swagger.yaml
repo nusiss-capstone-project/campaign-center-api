@@ -1,5 +1,34 @@
 basePath: /campaign-center-api/v1
 definitions:
+  data.AdminParticipantCampaignVO:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      project_id:
+        type: integer
+      task_group_id:
+        type: integer
+    type: object
+  data.AdminParticipantListData:
+    properties:
+      campaign:
+        $ref: '#/definitions/data.AdminParticipantCampaignVO'
+      participants:
+        items:
+          $ref: '#/definitions/data.AdminParticipantVO'
+        type: array
+    type: object
+  data.AdminParticipantVO:
+    properties:
+      joined_at:
+        type: integer
+      risk_level:
+        type: string
+      user_id:
+        type: integer
+    type: object
   data.BudgetVO:
     properties:
       projectId:
@@ -409,6 +438,18 @@ definitions:
         example: Deposit and get a bonus
         type: string
     type: object
+  data.WebCampaignRulesData:
+    properties:
+      id:
+        example: 1
+        type: integer
+      projectId:
+        example: 1
+        type: integer
+      taskGroupId:
+        example: 1
+        type: integer
+    type: object
   data.WebJoinCampaignData:
     properties:
       campaignId:
@@ -574,98 +615,6 @@ paths:
       summary: Get campaign detail (admin)
       tags:
       - admin-campaign
-  /admin/campaigns/{campaignId}/participations:
-    get:
-      parameters:
-      - description: Campaign ID
-        in: path
-        name: campaignId
-        required: true
-        type: integer
-      - description: Page (default 1)
-        in: query
-        name: page
-        type: integer
-      - description: Page size (default 20)
-        in: query
-        name: pageSize
-        type: integer
-      - description: Filter by user ID
-        in: query
-        name: userId
-        type: integer
-      - description: Filter by reward status e.g. GRANTED
-        in: query
-        name: status
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: success
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "400":
-          description: bad request
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: List campaign participations (admin, mock)
-      tags:
-      - admin-campaign-performance
-  /admin/campaigns/{campaignId}/performance/daily:
-    get:
-      parameters:
-      - description: Campaign ID
-        in: path
-        name: campaignId
-        required: true
-        type: integer
-      - description: Start date YYYY-MM-DD
-        in: query
-        name: startDate
-        required: true
-        type: string
-      - description: End date YYYY-MM-DD
-        in: query
-        name: endDate
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: success
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "400":
-          description: bad request
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: List campaign daily performance (admin, mock)
-      tags:
-      - admin-campaign-performance
-  /admin/campaigns/{campaignId}/performance/summary:
-    get:
-      parameters:
-      - description: Campaign ID
-        in: path
-        name: campaignId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: success
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-        "400":
-          description: bad request
-          schema:
-            $ref: '#/definitions/data.StandardResponse'
-      summary: Get campaign performance summary (admin, mock)
-      tags:
-      - admin-campaign-performance
   /admin/campaigns/{campaignId}/publish:
     post:
       consumes:
@@ -705,6 +654,81 @@ paths:
       summary: Publish campaign (admin)
       tags:
       - admin-campaign
+  /admin/campaigns/{campaignId}/users:
+    get:
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.AdminParticipantListData'
+              type: object
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: campaign not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: List campaign participants (admin)
+      tags:
+      - admin-participant
+  /admin/campaigns/{campaignId}/users/{userId}:
+    get:
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.AdminParticipantVO'
+              type: object
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Get campaign participant detail (admin)
+      tags:
+      - admin-participant
   /admin/campaigns/{campaignId}/versions:
     post:
       parameters:
@@ -1314,6 +1338,45 @@ paths:
           schema:
             $ref: '#/definitions/data.StandardResponse'
       summary: Get campaign landing page (user)
+      tags:
+      - user-campaign
+  /web/campaigns/{campaignId}/rules:
+    get:
+      parameters:
+      - description: Campaign ID
+        in: path
+        name: campaignId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            allOf:
+            - $ref: '#/definitions/data.StandardResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/data.WebCampaignRulesData'
+              type: object
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "401":
+          description: unauthorized
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "404":
+          description: campaign not found
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+        "503":
+          description: database unavailable
+          schema:
+            $ref: '#/definitions/data.StandardResponse'
+      summary: Get campaign rules summary (user)
       tags:
       - user-campaign
 schemes:

@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/nusiss-capstone-project/campaign-center-api/common/campaignpb"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -22,6 +23,7 @@ func GetCampaignCenterServiceClient(config *GRPCClientConfig) (campaignpb.Campai
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(1024 * 1024)),
 			grpc.WithDefaultCallOptions(grpc.MaxCallSendMsgSize(1024 * 1024)),
+			grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 		}
 		conn, clientErr = grpc.NewClient(fmt.Sprintf("%s:%d", config.Host, config.Port), opts...)
 		if clientErr != nil {

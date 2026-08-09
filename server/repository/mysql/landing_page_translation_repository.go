@@ -1,9 +1,9 @@
 package mysql
 
 import (
+	"context"
 	"sync"
 
-	"github.com/nusiss-capstone-project/campaign-center-api/server/log"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
 	"gorm.io/gorm"
 )
@@ -12,7 +12,7 @@ import (
 type LandingPageTranslationRepository interface {
 	GetByLandingPageAndLang(landingPageID int64, lang string) (*model.CampaignLandingPageTranslation, error)
 	ListLangsByLandingPageID(landingPageID int64) ([]string, error)
-	Upsert(t *model.CampaignLandingPageTranslation) error
+	Upsert(ctx context.Context, t *model.CampaignLandingPageTranslation) error
 }
 
 type landingPageTranslationRepository struct{}
@@ -75,8 +75,8 @@ func (r *landingPageTranslationRepository) ListLangsByLandingPageID(landingPageI
 	return langs, nil
 }
 
-func (r *landingPageTranslationRepository) Upsert(t *model.CampaignLandingPageTranslation) error {
-	db, err := r.db()
+func (r *landingPageTranslationRepository) Upsert(ctx context.Context, t *model.CampaignLandingPageTranslation) error {
+	db, err := session(ctx)
 	if err != nil {
 		return err
 	}
@@ -86,12 +86,8 @@ func (r *landingPageTranslationRepository) Upsert(t *model.CampaignLandingPageTr
 		if !IsNotFound(q.Error) {
 			return q.Error
 		}
-		log.Logger.Infow("landing_page_translation_create",
-			"landing_page_id", t.LandingPageID, "lang", t.Lang)
 		return db.Create(t).Error
 	}
-	log.Logger.Infow("landing_page_translation_update",
-		"landing_page_id", t.LandingPageID, "lang", t.Lang)
 	return db.Model(&cur).Updates(map[string]interface{}{
 		"title":       t.Title,
 		"description": t.Description,

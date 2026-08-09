@@ -1,6 +1,7 @@
 package service_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -36,7 +37,7 @@ func (r staticLandingPageTranslationRepo) ListLangsByLandingPageID(landingPageID
 	return []string{r.row.Lang}, nil
 }
 
-func (r staticLandingPageTranslationRepo) Upsert(*model.CampaignLandingPageTranslation) error {
+func (r staticLandingPageTranslationRepo) Upsert(context.Context, *model.CampaignLandingPageTranslation) error {
 	return nil
 }
 
@@ -50,15 +51,15 @@ func sampleLandingBody() data.LandingPageBody {
 
 func TestLandingPageAdminService_CreateLandingPage(t *testing.T) {
 	m := servicemock.NewMockLandingPageRepository(t)
-	m.On("Create", mock.MatchedBy(func(p *model.CampaignLandingPage) bool {
+	m.On("Create", mock.Anything, mock.MatchedBy(func(p *model.CampaignLandingPage) bool {
 		return p.DefaultLang == "en-US" && len(p.Steps) == 1 && p.Steps[0].Title == "s1"
 	})).Run(func(args mock.Arguments) {
-		p := args.Get(0).(*model.CampaignLandingPage)
+		p := args.Get(1).(*model.CampaignLandingPage)
 		p.ID = 7
 	}).Return(nil)
 
 	svc := service.NewLandingPageAdminService(m, noopTrans())
-	resp, err := svc.CreateLandingPage(sampleLandingBody())
+	resp, err := svc.CreateLandingPage(context.Background(), sampleLandingBody())
 	require.NoError(t, err)
 	require.Equal(t, int64(7), resp.LandingPageID)
 	require.Equal(t, model.LandingPageStatusDraft, resp.Status)
@@ -72,7 +73,7 @@ func TestLandingPageAdminService_UpdateDraft_notDraft(t *testing.T) {
 	}, nil)
 
 	svc := service.NewLandingPageAdminService(m, noopTrans())
-	_, err := svc.UpdateDraftLandingPage(1, data.LandingPageBody{
+	_, err := svc.UpdateDraftLandingPage(context.Background(), 1, data.LandingPageBody{
 		DefaultLang: "en", BannerImageURL: "u", Title: "t", Description: "d", Terms: "x",
 	})
 	require.Error(t, err)
@@ -83,7 +84,7 @@ func TestLandingPageAdminService_UpdateDraft_success(t *testing.T) {
 	m := servicemock.NewMockLandingPageRepository(t)
 	row := &model.CampaignLandingPage{ID: 2, Status: model.LandingPageStatusDraft}
 	m.On("GetByID", int64(2)).Return(row, nil)
-	m.On("Update", mock.MatchedBy(func(p *model.CampaignLandingPage) bool {
+	m.On("Update", mock.Anything, mock.MatchedBy(func(p *model.CampaignLandingPage) bool {
 		return p.Title == "new" && len(p.Faq) == 1
 	})).Return(nil)
 
@@ -92,7 +93,7 @@ func TestLandingPageAdminService_UpdateDraft_success(t *testing.T) {
 		DefaultLang: "en", BannerImageURL: "u", Title: "new", Description: "d", Terms: "x",
 		Faq: []data.LandingPageRepeatableItemVO{{Title: "q", Description: "a"}},
 	}
-	resp, err := svc.UpdateDraftLandingPage(2, body)
+	resp, err := svc.UpdateDraftLandingPage(context.Background(), 2, body)
 	require.NoError(t, err)
 	require.Equal(t, int64(2), resp.LandingPageID)
 	require.Equal(t, "new", resp.Title)
@@ -105,7 +106,7 @@ func TestLandingPageAdminService_ListGetPublish(t *testing.T) {
 	m.On("GetByID", int64(1)).Return(&model.CampaignLandingPage{
 		ID: 1, Title: "x", DefaultLang: "en",
 	}, nil)
-	m.On("Publish", int64(1), "op").Return(&model.CampaignLandingPage{ID: 1, Status: model.LandingPageStatusPublished}, nil)
+	m.On("Publish", mock.Anything, int64(1), "op").Return(&model.CampaignLandingPage{ID: 1, Status: model.LandingPageStatusPublished}, nil)
 
 	svc := service.NewLandingPageAdminService(m, noopTrans())
 	list, err := svc.ListLandingPages(f)
@@ -119,7 +120,7 @@ func TestLandingPageAdminService_ListGetPublish(t *testing.T) {
 	require.Equal(t, "x", p.Title)
 	require.Equal(t, "en", p.Lang)
 
-	pub, err := svc.PublishLandingPage(1, "op")
+	pub, err := svc.PublishLandingPage(context.Background(), 1, "op")
 	require.NoError(t, err)
 	require.Equal(t, model.LandingPageStatusPublished, pub.Status)
 }
@@ -158,10 +159,10 @@ func TestLandingPageAdminService_GetLandingPage_usesTranslation(t *testing.T) {
 
 func TestLandingPageAdminService_Create_error(t *testing.T) {
 	m := servicemock.NewMockLandingPageRepository(t)
-	m.On("Create", mock.Anything).Return(errors.New("fail"))
+	m.On("Create", mock.Anything, mock.Anything).Return(errors.New("fail"))
 
 	svc := service.NewLandingPageAdminService(m, noopTrans())
-	_, err := svc.CreateLandingPage(data.LandingPageBody{
+	_, err := svc.CreateLandingPage(context.Background(), data.LandingPageBody{
 		DefaultLang: "en", BannerImageURL: "u", Title: "t", Description: "d", Terms: "x",
 	})
 	require.Error(t, err)
@@ -169,7 +170,7 @@ func TestLandingPageAdminService_Create_error(t *testing.T) {
 
 func TestLandingPageAdminService_Create_rejectsInvalidSteps(t *testing.T) {
 	svc := service.NewLandingPageAdminService(servicemock.NewMockLandingPageRepository(t), noopTrans())
-	_, err := svc.CreateLandingPage(data.LandingPageBody{
+	_, err := svc.CreateLandingPage(context.Background(), data.LandingPageBody{
 		DefaultLang: "en", BannerImageURL: "u", Title: "t", Description: "d", Terms: "x",
 		Steps: []data.LandingPageRepeatableItemVO{{Title: "", Description: "x"}},
 	})

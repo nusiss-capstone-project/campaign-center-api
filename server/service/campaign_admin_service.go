@@ -276,12 +276,12 @@ func validatePublishContent(content data.CampaignVO) error {
 	if content.Budget.ProjectID <= 0 {
 		return fmt.Errorf("%w: budget projectId must be > 0", data.ErrCampaignPublishInvalid)
 	}
-	if content.RewardRules.TaskGroupID <= 0 || content.RewardRules.TaskGroupReward <= 0 {
-		return fmt.Errorf("%w: taskGroupId and taskGroupReward must be > 0", data.ErrCampaignPublishInvalid)
+	if content.RewardRules.TaskGroupID <= 0 || content.RewardRules.TaskGroupReward < 0 {
+		return fmt.Errorf("%w: invalid taskGroupId or taskGroupReward", data.ErrCampaignPublishInvalid)
 	}
 	for _, item := range content.RewardRules.TaskRewardItems {
-		if item.TaskID <= 0 || item.RewardTemplateID <= 0 {
-			return fmt.Errorf("%w: taskId and rewardTemplateId must be > 0", data.ErrCampaignPublishInvalid)
+		if item.TaskID <= 0 || item.RewardTemplateID < 0 {
+			return fmt.Errorf("%w: invalid taskId or rewardTemplateId", data.ErrCampaignPublishInvalid)
 		}
 	}
 	return nil

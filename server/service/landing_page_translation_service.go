@@ -79,7 +79,7 @@ func GetLandingPageTranslationService() LandingPageTranslationService {
 func (s *landingPageTranslationService) GenerateTranslation(
 	ctx context.Context, p GenerateTranslationParams,
 ) (*data.GenerateLandingTranslationData, error) {
-	log.Logger.Infow("generate_translation",
+	log.WithContext(ctx).Infow("generate_translation",
 		"landing_page_id", p.LandingPageID, "target_lang", p.TargetLang)
 	page, err := s.pages.GetByID(p.LandingPageID)
 	if err != nil {
@@ -107,11 +107,10 @@ func (s *landingPageTranslationService) GenerateTranslation(
 func (s *landingPageTranslationService) SaveTranslation(
 	ctx context.Context, p SaveTranslationParams,
 ) (*data.PutLandingTranslationData, error) {
-	_ = ctx
 	if err := validateLandingPageContent(p.Steps, p.Faq); err != nil {
 		return nil, err
 	}
-	log.Logger.Infow("save_translation", "landing_page_id", p.LandingPageID, "lang", p.Lang)
+	log.WithContext(ctx).Infow("save_translation", "landing_page_id", p.LandingPageID, "lang", p.Lang)
 	if _, err := s.pages.GetByID(p.LandingPageID); err != nil {
 		return nil, err
 	}
@@ -125,7 +124,7 @@ func (s *landingPageTranslationService) SaveTranslation(
 		return nil, err
 	}
 	row := buildTranslationRow(p, op, now, existing)
-	if err := s.translations.Upsert(row); err != nil {
+	if err := s.translations.Upsert(ctx, row); err != nil {
 		return nil, err
 	}
 	return &data.PutLandingTranslationData{LandingPageID: p.LandingPageID, Lang: p.Lang}, nil

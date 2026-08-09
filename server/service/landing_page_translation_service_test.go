@@ -38,7 +38,7 @@ func (r *translationRepoStub) ListLangsByLandingPageID(int64) ([]string, error) 
 	return r.langs, nil
 }
 
-func (r *translationRepoStub) Upsert(row *model.CampaignLandingPageTranslation) error {
+func (r *translationRepoStub) Upsert(_ context.Context, row *model.CampaignLandingPageTranslation) error {
 	r.upserted = row
 	return nil
 }

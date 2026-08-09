@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -12,11 +13,11 @@ import (
 
 // LandingPageAdminService admin landing page operations.
 type LandingPageAdminService interface {
-	CreateLandingPage(body data.LandingPageBody) (*data.LandingPageCreateResp, error)
-	UpdateDraftLandingPage(id int64, body data.LandingPageBody) (*data.LandingPageUpdateResp, error)
+	CreateLandingPage(ctx context.Context, body data.LandingPageBody) (*data.LandingPageCreateResp, error)
+	UpdateDraftLandingPage(ctx context.Context, id int64, body data.LandingPageBody) (*data.LandingPageUpdateResp, error)
 	ListLandingPages(filter mysql.LandingPageListFilter) (*data.LandingPageListData, error)
 	GetLandingPage(id int64, lang string) (*data.LandingPageDetailVO, error)
-	PublishLandingPage(id int64, operator string) (*data.LandingPagePublishResp, error)
+	PublishLandingPage(ctx context.Context, id int64, operator string) (*data.LandingPagePublishResp, error)
 }
 
 // LandingPageDetailView is resolved landing page text for admin display.
@@ -64,7 +65,7 @@ func GetLandingPageAdminService() LandingPageAdminService {
 	return landingPageAdminServiceInst
 }
 
-func (s *landingPageAdminService) CreateLandingPage(body data.LandingPageBody) (*data.LandingPageCreateResp, error) {
+func (s *landingPageAdminService) CreateLandingPage(ctx context.Context, body data.LandingPageBody) (*data.LandingPageCreateResp, error) {
 	if err := validateLandingPageContent(body.Steps, body.Faq); err != nil {
 		return nil, err
 	}
@@ -81,14 +82,14 @@ func (s *landingPageAdminService) CreateLandingPage(body data.LandingPageBody) (
 		CreatedAt:      now,
 		UpdatedAt:      now,
 	}
-	if err := s.pages.Create(&row); err != nil {
+	if err := s.pages.Create(ctx, &row); err != nil {
 		return nil, err
 	}
-	log.Logger.Infow("landing_page_created", "id", row.ID)
+	log.WithContext(ctx).Infow("landing_page_created", "id", row.ID)
 	return landingPageCreateResp(row.ID, row.Status, body), nil
 }
 
-func (s *landingPageAdminService) UpdateDraftLandingPage(id int64, body data.LandingPageBody) (*data.LandingPageUpdateResp, error) {
+func (s *landingPageAdminService) UpdateDraftLandingPage(ctx context.Context, id int64, body data.LandingPageBody) (*data.LandingPageUpdateResp, error) {
 	if err := validateLandingPageContent(body.Steps, body.Faq); err != nil {
 		return nil, err
 	}
@@ -108,8 +109,8 @@ func (s *landingPageAdminService) UpdateDraftLandingPage(id int64, body data.Lan
 	existing.Steps = toModelRepeatableItems(body.Steps)
 	existing.Faq = toModelRepeatableItems(body.Faq)
 	existing.UpdatedAt = now
-	log.Logger.Infow("landing_page_draft_updated", "id", id)
-	if err := s.pages.Update(existing); err != nil {
+	log.WithContext(ctx).Infow("landing_page_draft_updated", "id", id)
+	if err := s.pages.Update(ctx, existing); err != nil {
 		return nil, err
 	}
 	return landingPageUpdateResp(id, body), nil
@@ -155,9 +156,9 @@ func (s *landingPageAdminService) GetLandingPage(id int64, lang string) (*data.L
 	return landingPageDetailVO(view), nil
 }
 
-func (s *landingPageAdminService) PublishLandingPage(id int64, operator string) (*data.LandingPagePublishResp, error) {
-	log.Logger.Infow("landing_page_publish", "id", id, "operator", operator)
-	updated, err := s.pages.Publish(id, operator)
+func (s *landingPageAdminService) PublishLandingPage(ctx context.Context, id int64, operator string) (*data.LandingPagePublishResp, error) {
+	log.WithContext(ctx).Infow("landing_page_publish", "id", id, "operator", operator)
+	updated, err := s.pages.Publish(ctx, id, operator)
 	if err != nil {
 		return nil, err
 	}

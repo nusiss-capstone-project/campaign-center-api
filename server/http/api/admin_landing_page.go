@@ -27,7 +27,7 @@ func AdminCreateLandingPage(c *gin.Context) {
 		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
 		return
 	}
-	resp, err := service.GetLandingPageAdminService().CreateLandingPage(req)
+	resp, err := service.GetLandingPageAdminService().CreateLandingPage(c.Request.Context(), req)
 	if err != nil {
 		if isLandingPageValidationErr(err) {
 			data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
@@ -62,7 +62,7 @@ func AdminUpdateLandingPage(c *gin.Context) {
 		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
 		return
 	}
-	resp, err := service.GetLandingPageAdminService().UpdateDraftLandingPage(id, req)
+	resp, err := service.GetLandingPageAdminService().UpdateDraftLandingPage(c.Request.Context(), id, req)
 	if err != nil {
 		if isLandingPageValidationErr(err) {
 			data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
@@ -199,7 +199,7 @@ func AdminPublishLandingPage(c *gin.Context) {
 		data.JSON(c, http.StatusBadRequest, -1, err.Error(), nil)
 		return
 	}
-	resp, err := service.GetLandingPageAdminService().PublishLandingPage(id, req.Operator)
+	resp, err := service.GetLandingPageAdminService().PublishLandingPage(c.Request.Context(), id, req.Operator)
 	if err != nil {
 		if mysql.IsNotFound(err) {
 			data.JSON(c, http.StatusNotFound, -1, "landing page not found", nil)

@@ -1,0 +1,204 @@
+package listener
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/nusiss-capstone-project/campaign-center-api/server/config"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/kafka"
+	kafkatrace "github.com/nusiss-capstone-project/campaign-center-api/server/kafka/trace"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/log"
+	"github.com/twmb/franz-go/pkg/kgo"
+)
+
+const (
+	TopicTaskCompleted            = "task.events.completed"
+	TopicRewardDistributionResult = "reward.distribution.result"
+)
+
+type consumer struct {
+	client *kgo.Client
+}
+
+// Init starts the Kafka consumer when enabled.
+func Init(ctx context.Context) {
+	cfg := config.Config.KafkaConfig
+	if cfg == nil || !cfg.Enabled {
+		log.Logger.Info("kafka disabled")
+		return
+	}
+	Start(ctx, cfg)
+}
+
+func init() {
+	kafka.RegisterHandler(TopicTaskCompleted, handleTaskCompleted)
+	kafka.RegisterHandler(TopicRewardDistributionResult, handleRewardDistributionResult)
+}
+
+// Start launches the consumer loop.
+func Start(ctx context.Context, cfg *config.KafkaConfig) {
+	if err := validateConfig(cfg); err != nil {
+		log.Logger.Errorw("kafka consumer config invalid", "error", err)
+		return
+	}
+	c, err := newConsumer(cfg)
+	if err != nil {
+		log.Logger.Errorw("failed to create kafka consumer", "error", err)
+		return
+	}
+	topics := kafka.PrefixedTopics(cfg.Topics)
+	log.Logger.Infow("kafka consumer started",
+		"brokers", cfg.Brokers,
+		"group_id", cfg.GroupID,
+		"topics", topics,
+		"topic_prefix", kafka.TopicPrefix(),
+		"registered_topics", kafka.RegisteredTopics(),
+	)
+	go c.run(ctx)
+}
+
+func newConsumer(cfg *config.KafkaConfig) (*consumer, error) {
+	opts := []kgo.Opt{
+		kgo.SeedBrokers(cfg.Brokers...),
+		kgo.ConsumerGroup(cfg.GroupID),
+		kgo.ConsumeTopics(kafka.PrefixedTopics(cfg.Topics)...),
+		kgo.DisableAutoCommit(),
+	}
+	if cfg.ClientID != "" {
+		opts = append(opts, kgo.ClientID(cfg.ClientID))
+	}
+	client, err := kgo.NewClient(opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &consumer{client: client}, nil
+}
+
+func (c *consumer) run(ctx context.Context) {
+	defer c.client.Close()
+	for {
+		select {
+		case <-ctx.Done():
+			log.Logger.Infow("kafka consumer stopped", "reason", ctx.Err())
+			return
+		default:
+		}
+		fetches := c.client.PollFetches(ctx)
+		if err := ctx.Err(); err != nil {
+			log.Logger.Infow("kafka consumer poll stopped", "reason", err)
+			return
+		}
+		if errs := fetches.Errors(); len(errs) > 0 {
+			for _, ferr := range errs {
+				log.Logger.Errorw("kafka fetch error",
+					"topic", ferr.Topic, "partition", ferr.Partition, "error", ferr.Err)
+			}
+			continue
+		}
+		fetches.EachRecord(func(record *kgo.Record) {
+			c.handleRecord(ctx, record)
+		})
+	}
+}
+
+func (c *consumer) handleRecord(parentCtx context.Context, record *kgo.Record) {
+	start := time.Now()
+	ctx, span := kafkatrace.StartConsume(parentCtx, record)
+	var err error
+	defer func() {
+		kafkatrace.Finish(span, err)
+	}()
+
+	topicHandlers := kafka.HandlersForTopic(record.Topic)
+	if len(topicHandlers) == 0 {
+		log.WithContext(ctx).Warnw("no handlers registered for topic, skipping commit",
+			"topic", record.Topic,
+			"partition", record.Partition,
+			"offset", record.Offset,
+		)
+		return
+	}
+
+	kafkatrace.LogConsumeStart(ctx, record, len(topicHandlers))
+
+	err = invokeHandlersParallel(ctx, topicHandlers, toMessage(record))
+	kafkatrace.LogConsumeFinish(ctx, record, float64(time.Since(start).Microseconds())/1000, err)
+	if err != nil {
+		return
+	}
+
+	if commitErr := c.client.CommitRecords(ctx, record); commitErr != nil {
+		log.WithContext(ctx).Errorw("kafka manual commit failed",
+			"topic", record.Topic,
+			"partition", record.Partition,
+			"offset", record.Offset,
+			"error", commitErr,
+		)
+		err = commitErr
+	}
+}
+
+func invokeHandlersParallel(ctx context.Context, handlers []kafka.Handler, msg *kafka.Message) error {
+	var (
+		wg   sync.WaitGroup
+		mu   sync.Mutex
+		errs []error
+	)
+	wg.Add(len(handlers))
+	for _, handler := range handlers {
+		go func(h kafka.Handler) {
+			defer wg.Done()
+			if err := h(ctx, msg); err != nil {
+				mu.Lock()
+				errs = append(errs, err)
+				mu.Unlock()
+			}
+		}(handler)
+	}
+	wg.Wait()
+	if len(errs) == 0 {
+		return nil
+	}
+	parts := make([]string, 0, len(errs))
+	for _, err := range errs {
+		if err != nil {
+			parts = append(parts, err.Error())
+		}
+	}
+	return fmt.Errorf("%s", strings.Join(parts, "; "))
+}
+
+func toMessage(record *kgo.Record) *kafka.Message {
+	headers := make(map[string]string, len(record.Headers))
+	for _, header := range record.Headers {
+		headers[string(header.Key)] = string(header.Value)
+	}
+	return &kafka.Message{
+		Topic:     record.Topic,
+		Partition: record.Partition,
+		Offset:    record.Offset,
+		Key:       record.Key,
+		Value:     record.Value,
+		Headers:   headers,
+	}
+}
+
+func validateConfig(cfg *config.KafkaConfig) error {
+	if cfg == nil {
+		return errors.New("kafka config is nil")
+	}
+	if len(cfg.Brokers) == 0 {
+		return errors.New("kafka brokers is empty")
+	}
+	if cfg.GroupID == "" {
+		return errors.New("kafka group_id is empty")
+	}
+	if len(cfg.Topics) == 0 {
+		return errors.New("kafka topics is empty")
+	}
+	return nil
+}

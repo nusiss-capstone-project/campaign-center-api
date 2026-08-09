@@ -1,10 +1,6 @@
 name: Build and Deploy
 
 on:
-  push:
-    branches:
-      - develop
-      - main
   workflow_dispatch:
     inputs:
       environment:
@@ -33,13 +29,7 @@ jobs:
         id: version
         run: |
           TIMESTAMP="$(date -u +%Y%m%d%H%M)"
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            ENV="${{ github.event.inputs.environment }}"
-          elif [ "${{ github.ref_name }}" = "main" ]; then
-            ENV="prod"
-          else
-            ENV="dev"
-          fi
+          ENV="${{ github.event.inputs.environment }}"
           if [ "${ENV}" = "prod" ]; then
             TAG="prod-${TIMESTAMP}"
             GITOPS_BRANCH="main"
