@@ -1,6 +1,6 @@
 module github.com/nusiss-capstone-project/campaign-center-api/client
 
-go 1.25.10
+go 1.25.12
 
 require (
 	github.com/nusiss-capstone-project/campaign-center-api/common v0.0.2
