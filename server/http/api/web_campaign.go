@@ -77,7 +77,6 @@ func UserGetCampaignLanding(c *gin.Context) {
 		handleRepoErr(c, err)
 		return
 	}
-	payload.Name = payload.Name + "**"
 	log.WithContext(c.Request.Context()).Infow("web_get_campaign_landing",
 		"campaign_id", campaignID, "user_id", userID, "lang", lang)
 	data.OK(c, payload)
