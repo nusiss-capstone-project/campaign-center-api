@@ -1,6 +1,6 @@
 module github.com/nusiss-capstone-project/campaign-center-api/common
 
-go 1.25.10
+go 1.25.12
 
 require (
 	github.com/gin-gonic/gin v1.12.0
