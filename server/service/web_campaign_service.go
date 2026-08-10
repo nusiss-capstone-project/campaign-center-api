@@ -99,7 +99,7 @@ func (s *webCampaignService) ListCampaigns(ctx context.Context, userID int64, la
 	for _, c := range campaigns {
 		item := data.WebCampaignListItem{
 			ID:                c.ID,
-			Title:             c.Name,
+			Title:             c.Name + "**",
 			Market:            c.Market,
 			Status:            c.Status,
 			CampaignStartTime: timePtrToUnix(c.CampaignStartTime),
