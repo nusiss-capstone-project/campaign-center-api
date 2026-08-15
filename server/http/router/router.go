@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -33,6 +34,9 @@ func NewRouter() *gin.Engine {
 
 		// Business routes: enable request access logging.
 		apiGroup := basicGroup.Group("")
+		apiGroup.Use(commonauth.AuditMiddleware(func(ctx context.Context) commonauth.AuditLogger {
+			return log.WithContext(ctx)
+		}))
 		apiGroup.Use(log.HTTPObservabilityMiddleware())
 		{
 			admin := apiGroup.Group("/admin")

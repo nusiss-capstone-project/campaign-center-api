@@ -8,7 +8,7 @@ require (
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/nusiss-capstone-project/campaign-center-api/common v0.0.2
-	github.com/nusiss-capstone-project/identity-mservice/common v0.0.2-alpha.4
+	github.com/nusiss-capstone-project/identity-mservice/common v0.0.4
 	github.com/nusiss-capstone-project/reward-mservice/client v0.0.2
 	github.com/nusiss-capstone-project/reward-mservice/common v0.0.2-alpha.2
 	github.com/nusiss-capstone-project/task-mservice/client v0.0.4
