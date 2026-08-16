@@ -61,26 +61,39 @@ func (l *slowSQLLogger) Trace(ctx context.Context, begin time.Time, fc func() (s
 
 	if err != nil && l.level >= gormlogger.Error && !errors.Is(err, gorm.ErrRecordNotFound) {
 		sql, rows := fc()
-		log.WithContext(ctx).Errorw("gorm_sql_error",
+		fields := []any{
 			"source", utils.FileWithLineNum(),
 			"duration_ms", durationMs,
 			"rows_affected", rows,
 			"sql", sql,
 			"error", err.Error(),
-		)
+		}
+		log.WithContext(ctx).Errorw("gorm_sql_error", appendDBStats(fields)...)
 		return
 	}
 
 	if elapsed >= l.slowThreshold && l.level >= gormlogger.Warn {
 		sql, rows := fc()
-		log.WithContext(ctx).Warnw("gorm_slow_sql",
+		fields := []any{
 			"source", utils.FileWithLineNum(),
 			"duration_ms", durationMs,
-			"threshold_ms", float64(l.slowThreshold.Microseconds())/1000,
+			"threshold_ms", float64(l.slowThreshold.Microseconds()) / 1000,
 			"rows_affected", rows,
 			"sql", sql,
-		)
+		}
+		log.WithContext(ctx).Warnw("gorm_slow_sql", appendDBStats(fields)...)
 	}
+}
+
+func appendDBStats(fields []any) []any {
+	if DB == nil {
+		return fields
+	}
+	sqlDB, err := DB.DB()
+	if err != nil {
+		return fields
+	}
+	return append(fields, poolStatsFields(sqlDB.Stats())...)
 }
 
 func slowSQLThreshold() time.Duration {

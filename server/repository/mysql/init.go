@@ -24,6 +24,13 @@ func Init() (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	sqlDB, err := database.DB()
+	if err != nil {
+		return nil, err
+	}
+	configureConnectionPool(sqlDB)
+	startPoolStatsLogger(sqlDB)
+
 	DB = database
 	if err := registerWriteLoggingCallbacks(DB); err != nil {
 		return DB, err
