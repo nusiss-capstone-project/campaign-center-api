@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/nusiss-capstone-project/campaign-center-api/server/http/data"
+	"github.com/nusiss-capstone-project/campaign-center-api/server/log"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/proxy"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql"
 	"github.com/nusiss-capstone-project/campaign-center-api/server/repository/mysql/model"
@@ -123,14 +124,17 @@ func (s *webCampaignService) ListCampaigns(ctx context.Context, userID int64, la
 func (s *webCampaignService) GetCampaignLanding(ctx context.Context, campaignID, userID int64, lang string) (*data.WebCampaignLandingPageData, error) {
 	campaign, err := s.requirePublishedCampaign(ctx, campaignID)
 	if err != nil {
+		log.WithContext(ctx).Errorw("web_get_campaign_landing_require_published_campaign_error", "campaign_id", campaignID, "user_id", userID, "error", err)
 		return nil, err
 	}
 	lpContent, err := s.loadLandingContent(ctx, campaign.LandingPageID, lang)
 	if err != nil {
+		log.WithContext(ctx).Errorw("web_get_campaign_landing_load_landing_content_error", "campaign_id", campaignID, "user_id", userID, "error", err)
 		return nil, err
 	}
 	part, err := s.participants.GetByCampaignAndUserContext(ctx, campaignID, userID)
 	if err != nil {
+		log.WithContext(ctx).Errorw("web_get_campaign_landing_get_participant_error", "campaign_id", campaignID, "user_id", userID, "error", err)
 		return nil, err
 	}
 	out := &data.WebCampaignLandingPageData{
@@ -174,6 +178,7 @@ func (s *webCampaignService) JoinCampaign(ctx context.Context, campaignID, userI
 	if existing, err := s.participants.GetByCampaignAndUserContext(ctx, campaignID, userID); err != nil {
 		return nil, err
 	} else if existing != nil {
+		log.WithContext(ctx).Infow("web_join_campaign_already_joined", "campaign_id", campaignID, "user_id", userID)
 		return &data.WebJoinCampaignData{
 			CampaignID: campaignID,
 			UserID:     userID,
@@ -185,26 +190,32 @@ func (s *webCampaignService) JoinCampaign(ctx context.Context, campaignID, userI
 
 	matched, err := s.usergroup.MatchUserGroup(ctx, userID, campaign.TargetUserGroupID)
 	if err != nil {
+		log.WithContext(ctx).Errorw("web_join_campaign_match_usergroup_error", "campaign_id", campaignID, "user_id", userID, "error", err)
 		return nil, err
 	}
 	if !matched {
+		log.WithContext(ctx).Infow("web_join_campaign_not_eligible", "campaign_id", campaignID, "user_id", userID)
 		return nil, ErrUserNotEligible
 	}
 
 	taskGroupID, err := s.resolveTaskGroupID(campaignID)
 	if err != nil {
+		log.WithContext(ctx).Errorw("web_join_campaign_resolve_task_group_id_error", "campaign_id", campaignID, "user_id", userID, "error", err)
 		return nil, err
 	}
 	if taskGroupID > 0 {
 		if err := s.task.EnrollTaskGroup(ctx, userID, taskGroupID); err != nil {
+			log.WithContext(ctx).Errorw("web_join_campaign_enroll_task_group_error", "campaign_id", campaignID, "user_id", userID, "error", err)
 			return nil, fmt.Errorf("enroll task group: %w", err)
 		}
 	}
 
 	row, err := s.participants.Join(ctx, campaignID, userID)
 	if err != nil {
+		log.WithContext(ctx).Errorw("web_join_campaign_join_error", "campaign_id", campaignID, "user_id", userID, "error", err)
 		return nil, err
 	}
+	log.WithContext(ctx).Infow("web_join_campaign_joined", "campaign_id", campaignID, "user_id", userID)
 	return &data.WebJoinCampaignData{
 		CampaignID: campaignID,
 		UserID:     userID,
