@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	defaultMaxOpenConns         = 150
+	defaultMaxOpenConns         = 100
 	defaultMaxIdleConns         = 10
 	defaultConnMaxLifetime      = 30 * time.Minute
 	defaultConnMaxIdleTime      = 5 * time.Minute
