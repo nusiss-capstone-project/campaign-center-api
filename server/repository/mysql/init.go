@@ -16,7 +16,11 @@ func Init() (*gorm.DB, error) {
 	if dsn == "" {
 		return nil, errors.New("MYSQL_DSN is not set")
 	}
-	database, err := gorm.Open(gormmysql.Open(dsn), &gorm.Config{PrepareStmt: true, SkipDefaultTransaction: true})
+	database, err := gorm.Open(gormmysql.Open(dsn), &gorm.Config{
+		Logger:                 newSlowSQLLogger(),
+		PrepareStmt:            true,
+		SkipDefaultTransaction: true,
+	})
 	if err != nil {
 		return nil, err
 	}

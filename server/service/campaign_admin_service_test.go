@@ -41,6 +41,10 @@ func (r *memCampaignRepo) Update(_ context.Context, c *model.Campaign) error {
 }
 
 func (r *memCampaignRepo) GetByID(id int64) (*model.Campaign, error) {
+	return r.GetByIDContext(context.Background(), id)
+}
+
+func (r *memCampaignRepo) GetByIDContext(_ context.Context, id int64) (*model.Campaign, error) {
 	c, ok := r.byID[id]
 	if !ok {
 		return nil, gorm.ErrRecordNotFound

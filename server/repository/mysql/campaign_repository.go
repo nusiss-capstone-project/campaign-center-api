@@ -20,6 +20,7 @@ type CampaignRepository interface {
 	Create(ctx context.Context, c *model.Campaign) error
 	Update(ctx context.Context, c *model.Campaign) error
 	GetByID(id int64) (*model.Campaign, error)
+	GetByIDContext(ctx context.Context, id int64) (*model.Campaign, error)
 	Count(q CampaignQuery) (int64, error)
 	Find(q CampaignQuery, offset, limit int) ([]model.Campaign, error)
 	UpdateStatus(ctx context.Context, id int64, status int16, operator string) (*model.Campaign, error)
@@ -78,12 +79,16 @@ func (r *campaignRepository) Update(ctx context.Context, c *model.Campaign) erro
 }
 
 func (r *campaignRepository) GetByID(id int64) (*model.Campaign, error) {
+	return r.GetByIDContext(context.Background(), id)
+}
+
+func (r *campaignRepository) GetByIDContext(ctx context.Context, id int64) (*model.Campaign, error) {
 	db, err := r.db()
 	if err != nil {
 		return nil, err
 	}
 	var c model.Campaign
-	if err := db.Where("id = ?", id).First(&c).Error; err != nil {
+	if err := db.WithContext(ctx).Where("id = ?", id).First(&c).Error; err != nil {
 		return nil, err
 	}
 	return &c, nil

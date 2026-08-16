@@ -24,6 +24,10 @@ type staticLandingPageTranslationRepo struct {
 }
 
 func (r staticLandingPageTranslationRepo) GetByLandingPageAndLang(landingPageID int64, lang string) (*model.CampaignLandingPageTranslation, error) {
+	return r.GetByLandingPageAndLangContext(context.Background(), landingPageID, lang)
+}
+
+func (r staticLandingPageTranslationRepo) GetByLandingPageAndLangContext(_ context.Context, landingPageID int64, lang string) (*model.CampaignLandingPageTranslation, error) {
 	if r.row == nil || r.row.LandingPageID != landingPageID || r.row.Lang != lang {
 		return nil, nil
 	}

@@ -11,6 +11,7 @@ import (
 // LandingPageTranslationRepository persists per-language landing copy.
 type LandingPageTranslationRepository interface {
 	GetByLandingPageAndLang(landingPageID int64, lang string) (*model.CampaignLandingPageTranslation, error)
+	GetByLandingPageAndLangContext(ctx context.Context, landingPageID int64, lang string) (*model.CampaignLandingPageTranslation, error)
 	ListLangsByLandingPageID(landingPageID int64) ([]string, error)
 	Upsert(ctx context.Context, t *model.CampaignLandingPageTranslation) error
 }
@@ -40,12 +41,18 @@ func (r *landingPageTranslationRepository) db() (*gorm.DB, error) {
 func (r *landingPageTranslationRepository) GetByLandingPageAndLang(
 	landingPageID int64, lang string,
 ) (*model.CampaignLandingPageTranslation, error) {
+	return r.GetByLandingPageAndLangContext(context.Background(), landingPageID, lang)
+}
+
+func (r *landingPageTranslationRepository) GetByLandingPageAndLangContext(
+	ctx context.Context, landingPageID int64, lang string,
+) (*model.CampaignLandingPageTranslation, error) {
 	db, err := r.db()
 	if err != nil {
 		return nil, err
 	}
 	var row model.CampaignLandingPageTranslation
-	q := db.Where("landing_page_id = ? AND lang = ?", landingPageID, lang).First(&row)
+	q := db.WithContext(ctx).Where("landing_page_id = ? AND lang = ?", landingPageID, lang).First(&row)
 	if q.Error != nil {
 		if IsNotFound(q.Error) {
 			return nil, nil

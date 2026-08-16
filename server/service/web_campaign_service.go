@@ -121,15 +121,15 @@ func (s *webCampaignService) ListCampaigns(ctx context.Context, userID int64, la
 }
 
 func (s *webCampaignService) GetCampaignLanding(ctx context.Context, campaignID, userID int64, lang string) (*data.WebCampaignLandingPageData, error) {
-	campaign, err := s.requirePublishedCampaign(campaignID)
+	campaign, err := s.requirePublishedCampaign(ctx, campaignID)
 	if err != nil {
 		return nil, err
 	}
-	lpContent, err := s.loadLandingContent(campaign.LandingPageID, lang)
+	lpContent, err := s.loadLandingContent(ctx, campaign.LandingPageID, lang)
 	if err != nil {
 		return nil, err
 	}
-	part, err := s.participants.GetByCampaignAndUser(campaignID, userID)
+	part, err := s.participants.GetByCampaignAndUserContext(ctx, campaignID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (s *webCampaignService) GetCampaignLanding(ctx context.Context, campaignID,
 }
 
 func (s *webCampaignService) GetCampaignRules(ctx context.Context, campaignID int64) (*data.WebCampaignRulesData, error) {
-	campaign, err := s.requirePublishedCampaign(campaignID)
+	campaign, err := s.requirePublishedCampaign(ctx, campaignID)
 	if err != nil {
 		return nil, err
 	}
@@ -165,13 +165,13 @@ func (s *webCampaignService) GetCampaignRules(ctx context.Context, campaignID in
 }
 
 func (s *webCampaignService) JoinCampaign(ctx context.Context, campaignID, userID int64) (*data.WebJoinCampaignData, error) {
-	campaign, err := s.requirePublishedCampaign(campaignID)
+	campaign, err := s.requirePublishedCampaign(ctx, campaignID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Idempotent: already joined → return existing row.
-	if existing, err := s.participants.GetByCampaignAndUser(campaignID, userID); err != nil {
+	if existing, err := s.participants.GetByCampaignAndUserContext(ctx, campaignID, userID); err != nil {
 		return nil, err
 	} else if existing != nil {
 		return &data.WebJoinCampaignData{
@@ -227,8 +227,8 @@ func (s *webCampaignService) resolveTaskGroupID(campaignID int64) (int64, error)
 	return 0, nil
 }
 
-func (s *webCampaignService) requirePublishedCampaign(campaignID int64) (*model.Campaign, error) {
-	campaign, err := s.campaigns.GetByID(campaignID)
+func (s *webCampaignService) requirePublishedCampaign(ctx context.Context, campaignID int64) (*model.Campaign, error) {
+	campaign, err := s.campaigns.GetByIDContext(ctx, campaignID)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +238,7 @@ func (s *webCampaignService) requirePublishedCampaign(campaignID int64) (*model.
 	return campaign, nil
 }
 
-func (s *webCampaignService) loadLandingContent(landingPageID int64, lang string) (*data.WebLandingPageContent, error) {
+func (s *webCampaignService) loadLandingContent(ctx context.Context, landingPageID int64, lang string) (*data.WebLandingPageContent, error) {
 	if landingPageID == 0 {
 		return &data.WebLandingPageContent{
 			Lang:  lang,
@@ -246,14 +246,14 @@ func (s *webCampaignService) loadLandingContent(landingPageID int64, lang string
 			Faq:   []data.LandingPageRepeatableItemVO{},
 		}, nil
 	}
-	page, err := s.pages.GetByID(landingPageID)
+	page, err := s.pages.GetByIDContext(ctx, landingPageID)
 	if err != nil {
 		return nil, err
 	}
 	view := landingPageViewFromRow(page)
 	resolvedLang := page.DefaultLang
 	if lang != "" && lang != page.DefaultLang {
-		tr, trErr := s.translations.GetByLandingPageAndLang(landingPageID, lang)
+		tr, trErr := s.translations.GetByLandingPageAndLangContext(ctx, landingPageID, lang)
 		if trErr != nil {
 			return nil, trErr
 		}

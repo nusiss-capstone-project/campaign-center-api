@@ -14,6 +14,7 @@ import (
 // ParticipantRepository persists campaign join records.
 type ParticipantRepository interface {
 	GetByCampaignAndUser(campaignID, userID int64) (*model.CampaignParticipant, error)
+	GetByCampaignAndUserContext(ctx context.Context, campaignID, userID int64) (*model.CampaignParticipant, error)
 	ListByCampaignID(campaignID int64) ([]model.CampaignParticipant, error)
 	ListJoinedCampaignIDs(userID int64, campaignIDs []int64) (map[int64]struct{}, error)
 	Join(ctx context.Context, campaignID, userID int64) (*model.CampaignParticipant, error)
@@ -42,12 +43,18 @@ func (r *participantRepository) db() (*gorm.DB, error) {
 }
 
 func (r *participantRepository) GetByCampaignAndUser(campaignID, userID int64) (*model.CampaignParticipant, error) {
+	return r.GetByCampaignAndUserContext(context.Background(), campaignID, userID)
+}
+
+func (r *participantRepository) GetByCampaignAndUserContext(
+	ctx context.Context, campaignID, userID int64,
+) (*model.CampaignParticipant, error) {
 	db, err := r.db()
 	if err != nil {
 		return nil, err
 	}
 	var row model.CampaignParticipant
-	err = db.Where("campaign_id = ? AND user_id = ?", campaignID, userID).First(&row).Error
+	err = db.WithContext(ctx).Where("campaign_id = ? AND user_id = ?", campaignID, userID).First(&row).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

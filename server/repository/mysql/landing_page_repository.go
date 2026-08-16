@@ -22,6 +22,7 @@ type LandingPageRepository interface {
 	Create(ctx context.Context, p *model.CampaignLandingPage) error
 	Update(ctx context.Context, p *model.CampaignLandingPage) error
 	GetByID(id int64) (*model.CampaignLandingPage, error)
+	GetByIDContext(ctx context.Context, id int64) (*model.CampaignLandingPage, error)
 	List(f LandingPageListFilter) ([]model.CampaignLandingPage, int64, error)
 	Publish(ctx context.Context, id int64, operator string) (*model.CampaignLandingPage, error)
 }
@@ -75,12 +76,16 @@ func (r *landingPageRepository) Update(ctx context.Context, p *model.CampaignLan
 }
 
 func (r *landingPageRepository) GetByID(id int64) (*model.CampaignLandingPage, error) {
+	return r.GetByIDContext(context.Background(), id)
+}
+
+func (r *landingPageRepository) GetByIDContext(ctx context.Context, id int64) (*model.CampaignLandingPage, error) {
 	db, err := r.db()
 	if err != nil {
 		return nil, err
 	}
 	var p model.CampaignLandingPage
-	if err := db.Where("id = ?", id).First(&p).Error; err != nil {
+	if err := db.WithContext(ctx).Where("id = ?", id).First(&p).Error; err != nil {
 		return nil, err
 	}
 	return &p, nil
