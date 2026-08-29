@@ -44,6 +44,36 @@ func (_m *MockParticipantRepository) GetByCampaignAndUser(campaignID int64, user
 	return r0, r1
 }
 
+// GetByCampaignAndUserContext provides a mock function with given fields: ctx, campaignID, userID
+func (_m *MockParticipantRepository) GetByCampaignAndUserContext(ctx context.Context, campaignID int64, userID int64) (*model.CampaignParticipant, error) {
+	ret := _m.Called(ctx, campaignID, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetByCampaignAndUserContext")
+	}
+
+	var r0 *model.CampaignParticipant
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, int64, int64) (*model.CampaignParticipant, error)); ok {
+		return rf(ctx, campaignID, userID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, int64, int64) *model.CampaignParticipant); ok {
+		r0 = rf(ctx, campaignID, userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.CampaignParticipant)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, int64, int64) error); ok {
+		r1 = rf(ctx, campaignID, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Join provides a mock function with given fields: ctx, campaignID, userID
 func (_m *MockParticipantRepository) Join(ctx context.Context, campaignID int64, userID int64) (*model.CampaignParticipant, error) {
 	ret := _m.Called(ctx, campaignID, userID)

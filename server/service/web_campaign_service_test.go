@@ -30,6 +30,10 @@ func (r *webCampaignRepoStub) UpdateStatus(context.Context, int64, int16, string
 	return nil, nil
 }
 func (r *webCampaignRepoStub) GetByID(id int64) (*model.Campaign, error) {
+	return r.GetByIDContext(context.Background(), id)
+}
+
+func (r *webCampaignRepoStub) GetByIDContext(_ context.Context, id int64) (*model.Campaign, error) {
 	if r.getErr != nil {
 		return nil, r.getErr
 	}
@@ -54,6 +58,10 @@ func (r webPageRepoStub) List(mysql.LandingPageListFilter) ([]model.CampaignLand
 	return nil, 0, nil
 }
 func (r webPageRepoStub) GetByID(int64) (*model.CampaignLandingPage, error) {
+	return r.GetByIDContext(context.Background(), 0)
+}
+
+func (r webPageRepoStub) GetByIDContext(context.Context, int64) (*model.CampaignLandingPage, error) {
 	if r.page == nil {
 		return nil, gorm.ErrRecordNotFound
 	}
@@ -67,8 +75,13 @@ type webTransRepoStub struct {
 func (r webTransRepoStub) GetByLandingPageAndLang(int64, string) (*model.CampaignLandingPageTranslation, error) {
 	return r.row, nil
 }
+func (r webTransRepoStub) GetByLandingPageAndLangContext(context.Context, int64, string) (*model.CampaignLandingPageTranslation, error) {
+	return r.row, nil
+}
 func (r webTransRepoStub) ListLangsByLandingPageID(int64) ([]string, error) { return nil, nil }
-func (r webTransRepoStub) Upsert(context.Context, *model.CampaignLandingPageTranslation) error { return nil }
+func (r webTransRepoStub) Upsert(context.Context, *model.CampaignLandingPageTranslation) error {
+	return nil
+}
 
 type webParticipantRepoStub struct {
 	joined map[int64]struct{}
@@ -76,6 +89,9 @@ type webParticipantRepoStub struct {
 }
 
 func (r *webParticipantRepoStub) GetByCampaignAndUser(campaignID, userID int64) (*model.CampaignParticipant, error) {
+	return r.row, nil
+}
+func (r *webParticipantRepoStub) GetByCampaignAndUserContext(context.Context, int64, int64) (*model.CampaignParticipant, error) {
 	return r.row, nil
 }
 func (r *webParticipantRepoStub) ListByCampaignID(campaignID int64) ([]model.CampaignParticipant, error) {
@@ -102,7 +118,9 @@ type webRulesRepoStub struct {
 func (r webRulesRepoStub) ListByCampaignID(int64) ([]model.CampaignRewardRule, error) {
 	return r.rules, nil
 }
-func (r webRulesRepoStub) ListByRef(string, int64) ([]model.CampaignRewardRule, error) { return nil, nil }
+func (r webRulesRepoStub) ListByRef(string, int64) ([]model.CampaignRewardRule, error) {
+	return nil, nil
+}
 func (r webRulesRepoStub) ReplaceByCampaignID(context.Context, int64, []model.CampaignRewardRule) error {
 	return nil
 }

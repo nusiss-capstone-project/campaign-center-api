@@ -99,6 +99,10 @@ type adminParticipantRepoStub struct {
 }
 
 func (r *adminParticipantRepoStub) GetByCampaignAndUser(campaignID, userID int64) (*model.CampaignParticipant, error) {
+	return r.GetByCampaignAndUserContext(context.Background(), campaignID, userID)
+}
+
+func (r *adminParticipantRepoStub) GetByCampaignAndUserContext(_ context.Context, campaignID, userID int64) (*model.CampaignParticipant, error) {
 	for i := range r.rows {
 		if r.rows[i].CampaignID == campaignID && r.rows[i].UserID == userID {
 			return &r.rows[i], nil

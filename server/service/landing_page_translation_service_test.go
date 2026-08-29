@@ -34,6 +34,10 @@ func (r *translationRepoStub) GetByLandingPageAndLang(int64, string) (*model.Cam
 	return r.existing, nil
 }
 
+func (r *translationRepoStub) GetByLandingPageAndLangContext(context.Context, int64, string) (*model.CampaignLandingPageTranslation, error) {
+	return r.existing, nil
+}
+
 func (r *translationRepoStub) ListLangsByLandingPageID(int64) ([]string, error) {
 	return r.langs, nil
 }

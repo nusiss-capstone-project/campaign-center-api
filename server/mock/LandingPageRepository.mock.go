@@ -63,6 +63,36 @@ func (_m *MockLandingPageRepository) GetByID(id int64) (*model.CampaignLandingPa
 	return r0, r1
 }
 
+// GetByIDContext provides a mock function with given fields: ctx, id
+func (_m *MockLandingPageRepository) GetByIDContext(ctx context.Context, id int64) (*model.CampaignLandingPage, error) {
+	ret := _m.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetByIDContext")
+	}
+
+	var r0 *model.CampaignLandingPage
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, int64) (*model.CampaignLandingPage, error)); ok {
+		return rf(ctx, id)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, int64) *model.CampaignLandingPage); ok {
+		r0 = rf(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.CampaignLandingPage)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, int64) error); ok {
+		r1 = rf(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // List provides a mock function with given fields: f
 func (_m *MockLandingPageRepository) List(f mysql.LandingPageListFilter) ([]model.CampaignLandingPage, int64, error) {
 	ret := _m.Called(f)

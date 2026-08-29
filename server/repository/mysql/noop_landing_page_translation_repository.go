@@ -14,6 +14,12 @@ func (noopLandingPageTranslationRepository) GetByLandingPageAndLang(
 	return nil, nil
 }
 
+func (noopLandingPageTranslationRepository) GetByLandingPageAndLangContext(
+	context.Context, int64, string,
+) (*model.CampaignLandingPageTranslation, error) {
+	return nil, nil
+}
+
 func (noopLandingPageTranslationRepository) ListLangsByLandingPageID(int64) ([]string, error) {
 	return []string{}, nil
 }

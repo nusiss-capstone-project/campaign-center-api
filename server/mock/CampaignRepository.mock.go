@@ -121,6 +121,36 @@ func (_m *MockCampaignRepository) GetByID(id int64) (*model.Campaign, error) {
 	return r0, r1
 }
 
+// GetByIDContext provides a mock function with given fields: ctx, id
+func (_m *MockCampaignRepository) GetByIDContext(ctx context.Context, id int64) (*model.Campaign, error) {
+	ret := _m.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetByIDContext")
+	}
+
+	var r0 *model.Campaign
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, int64) (*model.Campaign, error)); ok {
+		return rf(ctx, id)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, int64) *model.Campaign); ok {
+		r0 = rf(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.Campaign)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, int64) error); ok {
+		r1 = rf(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Update provides a mock function with given fields: ctx, c
 func (_m *MockCampaignRepository) Update(ctx context.Context, c *model.Campaign) error {
 	ret := _m.Called(ctx, c)
